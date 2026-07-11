@@ -1,0 +1,37 @@
+[
+  {
+    "directory": "C:/Users/Bill/source/repos/OdrCop2/demo",
+    "file": "C:/Users/Bill/source/repos/OdrCop2/demo/AnotherFile.cpp",
+    "command": "clang-cl.exe /nologo /W4 /WX /diagnostics:column /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHsc /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++23preview /permissive- /Fox64\\Debug\\\\ /wd4743 \"C:/Users/Bill/source/repos/OdrCop2/demo/AnotherFile.cpp\""
+  },
+  {
+    "directory": "C:/Users/Bill/source/repos/OdrCop2/demo",
+    "file": "C:/Users/Bill/source/repos/OdrCop2/demo/demo.cpp",
+    "command": "clang-cl.exe /nologo /W4 /WX /diagnostics:column /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHsc /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++23preview /permissive- /Fox64\\Debug\\\\ /wd4743 \"C:/Users/Bill/source/repos/OdrCop2/demo/demo.cpp\""
+  },
+  {
+    "directory": "C:/Users/Bill/source/repos/OdrCop2/demo",
+    "file": "C:/Users/Bill/source/repos/OdrCop2/demo/RegressionTests.cpp",
+    "command": "clang-cl.exe /nologo /W4 /WX /diagnostics:column /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHsc /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++23preview /permissive- /Fox64\\Debug\\\\ /wd4743 \"C:/Users/Bill/source/repos/OdrCop2/demo/RegressionTests.cpp\""
+  },
+  {
+    "directory": "C:/Users/Bill/source/repos/OdrCop2/demo",
+    "file": "C:/Users/Bill/source/repos/OdrCop2/demo/TU1.cpp",
+    "command": "clang-cl.exe /nologo /W4 /WX /diagnostics:column /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHsc /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++23preview /permissive- /Fox64\\Debug\\\\ /wd4743 \"C:/Users/Bill/source/repos/OdrCop2/demo/TU1.cpp\""
+  },
+  {
+    "directory": "C:/Users/Bill/source/repos/OdrCop2/demo",
+    "file": "C:/Users/Bill/source/repos/OdrCop2/demo/TU2.cpp",
+    "command": "clang-cl.exe /nologo /W4 /WX /diagnostics:column /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHsc /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++23preview /permissive- /Fox64\\Debug\\\\ /wd4743 \"C:/Users/Bill/source/repos/OdrCop2/demo/TU2.cpp\""
+  },
+  {
+    "directory": "C:/Users/Bill/source/repos/OdrCop2/demo",
+    "file": "C:/Users/Bill/source/repos/OdrCop2/demo/TU3.cpp",
+    "command": "clang-cl.exe /nologo /W4 /WX /diagnostics:column /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHsc /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++23preview /permissive- /Fox64\\Debug\\\\ /wd4743 \"C:/Users/Bill/source/repos/OdrCop2/demo/TU3.cpp\""
+  },
+  {
+    "directory": "C:/Users/Bill/source/repos/OdrCop2/demo",
+    "file": "C:/Users/Bill/source/repos/OdrCop2/demo/TU4.cpp",
+    "command": "clang-cl.exe /nologo /W4 /WX /diagnostics:column /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHsc /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++23preview /permissive- /Fox64\\Debug\\\\ /wd4743 \"C:/Users/Bill/source/repos/OdrCop2/demo/TU4.cpp\""
+  }
+]
