@@ -29,6 +29,49 @@ namespace OdrCop3
         std::string get_Name()        const { return cxxRecordDecl->isAnonymousStructOrUnion() ? "" : cxxRecordDecl->getQualifiedNameAsString(); }
         std::string get_SizeComment() const { return cxxRecordDecl->isCompleteDefinition() && !cxxRecordDecl->isDependentType() ? " // sizeof=" + std::to_string(contextItems.context.getASTRecordLayout(cxxRecordDecl).getSize().getQuantity()) + "\n" : "\n"; }
 
+        std::string get_Bases()       const
+        {
+            std::string out;
+
+            bool firstBase = true;
+            for (const clang::CXXBaseSpecifier& base : cxxRecordDecl->bases())
+            {
+                if (firstBase) {
+                    firstBase = false;
+                    out += ": ";
+                } else
+                    out += ", ";
+
+                if (base.isVirtual())
+                   out += "virtual ";
+
+                switch (base.getAccessSpecifier()) {
+                case clang::AS_public:    out += "public ";    break;
+                case clang::AS_protected: out += "protected "; break;
+                case clang::AS_private:   out += "private ";   break;
+                case clang::AS_none:
+                default:                                       break;
+                }
+
+                //// when a base is defined in an anonymous namespace, include the full definition here.
+                //const clang::Type* type = base.getType().getCanonicalType().getTypePtr();
+                //const auto* recordType  = dyn_cast<RecordType>(type);
+                //if (recordType && recordType->getDecl()->isInAnonymousNamespace())
+                //{
+                //    previousWasAnonymous = true;
+                //    out += IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())), out.size() - (out.rfind('\n') + 1));  // length of last line up to current spot
+                //    out  = out.substr(0, out.size()-2); // strip off last ";\n"
+                //}
+                //else
+                out += base.getType().getAsString(contextItems.printPolicy);
+            }
+            if (firstBase == false)
+                out += " ";
+
+            out += "{";
+            return out;
+        }
+
         std::string Serialize() const
         {
             std::string out;
@@ -71,58 +114,7 @@ namespace OdrCop3
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";
 
-        //    // base classes
-        //    std::string indentToColon(out.size(), ' ');
-        //    bool previousWasAnonymous = false;
-        //    bool firstBase = true;
-        //    for (const clang::CXXBaseSpecifier& base : cxxRecordDecl->bases())
-        //    {
-        //        if (firstBase) {
-        //            firstBase = false;
-        //            out += ": ";
-        //        } else {
-        //            if (previousWasAnonymous) {
-        //                previousWasAnonymous = false;
-        //                out += "\n" + indentToColon;
-        //            }
-        //            out += ", ";
-        //        }
-
-        //        switch (base.getAccessSpecifier()) {
-        //        case clang::AS_public:    out += "public ";    break;
-        //        case clang::AS_protected: out += "protected "; break;
-        //        case clang::AS_private:   out += "private ";   break;
-        //        case clang::AS_none:      out += " ";          break; // depends on context
-        //        }
-        //        if (base.isVirtual())
-        //            out += "virtual ";
-
-        //        // when a base is defined in an anonymous namespace, include the full definition here.
-        //        const clang::Type* type = base.getType().getCanonicalType().getTypePtr();
-        //        const auto* recordType  = dyn_cast<RecordType>(type);
-        //        if (recordType && recordType->getDecl()->isInAnonymousNamespace())
-        //        {
-        //            previousWasAnonymous = true;
-        //            out += IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())), out.size() - (out.rfind('\n') + 1));  // length of last line up to current spot
-        //            out  = out.substr(0, out.size()-2); // strip off last ";\n"
-        //        }
-        //        else
-        //            out += base.getType().getAsString(printPolicy);
-        //    }
-        //    if (firstBase == false)
-        //        out += " ";
-
-        //    // final
-        //    if (true == cxxRecordDecl->hasAttr<FinalAttr>())
-        //        out += "final ";
-
-        //    // sizeof as comment
-        //    if (cxxRecordDecl->isCompleteDefinition() && !cxxRecordDecl->isDependentType())
-        //        out += "{ // sizeof=" + std::to_string(context->getASTRecordLayout(cxxRecordDecl).getSize().getQuantity()) + "\n";
-        //    else
-        //        out += "{\n";
-
-            out += "{";
+            out += get_Bases();
             out += get_SizeComment();
 
 

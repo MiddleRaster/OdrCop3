@@ -61,28 +61,37 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct Bar { // sizeof=8\n"
                                  "};"
-                               , (*it++).second[0].fullyQualified, "should have gotten the function and body");
-                Assert::AreEqual("struct Foo { // sizeof=16\n"
+                               , (*it++).second[0].fullyQualified, "should have gotten the struct");
+                Assert::AreEqual("struct Foo : public Bar { // sizeof=16\n"
                                  "};"
-                               , (*it++).second[0].fullyQualified, "should have gotten the ctor and body");
+                               , (*it++).second[0].fullyQualified, "should have gotten the struct");
             }
         }
     },
 
     {"Testing CXXRecordDeclSerializer on UDTs", []
         {
-            std::string code = "struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final {};";
+            std::string code = "struct Qux {}; struct Bar {}; struct Baz{}; struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : Baz, virtual private Bar, protected Qux {};";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(1, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
+            Assert::AreEqual(4, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
 
             auto it = maps.udtMap.begin();
-            Assert::AreEqual("Foo",      it->first,        "should have gotten correct key");
+            Assert::AreEqual("Bar",      it->first,        "should have gotten correct key");
             Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-            Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final { // sizeof=32\n"
+            Assert::AreEqual("struct Bar { // sizeof=1\n"
+                             "};"
+                           , (*it++).second[0].fullyQualified, "should have gotten the struct");
+            Assert::AreEqual("struct Baz { // sizeof=1\n"
+                             "};"
+                           , (*it++).second[0].fullyQualified, "should have gotten the struct");
+            Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : public Baz, virtual private Bar, protected Qux { // sizeof=32\n"
+                             "};"
+                           , (*it++).second[0].fullyQualified, "should have gotten the struct");
+            Assert::AreEqual("struct Qux { // sizeof=1\n"
                              "};"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
         }
