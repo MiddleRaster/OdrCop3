@@ -1,0 +1,54 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  SOLUTION_FILE_PATH: OdrCop3.slnx
+  BUILD_CONFIGURATION: Release
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: windows-2025-vs2026    
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install MSBuild
+        uses: microsoft/setup-msbuild@v1.3
+
+      - name: Restore NuGet packages
+        run: dotnet restore ${{ env.SOLUTION_FILE_PATH }}
+
+      - name: Download LLVM SDK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download llvm-sdk-2026-06-01 `
+            --repo ${{ github.repository }} `
+            --pattern "llvm.zip" `
+            --dir .
+
+      - name: Extract LLVM SDK
+        run: |
+          Expand-Archive llvm.zip -DestinationPath .
+
+      - name: Build Solution
+        run: |
+          msbuild ${{ env.SOLUTION_FILE_PATH }} /p:Configuration=${{ env.BUILD_CONFIGURATION }}
+
+      - name: Run TDD Tests
+        run: |
+          .\x64\Release\tdd.exe > output.txt
+          type output.txt
+          findstr /C:"0 failure(s) out of" output.txt
