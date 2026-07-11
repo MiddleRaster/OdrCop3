@@ -43,10 +43,14 @@ namespace OdrCop3
             
             out += get_Kind(); // struct/class/union keyword
 
-            // alignas/[[attributes]]/__declspecs
-            for (const Attr* attr : cxxRecordDecl->attrs())
+            bool hasFinal = false; // final is treated as an attribute, but it's really a keyword
+            for (const Attr* attr : cxxRecordDecl->attrs()) // alignas/[[attributes]]/__declspecs
             {
-                out += SerializeAttr(contextItems, attr);
+                std::string a = SerializeAttr(contextItems, attr);
+                if (a == "final ")
+                    hasFinal = true;
+                else
+                    out += SerializeAttr(contextItems, attr);
             }
 
         //    // name (if not nameless)
@@ -63,6 +67,9 @@ namespace OdrCop3
         //    }
 
             out += " ";
+
+            if (hasFinal) // final is treated as an attribute, but it's really a keyword
+                out += "final ";
 
         //    // base classes
         //    std::string indentToColon(out.size(), ' ');

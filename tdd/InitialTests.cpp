@@ -71,7 +71,7 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Testing CXXRecordDeclSerializer on UDTs", []
         {
-            std::string code = "struct Foo {};";
+            std::string code = "struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final {};";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -82,7 +82,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual("Foo",      it->first,        "should have gotten correct key");
             Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-            Assert::AreEqual("struct Foo { // sizeof=1\n"
+            Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final { // sizeof=32\n"
                              "};"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
         }

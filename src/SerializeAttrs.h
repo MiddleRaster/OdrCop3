@@ -28,25 +28,18 @@ namespace OdrCop3
             static std::string Serialize(const ContextItems& contextItems, const clang::AlignedAttr* alignedAttr)
             {
                 std::string out;
-                //if (const auto* alignedAttr = clang::dyn_cast<clang::AlignedAttr>(attr))
-                //{
-                    if (alignedAttr->isAlignmentExpr())
+                if (alignedAttr->isAlignmentExpr())
+                {
+                    const clang::Expr* expr = alignedAttr->getAlignmentExpr();
+                    if (expr && expr->isIntegerConstantExpr(contextItems.context))
                     {
-                        const clang::Expr* expr = alignedAttr->getAlignmentExpr();
-                        if (expr && expr->isIntegerConstantExpr(contextItems.context))
-                        {
-                            auto optInt = expr->getIntegerConstantExpr(contextItems.context);
-                            if (optInt.has_value())
-                            {
-                                out += "alignas(" + std::to_string(optInt.value().getExtValue()) + ") ";
-                                return out;
-                            }
-                        }
+                        auto optInt = expr->getIntegerConstantExpr(contextItems.context);
+                        if (optInt.has_value())
+                            return "alignas(" + std::to_string(optInt.value().getExtValue()) + ") ";
                     }
-                    // alignment specified as a type: alignas(SomeType)
-                    out += "alignas(" + alignedAttr->getAlignmentType()->getType().getAsString() + ") ";
-                // }
-                return out;
+                }
+                // alignment specified as a type: alignas(SomeType)
+                return "alignas(" + alignedAttr->getAlignmentType()->getType().getAsString() + ") ";
             }
             static std::string Serialize(const ContextItems& /*contextItems*/, const clang::WarnUnusedResultAttr* nodiscard)
             {
@@ -60,7 +53,7 @@ namespace OdrCop3
             }
             static std::string Serialize(const ContextItems& /*contextItems*/, const clang::FinalAttr* /*Final*/)
             {
-                return "__attribute__((final))"; // GNU-style only
+                return "final ";
             }
             static std::string Serialize(const ContextItems& contextItems, const clang::Attr* attr)
             {
