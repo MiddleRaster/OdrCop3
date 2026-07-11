@@ -175,11 +175,6 @@
     <ClInclude Include="headers\stdafx.h" />
     <ClInclude Include="headers\Utils.h" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\src\OdrCop2.vcxproj">
-      <Project>{d5f7276f-fe7c-472f-b1a6-fbe2b9b79dbd}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

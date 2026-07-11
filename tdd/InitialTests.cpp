@@ -40,22 +40,51 @@ Test ExploratoryTestsOfClangAST[] =
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(7, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
+            Assert::AreEqual(9, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found UDTs and functions/methods");
 
-            auto it = maps.functionMap.begin();
-            Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
-            Assert::AreEqual("export void __cdecl Baz([[deprecated]] int x, int y [[maybe_unused]]) {}",                  (*it++).second[0].fullyQualified, "should have gotten the function and body");
-            Assert::AreEqual("explicit void __cdecl Foo(int i) : x(7), i(i) { i++; }",                                    (*it++).second[0].fullyQualified, "should have gotten the ctor and body");
-            Assert::AreEqual("[[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }",              (*it++).second[0].fullyQualified, "should have gotten the method and body");
-            Assert::AreEqual("template <typename T> T __cdecl doTemplateyStuff(const T & value) "
-                             "requires requires { typename T::value_type; } const { return value; }",                     (*it++).second[0].fullyQualified, "should have gotten the method and body");
-            Assert::AreEqual("auto __cdecl make_lambda() const {\n"
-                             "    return [this](int x) {\n"
-                             "        return x + i;\n"
-                             "    };\n"
-                             "}",                                                                                         (*it++).second[0].fullyQualified, "should have gotten the operator and body");
-            Assert::AreEqual("explicit int __cdecl operator int() const { return 7; }",                                   (*it++).second[0].fullyQualified, "should have gotten the operator and body");
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
+                Assert::AreEqual("export void __cdecl Baz([[deprecated]] int x, int y [[maybe_unused]]) {}",    (*it++).second[0].fullyQualified, "should have gotten the function and body");
+                Assert::AreEqual("explicit void __cdecl Foo(int i) : x(7), i(i) { i++; }",                      (*it++).second[0].fullyQualified, "should have gotten the ctor and body");
+                Assert::AreEqual("[[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }",(*it++).second[0].fullyQualified, "should have gotten the method and body");
+                Assert::AreEqual("template <typename T> T __cdecl doTemplateyStuff(const T & value) "
+                                 "requires requires { typename T::value_type; } const { return value; }",       (*it++).second[0].fullyQualified, "should have gotten the method and body");
+                Assert::AreEqual("auto __cdecl make_lambda() const {\n"
+                                 "    return [this](int x) {\n"
+                                 "        return x + i;\n"
+                                 "    };\n"
+                                 "}",                                                                           (*it++).second[0].fullyQualified, "should have gotten the operator and body");
+                Assert::AreEqual("explicit int __cdecl operator int() const { return 7; }",                     (*it++).second[0].fullyQualified, "should have gotten the operator and body");
+            }
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Bar { // sizeof=8\n"
+                                 "};"
+                               , (*it++).second[0].fullyQualified, "should have gotten the function and body");
+                Assert::AreEqual("struct Foo { // sizeof=16\n"
+                                 "};"
+                               , (*it++).second[0].fullyQualified, "should have gotten the ctor and body");
+            }
         }
     },
 
+    {"Testing CXXRecordDeclSerializer on UDTs", []
+        {
+            std::string code = "struct Foo {};";
+
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+            Assert::AreEqual(1, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
+
+            auto it = maps.udtMap.begin();
+            Assert::AreEqual("Foo",      it->first,        "should have gotten correct key");
+            Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
+
+            Assert::AreEqual("struct Foo { // sizeof=1\n"
+                             "};"
+                           , (*it++).second[0].fullyQualified, "should have gotten the struct");
+        }
+    },
 };

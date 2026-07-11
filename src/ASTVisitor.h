@@ -105,8 +105,11 @@ namespace OdrCop3
 
             if (recordDecl->isThisDeclarationADefinition())
             {
-                std::string out = SerializeDecls(contextItems, recordDecl);
-                maps.udtMap[out].push_back({TU,out});
+                std::string key = recordDecl->getQualifiedNameAsString();
+                     if (recordDecl->getDescribedClassTemplate())                            key += "<>";
+            //  else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(recordDecl)) key += TemplateArgsToString(CTSD, true);
+
+                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, recordDecl) });
             }
             return true;
         }
