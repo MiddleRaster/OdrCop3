@@ -29,7 +29,20 @@ namespace OdrCop3
         std::string get_Name()        const { return cxxRecordDecl->isAnonymousStructOrUnion() ? "" : cxxRecordDecl->getQualifiedNameAsString(); }
         std::string get_SizeComment() const { return cxxRecordDecl->isCompleteDefinition() && !cxxRecordDecl->isDependentType() ? " // sizeof=" + std::to_string(contextItems.context.getASTRecordLayout(cxxRecordDecl).getSize().getQuantity()) + "\n" : "\n"; }
 
-        std::string get_Bases()       const
+        std::string get_Attributes(bool* hasFinal) const
+        {
+            std::string out;
+            for (const Attr* attr : cxxRecordDecl->attrs()) // alignas/[[attributes]]/__declspecs
+            {
+                std::string a = SerializeAttr(contextItems, attr);
+                if (a == "final ")
+                    *hasFinal = true;
+                else
+                    out += SerializeAttr(contextItems, attr);
+            }
+            return out;
+        }
+        std::string get_Bases() const
         {
             std::string out;
 
@@ -87,19 +100,7 @@ namespace OdrCop3
             out += get_Kind(); // struct/class/union keyword
 
             bool hasFinal = false; // final is treated as an attribute, but it's really a keyword
-            for (const Attr* attr : cxxRecordDecl->attrs()) // alignas/[[attributes]]/__declspecs
-            {
-                std::string a = SerializeAttr(contextItems, attr);
-                if (a == "final ")
-                    hasFinal = true;
-                else
-                    out += SerializeAttr(contextItems, attr);
-            }
-
-        //    // name (if not nameless)
-        //    if (!cxxRecordDecl->isAnonymousStructOrUnion())
-        //        out += cxxRecordDecl->getQualifiedNameAsString(); // note: no space until after any <> stuff
-
+            out += get_Attributes(&hasFinal);
             out += get_Name(); // NOTE: no " " until after template stuff
 
         //    // if it's a template instantiation, add <arg> 
@@ -108,7 +109,6 @@ namespace OdrCop3
         //        out += IndentBlock(TemplateArgsToString(CTSD), out.size());
         //        out  = out.substr(0, out.size()-1); // strip off last "\n"
         //    }
-
             out += " ";
 
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
