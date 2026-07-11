@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  SOLUTION_FILE_PATH: OdrCop2.slnx
+  SOLUTION_FILE_PATH: OdrCop3.slnx
   BUILD_CONFIGURATION: Release
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
