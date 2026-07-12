@@ -123,61 +123,17 @@ namespace OdrCop3
             out += get_Bases();
             out += get_SizeComment();
 
-
-            // data-members and methods
+            // data-members, methods, nested decls, etc.
             for (const clang::Decl* decl : cxxRecordDecl->decls())
             {
                 if (decl->isImplicit())
                     continue;
 
-                out += IndentBlock(SerializeDecl(contextItems, decl), 3, "   ");
+                if (decl->getKind() == clang::Decl::Kind::AccessSpec)
+                    out += SerializeDecl(contextItems, decl); // "public:", for instance, does not get indented
+                else
+                    out += IndentBlock(SerializeDecl(contextItems, decl), 3, "   ");
 
-
-        //        if (clang::isa<clang::AccessSpecDecl>(decl))
-        //        {
-        //            const auto* access = clang::dyn_cast<clang::AccessSpecDecl>(decl);
-        //            switch (access->getAccess())
-        //            {
-        //            case AS_public:    out += "public:\n";    break;
-        //            case AS_protected: out += "protected\n:"; break;
-        //            case AS_private:   out += "private:\n";   break;
-        //            default:                                  break;
-        //            }
-        //            continue;
-        //        }
-        //        if (const auto* var = clang::dyn_cast<clang::VarDecl>(decl))
-        //        {   // static data members  (VarDecl inside a record == static member)
-        //            out += "   ";
-
-        //            // attributes on static data-members
-        //            out += ConstructAttributes(decl);
-
-        //            if (var->isConstexpr())
-        //                out += "constexpr ";
-        //            else if (var->isInline())
-        //                out += "inline ";
-
-        //            { // static field: use same type+name print trick as non-static
-        //                std::string fieldStr;
-        //                llvm::raw_string_ostream os(fieldStr);
-        //                var->getType().print(os, printPolicy, var->getNameAsString());
-        //                os.flush();
-        //                out += "static " + fieldStr;
-        //            }
-
-        //            if (var->hasInit())
-        //            {
-        //                const Expr* expr = var->getInit();
-        //                llvm::StringRef  text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), context->getSourceManager(), context->getLangOpts());
-        //                std::string      init = text.str();
-        //                if ((init.starts_with("{")) || init.starts_with("("))
-        //                    out += init;
-        //                else
-        //                    out += "=" + init;
-        //            }
-        //            out += ";\n";
-        //            continue;
-        //        }
         //        if (const auto* method = clang::dyn_cast<clang::CXXMethodDecl>(decl))
         //        {   // methods
         //            if (method->isImplicit())

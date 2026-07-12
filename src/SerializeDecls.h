@@ -35,6 +35,16 @@ namespace OdrCop3
             {
                 return SerializeFunctionDecl(contextItems, functionTemplateDecl->getTemplatedDecl());
             }
+            static std::string SerializeAccessSpecDecl(const ContextItems& contextItems, const AccessSpecDecl* accessDecl)
+            {
+                switch (accessDecl->getAccess())
+                {
+                case AS_public:    return "public:\n";
+                case AS_protected: return "protected\n:";
+                case AS_private:   return "private:\n";
+                default:           return "";
+                }
+            }
             static std::string SerializeFieldDecl(const ContextItems& contextItems, const FieldDecl* fieldDecl)
             {
                 if (fieldDecl->isAnonymousStructOrUnion())
@@ -89,6 +99,39 @@ namespace OdrCop3
                 //if (field->hasInClassInitializer())
                 //    out += AddClassInitializer(field);
 
+                out += ";\n";
+                return out;
+            }
+            static std::string SerializeVarDecl(const ContextItems& contextItems, const VarDecl* varDecl)
+            {
+                std::string out;
+
+                for (const auto* attr : varDecl->attrs())
+                    out += SerializeAttr(contextItems, attr); // attributes on static data-members
+
+                if (varDecl->isConstexpr())
+                    out += "constexpr ";
+                else if (varDecl->isInline()) // constexpr is inline; don't print both
+                    out += "inline ";
+
+                { // static field: use same type+name print trick as non-static
+                    std::string fieldStr;
+                    llvm::raw_string_ostream os(fieldStr);
+                    varDecl->getType().print(os, contextItems.printPolicy, varDecl->getNameAsString());
+                    os.flush();
+                    out += "static " + fieldStr;
+                }
+
+                if (varDecl->hasInit())
+                {
+                    const Expr* expr = varDecl->getInit();
+                    llvm::StringRef  text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
+                    std::string      init = text.str();
+                    if ((init.starts_with("{")) || init.starts_with("("))
+                        out += init;
+                    else
+                        out += "=" + init;
+                }
                 out += ";\n";
                 return out;
             }
@@ -198,11 +241,13 @@ namespace OdrCop3
             case clang::Decl::Kind::CXXMethod:        // is a subclass of FunctionDecl
             case clang::Decl::Kind::CXXConstructor:   // so is this
             case clang::Decl::Kind::CXXConversion:    // and this
-            case clang::Decl::Kind::Function:         if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl        >(decl)) return DeclSerializer::SerializeFunctionDecl (contextItems, functionDecl); break;
-            case clang::Decl::Kind::ParmVar:          if (const ParmVarDecl *          pvd = dyn_cast<ParmVarDecl         >(decl)) return DeclSerializer::SerializeParameterDecl(contextItems, pvd);          break;
-            case clang::Decl::Kind::CXXRecord:        if (const CXXRecordDecl*         cxx = dyn_cast<CXXRecordDecl       >(decl)) return DeclSerializer::SerializeCXXRecordDecl(contextItems, cxx);          break;
-            case clang::Decl::Kind::Field:            if (const FieldDecl *      fieldDecl = dyn_cast<FieldDecl           >(decl)) return DeclSerializer::SerializeFieldDecl    (contextItems, fieldDecl);    break;
-            case clang::Decl::Kind::FunctionTemplate: if (const FunctionTemplateDecl * ftd = dyn_cast<FunctionTemplateDecl>(decl)) return DeclSerializer::SerializeFunctionTemplateDecl(contextItems, ftd);   break;
+            case clang::Decl::Kind::Function:         if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl        >(decl)) return DeclSerializer::SerializeFunctionDecl  (contextItems, functionDecl); break;
+            case clang::Decl::Kind::ParmVar:          if (const ParmVarDecl *          pvd = dyn_cast<ParmVarDecl         >(decl)) return DeclSerializer::SerializeParameterDecl (contextItems, pvd);          break;
+            case clang::Decl::Kind::CXXRecord:        if (const CXXRecordDecl*         cxx = dyn_cast<CXXRecordDecl       >(decl)) return DeclSerializer::SerializeCXXRecordDecl (contextItems, cxx);          break;
+            case clang::Decl::Kind::Field:            if (const FieldDecl *      fieldDecl = dyn_cast<FieldDecl           >(decl)) return DeclSerializer::SerializeFieldDecl     (contextItems, fieldDecl);    break;
+            case clang::Decl::Kind::FunctionTemplate: if (const FunctionTemplateDecl * ftd = dyn_cast<FunctionTemplateDecl>(decl)) return DeclSerializer::SerializeFunctionTemplateDecl(contextItems, ftd);    break;
+            case clang::Decl::Kind::AccessSpec:       if (const AccessSpecDecl* accessDecl = dyn_cast<AccessSpecDecl      >(decl)) return DeclSerializer::SerializeAccessSpecDecl(contextItems, accessDecl);   break;
+            case clang::Decl::Kind::Var:              if (const VarDecl *          varDecl = dyn_cast<VarDecl             >(decl)) return DeclSerializer::SerializeVarDecl       (contextItems, varDecl);      break;
             default: break;
             }
             throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));

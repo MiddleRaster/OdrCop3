@@ -84,7 +84,10 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Testing CXXRecordDeclSerializer on UDTs", []
         {
-            std::string code = "struct Qux {}; struct Bar {}; struct Baz{}; struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : Baz, virtual private Bar, protected Qux {};";
+            std::string code = "struct Qux {}; struct Bar {}; struct Baz{}; struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : Baz, virtual private Bar, protected Qux {"
+                               "public: [[deprecated(\"use y instead\")]] constexpr static int x = 0; "
+                               "   inline static int y{0};"
+                               "};";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -102,6 +105,9 @@ Test ExploratoryTestsOfClangAST[] =
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
             Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : public Baz, virtual private Bar, protected Qux { // sizeof=32\n"
+                             "public:\n"
+                             "   [[deprecated(\"use y instead\")]] constexpr static const int x=0;\n"
+                             "   inline static int y{0};\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
             Assert::AreEqual("struct Qux { // sizeof=1\n"
