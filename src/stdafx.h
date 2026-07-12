@@ -11,12 +11,10 @@
 #include <clang\AST\GlobalDecl.h>
 #include <clang\AST\RecordLayout.h>
 #include <llvm\Support\raw_ostream.h>
-using namespace clang;
 
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
-
-#include <windows.h>
-#include <DbgHelp.h>
+#include <sstream>
+#include <string>

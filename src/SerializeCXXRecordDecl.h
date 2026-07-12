@@ -114,7 +114,8 @@ namespace OdrCop3
         //        out += IndentBlock(TemplateArgsToString(CTSD), out.size());
         //        out  = out.substr(0, out.size()-1); // strip off last "\n"
         //    }
-            out += " ";
+            if (get_Name() != "") // don't put in extra space if nameless
+                out += " ";
 
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";
@@ -126,8 +127,11 @@ namespace OdrCop3
             // data-members and methods
             for (const clang::Decl* decl : cxxRecordDecl->decls())
             {
-                if (decl->isImplicit() == false)
-                    out += "   " + SerializeDecl(contextItems, decl);
+                if (decl->isImplicit())
+                    continue;
+
+                out += IndentBlock(SerializeDecl(contextItems, decl), 3, "   ");
+
 
         //        if (clang::isa<clang::AccessSpecDecl>(decl))
         //        {

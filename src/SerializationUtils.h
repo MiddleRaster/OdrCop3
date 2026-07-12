@@ -12,13 +12,10 @@
 #include <clang\AST\GlobalDecl.h>
 #include <clang\AST\RecordLayout.h>
 #include <llvm\Support\raw_ostream.h>
-using namespace clang;
 
-#include <vector>
 #include <exception>
 #include <string>
-
-#include <windows.h>
+#include <sstream>
 
 namespace OdrCop3
 {
@@ -35,4 +32,21 @@ namespace OdrCop3
         UnhandledException(const std::string& msg) : message(msg) {}
 		const char* what() const noexcept override { return message.c_str(); }
 	};
+
+    inline std::string IndentBlock(const std::string& block, size_t indentWidth, const std::string& firstLinePrefix = "")
+    {
+        std::istringstream iss(block);
+        std::string indentation(indentWidth, ' ');
+        std::string out;
+        bool first = true;
+        for (std::string line; std::getline(iss, line);)
+        {
+            if (first) {
+                first = false;
+                out  += firstLinePrefix + line + "\n";
+            } else
+                out  += indentation + line + "\n";
+        }
+        return out;
+    }
 }
