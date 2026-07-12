@@ -19,7 +19,7 @@ Test ExploratoryTestsOfClangAST[] =
 
             const auto& vec = maps.functionMap.begin()->second;
             Assert::AreEqual("input.cc", vec[0].TU, "should have gotten the TU name");
-            Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }", vec[0].fullyQualified, "should have gotten the function and body");
+            Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n", vec[0].fullyQualified, "should have gotten the function and body");
         }
     },
     {"Testing FunctionDeclSerializer on methods", []
@@ -45,26 +45,40 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
-                Assert::AreEqual("export void __cdecl Baz([[deprecated]] int x, int y [[maybe_unused]]) {}",    (*it++).second[0].fullyQualified, "should have gotten the function and body");
-                Assert::AreEqual("explicit void __cdecl Foo(int i) : x(7), i(i) { i++; }",                      (*it++).second[0].fullyQualified, "should have gotten the ctor and body");
-                Assert::AreEqual("[[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }",(*it++).second[0].fullyQualified, "should have gotten the method and body");
+                Assert::AreEqual("export void __cdecl Baz([[deprecated]] int x, int y [[maybe_unused]]) {}\n",    (*it++).second[0].fullyQualified, "should have gotten the function and body");
+                Assert::AreEqual("explicit void __cdecl Foo(int i) : x(7), i(i) { i++; }\n",                      (*it++).second[0].fullyQualified, "should have gotten the ctor and body");
+                Assert::AreEqual("[[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }\n",(*it++).second[0].fullyQualified, "should have gotten the method and body");
                 Assert::AreEqual("template <typename T> T __cdecl doTemplateyStuff(const T & value) "
-                                 "requires requires { typename T::value_type; } const { return value; }",       (*it++).second[0].fullyQualified, "should have gotten the method and body");
+                                 "requires requires { typename T::value_type; } const { return value; }\n",       (*it++).second[0].fullyQualified, "should have gotten the method and body");
                 Assert::AreEqual("auto __cdecl make_lambda() const {\n"
                                  "    return [this](int x) {\n"
                                  "        return x + i;\n"
                                  "    };\n"
-                                 "}",                                                                           (*it++).second[0].fullyQualified, "should have gotten the operator and body");
-                Assert::AreEqual("explicit int __cdecl operator int() const { return 7; }",                     (*it++).second[0].fullyQualified, "should have gotten the operator and body");
+                                 "}\n",                                                                           (*it++).second[0].fullyQualified, "should have gotten the operator and body");
+                Assert::AreEqual("explicit int __cdecl operator int() const { return 7; }\n",                     (*it++).second[0].fullyQualified, "should have gotten the operator and body");
             }
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct Bar { // sizeof=8\n"
-                                 "};"
+                                 "   export virtual const Bar * __cdecl GetBar() const & =0;\n"
+                                 "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the struct");
                 Assert::AreEqual("struct Foo : public Bar { // sizeof=16\n"
-                                 "};"
-                               , (*it++).second[0].fullyQualified, "should have gotten the struct");
+                                "   struct  { // sizeof=4\n"
+                                "   int x;\n"
+                                "};\n"
+                                "   int i;\n"
+                                "   explicit void __cdecl Foo(int i) : x(7), i(i) { i++; }\n"
+                                "   [[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }\n"
+                                "   auto __cdecl make_lambda() const {\n"
+                                "    return [this](int x) {\n"
+                                "        return x + i;\n"
+                                "    };\n"
+                                "}\n"
+                                "   template <typename T> T __cdecl doTemplateyStuff(const T & value) requires requires { typename T::value_type; } const { return value; }\n"
+                                "   explicit int __cdecl operator int() const { return 7; }\n"
+                                "};\n"
+                              , (*it++).second[0].fullyQualified, "should have gotten the struct");
             }
         }
     },
@@ -83,16 +97,16 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
             Assert::AreEqual("struct Bar { // sizeof=1\n"
-                             "};"
+                             "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
             Assert::AreEqual("struct Baz { // sizeof=1\n"
-                             "};"
+                             "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
             Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : public Baz, virtual private Bar, protected Qux { // sizeof=32\n"
-                             "};"
+                             "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
             Assert::AreEqual("struct Qux { // sizeof=1\n"
-                             "};"
+                             "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
         }
     },

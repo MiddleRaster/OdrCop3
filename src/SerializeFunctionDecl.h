@@ -469,7 +469,7 @@ namespace OdrCop3
             } else
                 fqn += get_Body();
 
-            return fqn;
+            return fqn + "\n";
         }
     };
 }

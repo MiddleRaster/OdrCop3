@@ -89,6 +89,11 @@ namespace OdrCop3
         {
             std::string out;
 
+            if (cxxRecordDecl->isInjectedClassName())
+                return out;
+            if (cxxRecordDecl->isLambda())
+                return out;
+
         // std::string ConstructRecordSignature(const CXXRecordDecl * cxxRecordDecl) {
         //    // template
         //    const clang::ClassTemplateDecl* ctd = cxxRecordDecl->getDescribedClassTemplate();
@@ -118,9 +123,12 @@ namespace OdrCop3
             out += get_SizeComment();
 
 
-        //    // data-members and methods
-        //    for (const clang::Decl* decl : cxxRecordDecl->decls())
-        //    {
+            // data-members and methods
+            for (const clang::Decl* decl : cxxRecordDecl->decls())
+            {
+                if (decl->isImplicit() == false)
+                    out += "   " + SerializeDecl(contextItems, decl);
+
         //        if (clang::isa<clang::AccessSpecDecl>(decl))
         //        {
         //            const auto* access = clang::dyn_cast<clang::AccessSpecDecl>(decl);
@@ -131,64 +139,6 @@ namespace OdrCop3
         //            case AS_private:   out += "private:\n";   break;
         //            default:                                  break;
         //            }
-        //            continue;
-        //        }
-        //        if (const auto* field = clang::dyn_cast<clang::FieldDecl>(decl))
-        //        {   // data members
-
-        //            if (field->isAnonymousStructOrUnion())
-        //                continue; // nameless unions/struct never have a variable name
-
-        //            out += "   ";
-
-        //            // attributes on data-members
-        //            out += ConstructAttributes(decl);
-
-        //            { // when a field is defined in an anonymous namespace, include the full definition here with the field.
-        //                IndirectionCvStripper ics(field->getType().getCanonicalType());
-        //                const QualType qualType = ics.GetBaseType();
-        //                const clang::Type* type = qualType.getTypePtr();
-
-        //                std::string definition;
-
-        //                const auto* recordType  = clang::dyn_cast<clang::RecordType>(type);
-        //                if (recordType && recordType->getDecl()->isInAnonymousNamespace())
-        //                {
-        //                    definition = IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())), 3);
-        //                    definition = definition.substr(0, definition.size()-2);
-        //                }
-        //                else if (const auto* enumTy = llvm::dyn_cast<clang::EnumType>(type); enumTy && !enumTy->getDecl()->getIdentifier())
-        //                    definition = ConstructEnumDefinition(enumTy->getDecl()); // nameless enum
-        //                else if (const auto* enumTy = llvm::dyn_cast<clang::EnumType>(type); enumTy && enumTy->getDecl()->isInAnonymousNamespace())
-        //                    definition = ConstructEnumDefinition(enumTy->getDecl()); // enum defined in anonymous namespace
-
-        //                if (!definition.empty()) {
-        //                    out += ics.ConstructPrefix() + ConstructAttributes(field);
-        //                    out += definition;
-        //                    out += ics.ConstructPointersAndReferences() + ics.ConstructSuffixWithName(field->getNameAsString());
-        //                } else {
-        //                    // field must be done this way to handle array fields as well.
-        //                    std::string fieldStr;
-        //                    llvm::raw_string_ostream os(fieldStr);
-        //                    field->getType().print(os, printPolicy, field->getNameAsString());
-        //                    os.flush();
-        //                    out += fieldStr;
-        //                }
-        //            }
-
-        //            if (field->isBitField())
-        //            {
-        //                std::string bitWidth;
-        //                llvm::raw_string_ostream os(bitWidth);
-        //                field->getBitWidth()->printPretty(os, nullptr, printPolicy);
-        //                os.flush();
-        //                out += " : " + bitWidth;
-        //            }
-
-        //            if (field->hasInClassInitializer())
-        //                out += AddClassInitializer(field);
-
-        //            out += ";\n";
         //            continue;
         //        }
         //        if (const auto* var = clang::dyn_cast<clang::VarDecl>(decl))
@@ -230,11 +180,6 @@ namespace OdrCop3
         //                continue;
 
         //            out += IndentBlock(ConstructFunctionSignature(method, false), 3, "   ");
-        //            continue;
-        //        }
-        //        if (const auto* funcTemplateDecl = dyn_cast<FunctionTemplateDecl>(decl))
-        //        {
-        //            out += IndentBlock(ConstructFunctionSignature(funcTemplateDecl->getTemplatedDecl(), false), 3, "   ");
         //            continue;
         //        }
 
@@ -346,9 +291,9 @@ namespace OdrCop3
         //                out += named->getNameAsString();
         //            out += "\n";
         //        }
-        //    }
+            }
 
-            out += "};";
+            out += "};\n";
 
             return out;
         }

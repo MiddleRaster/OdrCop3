@@ -31,18 +31,81 @@ namespace OdrCop3
             {
                 return FunctionDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, funcDecl).Serialize();
             }
+            static std::string SerializeFunctionTemplateDecl(const ContextItems& contextItems, const FunctionTemplateDecl* functionTemplateDecl)
+            {
+                return SerializeFunctionDecl(contextItems, functionTemplateDecl->getTemplatedDecl());
+            }
+            static std::string SerializeFieldDecl(const ContextItems& contextItems, const FieldDecl* fieldDecl)
+            {
+                if (fieldDecl->isAnonymousStructOrUnion())
+                    return ""; // nameless unions/struct never have a variable name
+
+                std::string out;
+
+                // attributes on data-members
+                //out += ConstructAttributes(decl);
+
+                //{ // when a field is defined in an anonymous namespace, include the full definition here with the field.
+                //    IndirectionCvStripper ics(field->getType().getCanonicalType());
+                //    const QualType qualType = ics.GetBaseType();
+                //    const clang::Type* type = qualType.getTypePtr();
+
+                //    std::string definition;
+
+                //    const auto* recordType  = clang::dyn_cast<clang::RecordType>(type);
+                //    if (recordType && recordType->getDecl()->isInAnonymousNamespace())
+                //    {
+                //        definition = IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())), 3);
+                //        definition = definition.substr(0, definition.size()-2);
+                //    }
+                //    else if (const auto* enumTy = llvm::dyn_cast<clang::EnumType>(type); enumTy && !enumTy->getDecl()->getIdentifier())
+                //        definition = ConstructEnumDefinition(enumTy->getDecl()); // nameless enum
+                //    else if (const auto* enumTy = llvm::dyn_cast<clang::EnumType>(type); enumTy && enumTy->getDecl()->isInAnonymousNamespace())
+                //        definition = ConstructEnumDefinition(enumTy->getDecl()); // enum defined in anonymous namespace
+
+                //    if (!definition.empty()) {
+                //        out += ics.ConstructPrefix() + ConstructAttributes(field);
+                //        out += definition;
+                //        out += ics.ConstructPointersAndReferences() + ics.ConstructSuffixWithName(field->getNameAsString());
+                //    } else {
+                        // field must be done this way to handle array fields as well.
+                        std::string fieldStr;
+                        llvm::raw_string_ostream os(fieldStr);
+                        fieldDecl->getType().print(os, contextItems.printPolicy, fieldDecl->getNameAsString());
+                        os.flush();
+                        out += fieldStr;
+                //    }
+                //}
+
+                if (fieldDecl->isBitField())
+                {
+                    std::string bitWidth;
+                    llvm::raw_string_ostream os(bitWidth);
+                    fieldDecl->getBitWidth()->printPretty(os, nullptr, contextItems.printPolicy);
+                    os.flush();
+                    out += " : " + bitWidth;
+                }
+
+                //if (field->hasInClassInitializer())
+                //    out += AddClassInitializer(field);
+
+                out += ";\n";
+                return out;
+            }
             static std::string SerializeParameterDecl(const ContextItems& contextItems, const ParmVarDecl* paramDecl)
             {
                 std::string out;
 
-                // std::string get_LeadingAttributes() const
-                {
-                    SourceLocation typeLoc = paramDecl->getTypeSourceInfo()->getTypeLoc().getBeginLoc();
-                    for (const Attr* attr : paramDecl->attrs())
+                {   // leading attributes
+                    if (TypeSourceInfo* typeSourceInfo = paramDecl->getTypeSourceInfo())
                     {
-                        if (attr->getLocation() > typeLoc)
-                            continue; // trailing attribute
-                        out += SerializeAttr(contextItems, attr);
+                        SourceLocation typeLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
+                        for (const Attr* attr : paramDecl->attrs())
+                        {
+                            if (attr->getLocation() > typeLoc)
+                                continue; // this is a trailing attribute
+                            out += SerializeAttr(contextItems, attr);
+                        }
                     }
                 }
 
@@ -63,18 +126,19 @@ namespace OdrCop3
                     out += " = " + s;
                 }
 
-                // std::string get_TrailingAttributes() const
-                {
-                    SourceLocation typeLoc = paramDecl->getTypeSourceInfo()->getTypeLoc().getBeginLoc();
-                    for (const Attr* attr : paramDecl->attrs())
+                {   // trailing attributes
+                    if (TypeSourceInfo* typeSourceInfo = paramDecl->getTypeSourceInfo())
                     {
-                        if (attr->getLocation() < typeLoc)
-                            continue; // leading attribute
-                        out += " " + SerializeAttr(contextItems, attr);
-                        out  = out.substr(0, out.size()-1); // strip off last " "
+                        SourceLocation typeLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
+                        for (const Attr* attr : paramDecl->attrs())
+                        {
+                            if (attr->getLocation() < typeLoc)
+                                continue; // leading attribute
+                            out += " " + SerializeAttr(contextItems, attr);
+                            out  = out.substr(0, out.size()-1); // strip off last " "
+                        }
                     }
                 }
-
                 return out;
 
                 //IndirectionCvStripper ics(param->getType().getCanonicalType());
@@ -131,12 +195,14 @@ namespace OdrCop3
             using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeAttr>, SerializeType, SerializeAttr>;
             switch(decl->getKind())
             {
-            case clang::Decl::Kind::CXXMethod:      // is a subclass of FunctionDecl
-            case clang::Decl::Kind::CXXConstructor: // so is this
-            case clang::Decl::Kind::CXXConversion:  // and this
+            case clang::Decl::Kind::CXXMethod:        // is a subclass of FunctionDecl
+            case clang::Decl::Kind::CXXConstructor:   // so is this
+            case clang::Decl::Kind::CXXConversion:    // and this
             case clang::Decl::Kind::Function:         if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl        >(decl)) return DeclSerializer::SerializeFunctionDecl (contextItems, functionDecl); break;
             case clang::Decl::Kind::ParmVar:          if (const ParmVarDecl *          pvd = dyn_cast<ParmVarDecl         >(decl)) return DeclSerializer::SerializeParameterDecl(contextItems, pvd);          break;
             case clang::Decl::Kind::CXXRecord:        if (const CXXRecordDecl*         cxx = dyn_cast<CXXRecordDecl       >(decl)) return DeclSerializer::SerializeCXXRecordDecl(contextItems, cxx);          break;
+            case clang::Decl::Kind::Field:            if (const FieldDecl *      fieldDecl = dyn_cast<FieldDecl           >(decl)) return DeclSerializer::SerializeFieldDecl    (contextItems, fieldDecl);    break;
+            case clang::Decl::Kind::FunctionTemplate: if (const FunctionTemplateDecl * ftd = dyn_cast<FunctionTemplateDecl>(decl)) return DeclSerializer::SerializeFunctionTemplateDecl(contextItems, ftd);   break;
             default: break;
             }
             throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));
