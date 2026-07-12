@@ -65,21 +65,19 @@ namespace OdrCop3
                 fieldDecl->getType().print(os, contextItems.printPolicy, fieldDecl->getNameAsString());
                 os.flush();
 
-                if (auto* recordDecl = fieldDecl->getType()->getAsRecordDecl();
-                            recordDecl && (recordDecl->getIdentifier() == nullptr) && (recordDecl->getTypedefNameForAnonDecl() == nullptr))
+
+                // is it an anonymous struct/class/union/enum?
+                if (auto* tagDecl = fieldDecl->getType()->getAsTagDecl();
+                          tagDecl && (tagDecl->getIdentifier() == nullptr) && (tagDecl->getTypedefNameForAnonDecl() == nullptr))
                 {
                     fieldStr = OdrCop3::MakeUnnamedAndAnonymousConsistent(fieldStr);
-
-                    std::string qualifier;
-                    if (auto* parentDecl = llvm::dyn_cast<clang::NamedDecl>(recordDecl->getDeclContext()))
-                        qualifier = parentDecl->getQualifiedNameAsString() + "::";
 
                     std::string anonymous = "(anonymous type at ";
                     auto pos = fieldStr.find(anonymous);
                     if (pos != std::string::npos)
-                        fieldStr.insert(pos, qualifier);
+                        if (auto* parentDecl = llvm::dyn_cast<clang::NamedDecl>(tagDecl->getDeclContext()))
+                            fieldStr.insert(pos, parentDecl->getQualifiedNameAsString() + "::");
                 }
-
                 out += fieldStr;
             }
 

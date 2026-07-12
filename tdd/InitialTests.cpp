@@ -137,19 +137,40 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Testing EnumDecl serialization", []
         {
-            std::string code = "enum E { A=1, B, C };";
+            std::string code = "enum E { A=1, B, C };\n"
+                               "struct S { E e=E::B; };\n"
+                               "struct N { enum { D=0, E, F } eVal=E; };";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(1, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found an enum entry");
+            Assert::AreEqual(4, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found an enum entry");
 
-            auto it = maps.enumMap.begin();
-            Assert::AreEqual("E",        it->first,        "should have gotten correct key");
-            Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
+            {
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("E",        it->first,        "should have gotten correct key");
+                Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-            Assert::AreEqual("enum E { A=1, B=2, C=3 };\n"
-                           , (*it++).second[0].fullyQualified, "should have gotten the enum");
+                Assert::AreEqual("enum E { A=1, B=2, C=3 };\n"
+                               , (*it++).second[0].fullyQualified, "should have gotten the enum");
+                Assert::AreEqual("enum N::(anonymous type at input.cc:3:12) { D=0, E=1, F=2 };\n"
+                               , (*it++).second[0].fullyQualified, "should have gotten the enum");
+            }
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("N", it->first,               "should have gotten correct key");
+                Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
+
+                Assert::AreEqual("struct N { // sizeof=4\n"
+                                 "   enum N::(anonymous type at input.cc:3:12) { D=0, E=1, F=2 };\n"
+                                 "   enum N::(anonymous type at input.cc:3:12) eVal=E;\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified, "should have gotten the struct");
+                Assert::AreEqual("struct S { // sizeof=4\n"
+                                 "   E e=E::B;\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified, "should have gotten the struct");
+            }
         }
     },
 };

@@ -69,11 +69,6 @@ namespace OdrCop3
             if (record->isLambda())
                 return true; // skip lambdas, too
 
-            //if (funcDecl->isThisDeclarationADefinition())
-            //{
-            //    maps.functionMap[CreateKeyForFunctionMap(funcDecl)].push_back({TU, ConstructFunctionSignature(funcDecl)});
-            //}
-
             if (funcDecl->isThisDeclarationADefinition())
             {
                 maps.functionMap[CreateKeyForFunctionMap(funcDecl)].push_back({TU, SerializeDecls(contextItems, funcDecl)});
@@ -93,15 +88,6 @@ namespace OdrCop3
 
             if (recordDecl->isLambda())
                 return true; // skip lambdas
-
-            //if (recordDecl->isThisDeclarationADefinition())
-            //{
-            //    std::string key = recordDecl->getQualifiedNameAsString();
-            //         if (recordDecl->getDescribedClassTemplate())                            key += "<>";
-            //    else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(recordDecl)) key += TemplateArgsToString(CTSD, true);
-
-            //    maps.udtMap[key].push_back({TU, ConstructRecordSignature(recordDecl)});
-            //}
 
             if (recordDecl->isThisDeclarationADefinition())
             {

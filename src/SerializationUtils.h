@@ -64,6 +64,7 @@ namespace OdrCop3
         };
 
         input = Replace::With(input, "(unnamed at"         , "(anonymous type at");
+        input = Replace::With(input, "(unnamed enum at"    , "(anonymous type at");
         input = Replace::With(input, "(unnamed union at"   , "(anonymous type at");
         input = Replace::With(input, "(anonymous struct at", "(anonymous type at");
         input = Replace::With(input, "(anonymous class at" , "(anonymous type at");

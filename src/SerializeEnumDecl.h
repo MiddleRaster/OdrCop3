@@ -66,8 +66,24 @@ namespace OdrCop3
             bool              isScoped = enumDecl->isScoped();   // enum class vs enum
             bool               isFixed = enumDecl->isFixed();
             std::string       enumName = enumDecl->getNameAsString();
-            std::string     prettyEnum = enumName == "" ? MakeUnnamedEnumKey(enumDecl) : enumDecl->getQualifiedNameAsString();
+            std::string     prettyEnum;
+            if (enumName == "")
+            {
+                std::string enumStr;
+                llvm::raw_string_ostream os(enumStr);
+                QualType enumQT = enumDecl->getASTContext().getTagType(ElaboratedTypeKeyword::None, /*Qualifier=*/std::nullopt, enumDecl, /*OwnsTag=*/false);
+                enumQT.print(os, contextItems.printPolicy, enumDecl->getNameAsString());
+                os.flush();
+                prettyEnum = OdrCop3::MakeUnnamedAndAnonymousConsistent(enumStr);
 
+                std::string anonymous = "(anonymous type at ";
+                auto pos = prettyEnum.find(anonymous);
+                if (pos != std::string::npos)
+                    if (auto* parentDecl = llvm::dyn_cast<clang::NamedDecl>(enumDecl->getDeclContext()))
+                        prettyEnum.insert(pos, parentDecl->getQualifiedNameAsString() + "::");
+            } else
+                prettyEnum = enumDecl->getQualifiedNameAsString();
+            
             std::string fqe = (isScoped ? "enum class " : "enum ") + prettyEnum + (isFixed ? " : " + underlyingType : "") + " { ";
             for (const clang::EnumConstantDecl* enumeratorDecl : enumDecl->enumerators())
             {
