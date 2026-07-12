@@ -87,6 +87,8 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code = "struct Qux {}; struct Bar {}; struct Baz{}; struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : Baz, virtual private Bar, protected Qux {"
                                "public: [[deprecated(\"use y instead\")]] constexpr static int x = 0; "
                                "   inline static int y{0};"
+                               "   int b:3=1;"
+                               "   unsigned int c:2{3};"
                                "};";
 
             OdrCop3::AllMaps maps;
@@ -108,6 +110,8 @@ Test ExploratoryTestsOfClangAST[] =
                              "public:\n"
                              "   [[deprecated(\"use y instead\")]] constexpr static const int x=0;\n"
                              "   inline static int y{0};\n"
+                             "   int b:3=1;\n"
+                             "   unsigned int c:2{3};\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
             Assert::AreEqual("struct Qux { // sizeof=1\n"

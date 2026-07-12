@@ -93,11 +93,29 @@ namespace OdrCop3
                     llvm::raw_string_ostream os(bitWidth);
                     fieldDecl->getBitWidth()->printPretty(os, nullptr, contextItems.printPolicy);
                     os.flush();
-                    out += " : " + bitWidth;
+                    out += ":" + bitWidth;
                 }
 
-                //if (field->hasInClassInitializer())
-                //    out += AddClassInitializer(field);
+                if (fieldDecl->hasInClassInitializer())
+                {
+                    const Expr* expr = fieldDecl->getInClassInitializer();
+                    //const auto* declRef   = llvm::dyn_cast<clang::DeclRefExpr>(expr->IgnoreParenImpCasts());
+                    //const auto* enumConst = declRef ? llvm::dyn_cast<clang::EnumConstantDecl>(declRef->getDecl()) : nullptr;
+                    //if (enumConst)
+                    //{
+                    //    const auto* enumDecl = llvm::dyn_cast<clang::EnumDecl>(enumConst->getDeclContext());
+                    //    out += "=" + ConstructEnumName(enumDecl, enumConst);
+                    //}
+                    //else
+                    {
+                        llvm::StringRef text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
+                        std::string     init = text.str();
+                        if ((init.starts_with("{")) || init.starts_with("("))
+                            out += init;
+                        else
+                            out += "=" + init;
+                    }
+                }
 
                 out += ";\n";
                 return out;
