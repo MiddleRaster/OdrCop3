@@ -49,4 +49,26 @@ namespace OdrCop3
         }
         return out;
     }
+
+    inline std::string MakeUnnamedAndAnonymousConsistent(std::string input)
+    {
+        struct Replace
+        {
+            static std::string With(std::string str, const std::string& bad, const std::string& good)
+            {
+                auto pos = str.find(bad);
+                if (pos != std::string::npos)
+                    str.replace(pos, bad.size(), good);
+                return str;
+            }
+        };
+
+        input = Replace::With(input, "(unnamed at"         , "(anonymous type at");
+        input = Replace::With(input, "(unnamed union at"   , "(anonymous type at");
+        input = Replace::With(input, "(anonymous struct at", "(anonymous type at");
+        input = Replace::With(input, "(anonymous class at" , "(anonymous type at");
+        input = Replace::With(input, "(anonymous union at" , "(anonymous type at");
+
+        return input;
+    }
 }

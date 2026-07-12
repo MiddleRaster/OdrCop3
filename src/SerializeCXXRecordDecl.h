@@ -26,7 +26,7 @@ namespace OdrCop3
         CXXRecordDeclSerializer(const ContextItems& contextItems, const CXXRecordDecl* cxxRecordDecl) : contextItems(contextItems), cxxRecordDecl(cxxRecordDecl) {}
 
         std::string get_Kind()        const { return cxxRecordDecl->getKindName().str() + " "; }
-        std::string get_Name()        const { return cxxRecordDecl->isAnonymousStructOrUnion() ? "" : cxxRecordDecl->getQualifiedNameAsString(); }
+        std::string get_Name()        const { return MakeUnnamedAndAnonymousConsistent(cxxRecordDecl->getQualifiedNameAsString()); }
         std::string get_SizeComment() const { return cxxRecordDecl->isCompleteDefinition() && !cxxRecordDecl->isDependentType() ? " // sizeof=" + std::to_string(contextItems.context.getASTRecordLayout(cxxRecordDecl).getSize().getQuantity()) + "\n" : "\n"; }
 
         std::string get_Attributes(bool* hasFinal) const
@@ -114,8 +114,8 @@ namespace OdrCop3
         //        out += IndentBlock(TemplateArgsToString(CTSD), out.size());
         //        out  = out.substr(0, out.size()-1); // strip off last "\n"
         //    }
-            if (get_Name() != "") // don't put in extra space if nameless
-                out += " ";
+
+            out += " ";
 
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";
@@ -134,26 +134,6 @@ namespace OdrCop3
                 else
                     out += IndentBlock(SerializeDecl(contextItems, decl), 3, "   ");
 
-        //        if (const auto* method = clang::dyn_cast<clang::CXXMethodDecl>(decl))
-        //        {   // methods
-        //            if (method->isImplicit())
-        //                continue;
-
-        //            out += IndentBlock(ConstructFunctionSignature(method, false), 3, "   ");
-        //            continue;
-        //        }
-
-        //        if (const auto* nested = clang::dyn_cast<clang::CXXRecordDecl>(decl))
-        //        {
-        //            if (nested->isInjectedClassName())
-        //                continue;
-
-        //            if (nested->isLambda())
-        //                continue;
-
-        //            out += IndentBlock(ConstructRecordSignature(nested), 3, "   ");
-        //            continue;
-        //        }
         //        if (clang::isa<clang::IndirectFieldDecl>(decl))
         //            continue; // these are Clang's mechanism for exposing the members of an anonymous struct/union as if they were directly accessible in the enclosing class.
 

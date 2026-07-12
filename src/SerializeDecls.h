@@ -77,15 +77,30 @@ namespace OdrCop3
                 //        out += ics.ConstructPrefix() + ConstructAttributes(field);
                 //        out += definition;
                 //        out += ics.ConstructPointersAndReferences() + ics.ConstructSuffixWithName(field->getNameAsString());
-                //    } else {
-                        // field must be done this way to handle array fields as well.
-                        std::string fieldStr;
-                        llvm::raw_string_ostream os(fieldStr);
-                        fieldDecl->getType().print(os, contextItems.printPolicy, fieldDecl->getNameAsString());
-                        os.flush();
-                        out += fieldStr;
-                //    }
-                //}
+                {
+                    // field must be done this way to handle array fields as well.
+                    std::string fieldStr;
+                    llvm::raw_string_ostream os(fieldStr);
+                    fieldDecl->getType().print(os, contextItems.printPolicy, fieldDecl->getNameAsString());
+                    os.flush();
+
+                    if (auto* recordDecl = fieldDecl->getType()->getAsRecordDecl();
+                              recordDecl && (recordDecl->getIdentifier() == nullptr) && (recordDecl->getTypedefNameForAnonDecl() == nullptr))
+                    {
+                        fieldStr = OdrCop3::MakeUnnamedAndAnonymousConsistent(fieldStr);
+
+                        std::string qualifier;
+                        if (auto* parentDecl = llvm::dyn_cast<clang::NamedDecl>(recordDecl->getDeclContext()))
+                            qualifier = parentDecl->getQualifiedNameAsString() + "::";
+
+                        std::string anonymous = "(anonymous type at ";
+                        auto pos = fieldStr.find(anonymous);
+                        if (pos != std::string::npos)
+                            fieldStr.insert(pos, qualifier);
+                    }
+
+                    out += fieldStr;
+                }
 
                 if (fieldDecl->isBitField())
                 {

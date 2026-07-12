@@ -63,7 +63,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the struct");
                 Assert::AreEqual("struct Foo : public Bar { // sizeof=16\n"
-                                "   struct { // sizeof=4\n"
+                                "   struct Foo::(anonymous type at input.cc:2:150) { // sizeof=4\n"
                                 "      int x;\n"
                                 "   };\n"
                                 "   int i;\n"
@@ -89,12 +89,13 @@ Test ExploratoryTestsOfClangAST[] =
                                "   inline static int y{0};"
                                "   int b:3=1;"
                                "   unsigned int c:2{3};"
-                               "};";
+                               "};"
+                               "struct S { union { int a; double b; } u; };";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(4, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
+            Assert::AreEqual(6, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
 
             auto it = maps.udtMap.begin();
             Assert::AreEqual("Bar",      it->first,        "should have gotten correct key");
@@ -115,6 +116,20 @@ Test ExploratoryTestsOfClangAST[] =
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
             Assert::AreEqual("struct Qux { // sizeof=1\n"
+                             "};\n"
+                           , (*it++).second[0].fullyQualified, "should have gotten the struct");
+
+            Assert::AreEqual("struct S { // sizeof=8\n"
+                             "   union S::(anonymous type at input.cc:1:294) { // sizeof=8\n"
+                             "      int a;\n"
+                             "      double b;\n"
+                             "   };\n"
+                             "   union S::(anonymous type at input.cc:1:294) u;\n"
+                             "};\n"
+                           , (*it++).second[0].fullyQualified, "should have gotten the struct");
+            Assert::AreEqual("union S::(anonymous type at input.cc:1:294) { // sizeof=8\n"
+                             "   int a;\n"
+                             "   double b;\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
         }
