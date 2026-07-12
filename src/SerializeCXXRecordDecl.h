@@ -134,9 +134,6 @@ namespace OdrCop3
                 else
                     out += IndentBlock(SerializeDecl(contextItems, decl), 3, "   ");
 
-        //        if (clang::isa<clang::IndirectFieldDecl>(decl))
-        //            continue; // these are Clang's mechanism for exposing the members of an anonymous struct/union as if they were directly accessible in the enclosing class.
-
         //        if (const auto* enumDecl = clang::dyn_cast<clang::EnumDecl>(decl))
         //        {   // a locally defined enum
         //            out += ConstructEnumDefinition(enumDecl) + ";";

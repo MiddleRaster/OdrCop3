@@ -115,17 +115,17 @@ namespace OdrCop3
         }
         bool VisitEnumDecl(clang::EnumDecl* enumDecl)
         {
-            //if (context->getSourceManager().isInSystemHeader(enumDecl->getLocation()))
-            //    return true; // skip anything not in the main file or a user header
+            if (context->getSourceManager().isInSystemHeader(enumDecl->getLocation()))
+                return true; // skip anything not in the main file or a user header
 
-            //if (enumDecl->isInAnonymousNamespace())
-            //    return true; // TU-local, not an ODR candidate
+            if (enumDecl->isInAnonymousNamespace())
+                return true; // TU-local, not an ODR candidate
 
-            //if (enumDecl->isThisDeclarationADefinition())
-            //{
-            //    std::string  prettyName = enumDecl->getNameAsString() == "" ? makeUnnamedEnumKey(enumDecl) : enumDecl->getQualifiedNameAsString();
-            //    maps.enumMap[prettyName].push_back({TU, ConstructEnumDefinition(enumDecl) + ";" });
-            //}
+            if (enumDecl->isThisDeclarationADefinition())
+            {
+                std::string  prettyName = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey(enumDecl) : enumDecl->getQualifiedNameAsString();
+                maps.enumMap[prettyName].push_back({TU, SerializeDecls(contextItems, enumDecl)});
+            }
             return true;
         }
         bool VisitTypedefNameDecl(clang::TypedefNameDecl* typedefDecl)
@@ -530,42 +530,6 @@ namespace OdrCop3
 
             return fqtd;
         }
-
-        std::string makeUnnamedEnumKey(const clang::EnumDecl* enumDecl)
-        {
-            // 1. Build the fully qualified parent chain
-            std::string parent;
-            const clang::DeclContext* declContext = enumDecl->getDeclContext();
-            while (declContext && !declContext->isTranslationUnit())
-            {
-                if (const auto* recordDecl = llvm::dyn_cast<clang::RecordDecl>(declContext))
-                {
-                    std::string name;
-                    if (const auto* ctsd = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(recordDecl))
-                        name = ctsd->getNameAsString() + TemplateArgsToString(ctsd); // include template instantiations
-                    else
-                        name = recordDecl->getNameAsString();
-                    parent = name + "::" + parent;
-                }
-                else if (const auto* namespaceDecl = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
-                {
-                    if (!namespaceDecl->isAnonymousNamespace())
-                        parent = namespaceDecl->getNameAsString() + "::" + parent;
-                }
-                declContext = declContext->getParent();
-            }
-
-            // 2. Extract the first enumerator name
-            std::string firstEnumName;
-            if (!enumDecl->enumerators().empty())
-                firstEnumName = enumDecl->enumerators().begin()->getName().str();
-            else
-                firstEnumName = "<empty>";
-
-            // 3. Construct the final key
-            return parent + "(unnamed enum: " + firstEnumName + ")";
-        }
-
         std::string TemplateArgsToString(const clang::ClassTemplateSpecializationDecl* ctsd, bool wantAnonymousNamespaceWithTU = false)
         {
             std::string out;
