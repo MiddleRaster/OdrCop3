@@ -69,12 +69,21 @@ namespace OdrCop3
             std::string     prettyEnum;
             if (enumName == "")
             {
-                std::string enumStr;
-                llvm::raw_string_ostream os(enumStr);
-                QualType enumQT = enumDecl->getASTContext().getTagType(ElaboratedTypeKeyword::None, /*Qualifier=*/std::nullopt, enumDecl, /*OwnsTag=*/false);
-                enumQT.print(os, contextItems.printPolicy, enumDecl->getNameAsString());
-                os.flush();
-                prettyEnum = OdrCop3::MakeUnnamedAndAnonymousConsistent(enumStr);
+                if (const TypedefNameDecl* typedefNameDecl = enumDecl->getTypedefNameForAnonDecl())
+                {
+                    clang::SourceManager& sourceManager = enumDecl->getASTContext().getSourceManager();
+                    clang::PresumedLoc    presumedLoc   = sourceManager.getPresumedLoc(enumDecl->getLocation());
+                    prettyEnum = std::string("(anonymous type at ") + presumedLoc.getFilename() + ":" + std::to_string(presumedLoc.getLine()) + ":" + std::to_string(presumedLoc.getColumn()) + ")";
+                }
+                else
+                {
+                    std::string enumStr;
+                    llvm::raw_string_ostream os(enumStr);
+                    QualType enumQT = enumDecl->getASTContext().getTagType(ElaboratedTypeKeyword::None, /*Qualifier=*/std::nullopt, enumDecl, /*OwnsTag=*/false);
+                    enumQT.print(os, contextItems.printPolicy, enumDecl->getNameAsString());
+                    os.flush();
+                    prettyEnum = OdrCop3::MakeUnnamedAndAnonymousConsistent(enumStr);
+                }
 
                 std::string anonymous = "(anonymous type at ";
                 auto pos = prettyEnum.find(anonymous);

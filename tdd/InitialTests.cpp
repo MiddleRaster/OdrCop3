@@ -173,6 +173,29 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+
+    {"Testing Typedef serialization", []
+        {
+            std::string code = "typedef int MyInt;\n"
+                               "typedef enum { Red, Green, Blue } Color;\n";
+
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+            Assert::AreEqual(3, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found an enum entry");
+
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("Color",    it->first,        "should have gotten correct key");
+                Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
+
+                Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:9) { Red=0, Green=1, Blue=2 }; // typedef enum (anonymous type at input.cc:2:9) { Red=0, Green=1, Blue=2 } Color;\n"
+                               , (*it++).second[0].fullyQualified, "should have gotten the typedef");
+                Assert::AreEqual("using MyInt = int; // typedef int MyInt;\n"
+                               , (*it++).second[0].fullyQualified, "should have gotten the typedef");
+            }
+        }
+    },
 };
 
 

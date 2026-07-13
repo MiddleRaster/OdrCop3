@@ -23,6 +23,7 @@
 #include "SerializeVarDecl.h"
 #include "SerializeParamVarDecl.h"
 #include "SerializeAccessSpecDecl.h"
+#include "SerializeTypedefDecl.h"
 #include "magic_enum.h"
 
 namespace OdrCop3
@@ -35,6 +36,7 @@ namespace OdrCop3
             static std::string SerializeFunctionTemplateDecl(const ContextItems& contextItems, const FunctionTemplateDecl* functionTemplateDecl) { return FunctionDeclSerializer  <SerializeDecl, SerializeType, SerializeAttr>(contextItems, functionTemplateDecl->getTemplatedDecl()).Serialize(); }
             static std::string SerializeFunctionDecl        (const ContextItems& contextItems, const FunctionDecl        *             funcDecl) { return FunctionDeclSerializer  <SerializeDecl, SerializeType, SerializeAttr>(contextItems,      funcDecl).Serialize(); }
             static std::string SerializeAccessSpecDecl      (const ContextItems& contextItems, const AccessSpecDecl      *           accessDecl) { return AccessSpecDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems,    accessDecl).Serialize(); }
+            static std::string SerializeTypedefDecl         (const ContextItems& contextItems, const TypedefDecl         *          typedefDecl) { return TypedefDeclSerializer   <SerializeDecl, SerializeType, SerializeAttr>(contextItems,   typedefDecl).Serialize(); }
             static std::string SerializeFieldDecl           (const ContextItems& contextItems, const FieldDecl           *            fieldDecl) { return FieldDeclSerializer     <SerializeDecl, SerializeType, SerializeAttr>(contextItems,     fieldDecl).Serialize(); }
             static std::string SerializeVarDecl             (const ContextItems& contextItems, const VarDecl             *              varDecl) { return VarDeclSerializer       <SerializeDecl, SerializeType, SerializeAttr>(contextItems,       varDecl).Serialize(); }
             static std::string SerializeEnumDecl            (const ContextItems& contextItems, const EnumDecl            *             enumDecl) { return EnumDeclSerializer      <SerializeDecl, SerializeType, SerializeAttr>(contextItems,      enumDecl).Serialize(); }
@@ -55,13 +57,14 @@ namespace OdrCop3
             case clang::Decl::Kind::CXXConstructor:   // so is this
             case clang::Decl::Kind::CXXConversion:    // and this
             case clang::Decl::Kind::Function:         if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl        >(decl)) return DeclSerializer::SerializeFunctionDecl  (contextItems, functionDecl); break;
-            case clang::Decl::Kind::ParmVar:          if (const ParmVarDecl *          pvd = dyn_cast<ParmVarDecl         >(decl)) return DeclSerializer::SerializeParmVarDecl (contextItems, pvd);          break;
+            case clang::Decl::Kind::ParmVar:          if (const ParmVarDecl *          pvd = dyn_cast<ParmVarDecl         >(decl)) return DeclSerializer::SerializeParmVarDecl   (contextItems, pvd);          break;
             case clang::Decl::Kind::CXXRecord:        if (const CXXRecordDecl*         cxx = dyn_cast<CXXRecordDecl       >(decl)) return DeclSerializer::SerializeCXXRecordDecl (contextItems, cxx);          break;
             case clang::Decl::Kind::Field:            if (const FieldDecl *      fieldDecl = dyn_cast<FieldDecl           >(decl)) return DeclSerializer::SerializeFieldDecl     (contextItems, fieldDecl);    break;
             case clang::Decl::Kind::FunctionTemplate: if (const FunctionTemplateDecl * ftd = dyn_cast<FunctionTemplateDecl>(decl)) return DeclSerializer::SerializeFunctionTemplateDecl(contextItems, ftd);    break;
             case clang::Decl::Kind::AccessSpec:       if (const AccessSpecDecl* accessDecl = dyn_cast<AccessSpecDecl      >(decl)) return DeclSerializer::SerializeAccessSpecDecl(contextItems, accessDecl);   break;
             case clang::Decl::Kind::Var:              if (const VarDecl *          varDecl = dyn_cast<VarDecl             >(decl)) return DeclSerializer::SerializeVarDecl       (contextItems, varDecl);      break;
             case clang::Decl::Kind::Enum:             if (const EnumDecl*         enumDecl = dyn_cast<EnumDecl            >(decl)) return DeclSerializer::SerializeEnumDecl      (contextItems, enumDecl);     break;
+            case clang::Decl::Kind::Typedef:          if (const TypedefDecl *  typedefDecl = dyn_cast<TypedefDecl         >(decl)) return DeclSerializer::SerializeTypedefDecl   (contextItems, typedefDecl);  break;
             default: break;
             }
             throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));

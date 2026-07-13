@@ -116,26 +116,26 @@ namespace OdrCop3
         }
         bool VisitTypedefNameDecl(clang::TypedefNameDecl* typedefDecl)
         {
-            //if (context->getSourceManager().isInSystemHeader(typedefDecl->getLocation()))
-            //    return true; // skip anything not in the main file or a user header
+            if (context->getSourceManager().isInSystemHeader(typedefDecl->getLocation()))
+                return true; // skip anything not in the main file or a user header
 
-            //if (typedefDecl->isImplicit())
-            //    return true;
+            if (typedefDecl->isImplicit())
+                return true;
 
-            //if (const auto* tad = llvm::dyn_cast<TypeAliasDecl>(typedefDecl))
-            //    if (tad->getDescribedAliasTemplate() != nullptr)
-            //        return true; // Skip the templated decl inside a TypeAliasTemplateDecl - handled below
+            if (const auto* tad = llvm::dyn_cast<TypeAliasDecl>(typedefDecl))
+                if (tad->getDescribedAliasTemplate() != nullptr)
+                    return true; // Skip the templated decl inside a TypeAliasTemplateDecl - handled below
 
-            //if (typedefDecl->getDeclContext()->isRecord()) {
-            //    const auto* rd = llvm::cast<CXXRecordDecl>(typedefDecl->getDeclContext());
-            //    if (rd->getDescribedClassTemplate() != nullptr)
-            //        return true; // inside a class template definition
-            //    if (const auto* spec = llvm::dyn_cast<ClassTemplateSpecializationDecl>(rd))
-            //        return true; // inside a class template specialization or partial specialization
-            //}
+            if (typedefDecl->getDeclContext()->isRecord()) {
+                const auto* rd = llvm::cast<CXXRecordDecl>(typedefDecl->getDeclContext());
+                if (rd->getDescribedClassTemplate() != nullptr)
+                    return true; // inside a class template definition
+                if (const auto* spec = llvm::dyn_cast<ClassTemplateSpecializationDecl>(rd))
+                    return true; // inside a class template specialization or partial specialization
+            }
 
-            //std::string aliasName = typedefDecl->getQualifiedNameAsString();
-            //maps.typedefMap[aliasName].push_back({TU, ConstructTypedefSignature(typedefDecl)});
+            std::string aliasName = typedefDecl->getQualifiedNameAsString();
+            maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, typedefDecl)});
             return true;
         }
         bool VisitTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* tatDecl)
