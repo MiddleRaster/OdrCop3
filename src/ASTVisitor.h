@@ -35,6 +35,7 @@ namespace OdrCop3
 
     class TheVisitor : public RecursiveASTVisitor<TheVisitor>
     {
+        std::unordered_set<const clang::Decl*> recursingDecls;
         const std::string TU;
         ASTContext* context;
         const PrintingPolicy printPolicy;
@@ -46,7 +47,7 @@ namespace OdrCop3
             , context      (context)
             , printPolicy  (context->getLangOpts())
             , maps         (maps)
-            , contextItems (context, printPolicy)
+            , contextItems (context, printPolicy, recursingDecls)
         {}
     private:
         static std::string SerializeDecls(const ContextItems& contextItems, const clang::Decl  * decl) { return Serialize::Decls<                 &SerializeTypes, &SerializeAttrs>(contextItems, decl); }

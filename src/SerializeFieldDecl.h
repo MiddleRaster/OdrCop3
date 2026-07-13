@@ -26,6 +26,17 @@ namespace OdrCop3
     public:
         FieldDeclSerializer(const ContextItems& contextItems, const FieldDecl* fieldDecl) : contextItems(contextItems), fieldDecl(fieldDecl) {}
 
+        std::string get_PointerOrReference() const
+        {
+            clang::QualType qualType = fieldDecl->getType();
+            if (qualType->isPointerType())
+                return "*";
+            if (qualType->isReferenceType())
+                return "&";
+            return "";
+        }
+        std::string get_Name() const { return fieldDecl->getNameAsString(); }
+
         std::string Serialize() const
         {
             if (fieldDecl->isAnonymousStructOrUnion())
@@ -34,7 +45,8 @@ namespace OdrCop3
             std::string out;
 
             // attributes on data-members
-            //out += ConstructAttributes(decl);
+            for (const Attr* attr : fieldDecl->attrs())
+                out += SerializeAttr(contextItems, attr);
 
             //{ // when a field is defined in an anonymous namespace, include the full definition here with the field.
             //    IndirectionCvStripper ics(field->getType().getCanonicalType());
@@ -58,13 +70,21 @@ namespace OdrCop3
             //        out += ics.ConstructPrefix() + ConstructAttributes(field);
             //        out += definition;
             //        out += ics.ConstructPointersAndReferences() + ics.ConstructSuffixWithName(field->getNameAsString());
+
+            if (IsInAnonymousNamespace(fieldDecl))
+            {
+                out += IndentBlock(SerializeDecl(contextItems, fieldDecl), out.size() - (out.rfind('\n')+1));
+                out  = out.substr(0, out.size()-1); // remove '\n'
+                out += get_PointerOrReference();
+                out += get_Name();
+            }
+            else
             {
                 // field must be done this way to handle array fields as well.
                 std::string fieldStr;
                 llvm::raw_string_ostream os(fieldStr);
                 fieldDecl->getType().print(os, contextItems.printPolicy, fieldDecl->getNameAsString());
                 os.flush();
-
 
                 // is it an anonymous struct/class/union/enum?
                 if (auto* tagDecl = fieldDecl->getType()->getAsTagDecl();

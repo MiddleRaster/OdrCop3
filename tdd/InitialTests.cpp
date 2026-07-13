@@ -199,7 +199,7 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Testing SerializeTypes and SerializeTypeRecord", []
         {
-            std::string code = "namespace { struct Foo {}; } struct Bar : Foo {};";
+            std::string code = "namespace { struct Foo { [[maybe_unused]] Foo* foo; }; } struct Bar : Foo {};";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -211,8 +211,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("Bar",      it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("struct Bar : public struct (anonymous namespace)::Foo { // sizeof=1\n"
-                                 "                    } { // sizeof=1\n"
+                Assert::AreEqual("struct Bar : public struct (anonymous namespace)::Foo { // sizeof=8\n"
+                                 "                       [[maybe_unused]] Foo *foo;\n"
+                                 "                    } { // sizeof=8\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the anonymous namespace base class");
             }

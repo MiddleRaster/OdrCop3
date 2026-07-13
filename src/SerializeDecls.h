@@ -50,6 +50,39 @@ namespace OdrCop3
             if (!decl)
                 throw std::invalid_argument("decl argument was null");
 
+            class RecursionPreventor
+            {
+                std::unordered_set<const clang::Decl*>& recursingDecls;
+                const bool recursing;
+                const clang::Decl* decl;
+            public:
+                RecursionPreventor(std::unordered_set<const clang::Decl*>& recursingDecls, const clang::Decl* decl)
+                    : recursingDecls(recursingDecls)
+                    , recursing(recursingDecls.find(decl) != recursingDecls.end())
+                    , decl(decl)
+                {
+                    //recursing = recursingDecl.find(decl) != recursingDecl.end();
+                    recursingDecls.insert(decl);
+                }
+                bool IsRecursing() const { return recursing; }
+               ~RecursionPreventor()
+                {
+                    recursingDecls.erase(decl);
+                }
+            } recursionPreventor(contextItems.recursingDecls, decl);
+            if (recursionPreventor.IsRecursing() == true)
+            {
+                clang::QualType qualType;
+                if      (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl)) qualType = valueDecl->getType();
+                else if (const auto*  typeDecl = llvm::dyn_cast<clang::TypeDecl >(decl)) qualType =  typeDecl->getTypeForDecl()->getCanonicalTypeInternal();
+                else return std::string{};
+
+                while (qualType->isPointerType() || qualType->isReferenceType())
+                    qualType = qualType->getPointeeType();
+
+                return qualType.getAsString() + " ";
+            }
+
             using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeAttr>, SerializeType, SerializeAttr>;
             switch(decl->getKind())
             {

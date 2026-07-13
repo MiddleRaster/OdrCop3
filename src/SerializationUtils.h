@@ -16,6 +16,7 @@
 #include <exception>
 #include <string>
 #include <sstream>
+#include <set>
 
 namespace OdrCop3
 {
@@ -23,7 +24,12 @@ namespace OdrCop3
     {
         ASTContext& context;
         const PrintingPolicy& printPolicy;
-        ContextItems(ASTContext* context, const PrintingPolicy& policy) : context(*context), printPolicy(policy) {}
+        std::unordered_set<const Decl*>& recursingDecls;
+        ContextItems(ASTContext* context, const PrintingPolicy& policy, std::unordered_set<const Decl*>& recursingDecls)
+            : context       (*context)
+            , printPolicy   (policy)
+            , recursingDecls(recursingDecls)
+        {}
     };
 
 	struct UnhandledException : public std::exception
@@ -71,5 +77,16 @@ namespace OdrCop3
         input = Replace::With(input, "(anonymous union at" , "(anonymous type at");
 
         return input;
+    }
+
+    inline bool IsInAnonymousNamespace(const clang::Decl* decl)
+    {
+        for (const clang::DeclContext* declContext = decl->getDeclContext(); declContext != nullptr; declContext = declContext->getParent())
+        {
+            if (const auto* nameSpace = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
+                if (nameSpace->isAnonymousNamespace())
+                    return true;
+        }
+        return false;
     }
 }
