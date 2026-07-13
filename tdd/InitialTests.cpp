@@ -107,7 +107,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual("struct Baz { // sizeof=1\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
-            Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : public Baz, virtual private Bar, protected Qux { // sizeof=32\n"
+            Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : public Baz, private virtual Bar, protected Qux { // sizeof=32\n"
                              "public:\n"
                              "   [[deprecated(\"use y instead\")]] constexpr static const int x=0;\n"
                              "   inline static int y{0};\n"

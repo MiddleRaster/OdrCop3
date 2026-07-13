@@ -49,9 +49,9 @@ namespace OdrCop3
             , contextItems (context, printPolicy)
         {}
     private:
-        static std::string SerializeDecls(const ContextItems& contextItems, const clang::Decl* decl) { return Serialize::Decls<                 &SerializeTypes, &SerializeAttrs>(contextItems, decl); }
-        static std::string SerializeTypes(const ContextItems& contextItems, const clang::Type* type) { return Serialize::Types<&SerializeDecls,                  &SerializeAttrs>(contextItems, type); }
-        static std::string SerializeAttrs(const ContextItems& contextItems, const clang::Attr* attr) { return Serialize::Attrs<&SerializeDecls, &SerializeTypes                 >(contextItems, attr); }
+        static std::string SerializeDecls(const ContextItems& contextItems, const clang::Decl  * decl) { return Serialize::Decls<                 &SerializeTypes, &SerializeAttrs>(contextItems, decl); }
+        static std::string SerializeTypes(const ContextItems& contextItems, const clang::QualType& qt) { return Serialize::Types<&SerializeDecls,                  &SerializeAttrs>(contextItems, qt  ); }
+        static std::string SerializeAttrs(const ContextItems& contextItems, const clang::Attr  * attr) { return Serialize::Attrs<&SerializeDecls, &SerializeTypes                 >(contextItems, attr); }
     public:
         bool VisitFunctionDecl(FunctionDecl* funcDecl)
         {

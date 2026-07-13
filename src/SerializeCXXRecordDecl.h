@@ -48,15 +48,12 @@ namespace OdrCop3
 
             bool firstBase = true;
             for (const clang::CXXBaseSpecifier& base : cxxRecordDecl->bases())
-            {
+            {   // CXXBaseSpecifier is not a Decl or a Type:  must serialize some stuff here
                 if (firstBase) {
                     firstBase = false;
                     out += ": ";
                 } else
                     out += ", ";
-
-                if (base.isVirtual())
-                   out += "virtual ";
 
                 switch (base.getAccessSpecifier()) {
                 case clang::AS_public:    out += "public ";    break;
@@ -66,17 +63,10 @@ namespace OdrCop3
                 default:                                       break;
                 }
 
-                //// when a base is defined in an anonymous namespace, include the full definition here.
-                //const clang::Type* type = base.getType().getCanonicalType().getTypePtr();
-                //const auto* recordType  = dyn_cast<RecordType>(type);
-                //if (recordType && recordType->getDecl()->isInAnonymousNamespace())
-                //{
-                //    previousWasAnonymous = true;
-                //    out += IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())), out.size() - (out.rfind('\n') + 1));  // length of last line up to current spot
-                //    out  = out.substr(0, out.size()-2); // strip off last ";\n"
-                //}
-                //else
-                out += base.getType().getAsString(contextItems.printPolicy);
+                if (base.isVirtual())
+                    out += "virtual ";
+
+                out += SerializeType(contextItems, base.getType());
             }
             if (firstBase == false)
                 out += " ";

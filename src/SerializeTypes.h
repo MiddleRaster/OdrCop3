@@ -12,36 +12,40 @@
 #include <clang\AST\RecordLayout.h>
 #include <llvm\Support\raw_ostream.h>
 
-#include <vector>
-
 #include "SerializationUtils.h"
 #include "magic_enum.h"
+
+#include "SerializeRecordType.h"
 
 namespace OdrCop3
 {
     namespace Serialize
     {
-        template<auto SerializeDecl, auto SerializeAttr>
-        static std::string Types(const ContextItems& contextItems, const clang::Type* type)
+        template<auto SerializeDecl, auto SerializeType, auto SerializeAttr>
+        struct Type
         {
-            if (!type)
-                throw std::invalid_argument("type argument was null");
+            static std::string SerializeRecordType(const ContextItems& contextItems, const QualType& qt) { return RecordTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt).Serialize(); }
+        };
 
-            switch (type->getTypeClass())
+        template<auto SerializeDecl, auto SerializeAttr>
+        static std::string Types(const ContextItems& contextItems, const clang::QualType& qualType)
+        {
+            using TypeSerializer = Serialize::Type<SerializeDecl, &Types<SerializeDecl, SerializeAttr>, SerializeAttr>;
+            switch (qualType.getTypePtr()->getTypeClass())
             {
-            case clang::Type::TypeClass::Builtin:
-            case clang::Type::TypeClass::Pointer:
-            case clang::Type::TypeClass::Record:
-            case clang::Type::TypeClass::Enum:
-            case clang::Type::TypeClass::Typedef:
-            case clang::Type::TypeClass::TemplateSpecialization:
-         // case clang::Type::TypeClass::Elaborated:
-            case clang::Type::TypeClass::InjectedClassName:
-            case clang::Type::TypeClass::PackExpansion:
+            case clang::Type::TypeClass::Record: return TypeSerializer::SerializeRecordType(contextItems, qualType);
+         // case clang::Type::TypeClass::Builtin:
+         // case clang::Type::TypeClass::Pointer:
+         // case clang::Type::TypeClass::Record:
+         // case clang::Type::TypeClass::Enum:
+         // case clang::Type::TypeClass::Typedef:
+         // case clang::Type::TypeClass::TemplateSpecialization:
+         // case clang::Type::TypeClass::InjectedClassName:
+         // case clang::Type::TypeClass::PackExpansion:
             default:
                 break;
             };
-            throw OdrCop3::UnhandledException(std::string("unhandled type::getTypeClass: ") + enum_name(type->getTypeClass()));
+            throw OdrCop3::UnhandledException(std::string("unhandled type::getTypeClass: ") + enum_name(qualType.getTypePtr()->getTypeClass()));
         }
     }
 }
