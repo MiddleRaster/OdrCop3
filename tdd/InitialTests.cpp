@@ -196,6 +196,28 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+
+    {"Testing SerializeTypes and SerializeTypeRecord", []
+        {
+            std::string code = "namespace { struct Foo {}; } struct Bar : Foo {};";
+
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+            Assert::AreEqual(1, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found an enum entry");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("Bar",      it->first,        "should have gotten correct key");
+                Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
+
+                Assert::AreEqual("struct Bar : public struct (anonymous namespace)::Foo { // sizeof=1\n"
+                                 "                    } { // sizeof=1\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified, "should have gotten the anonymous namespace base class");
+            }
+        }
+    },
 };
 
 

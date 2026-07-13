@@ -24,16 +24,16 @@ namespace OdrCop3
         template<auto SerializeDecl, auto SerializeType, auto SerializeAttr>
         struct Type
         {
-            static std::string SerializeRecordType(const ContextItems& contextItems, const QualType& qt) { return RecordTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt).Serialize(); }
+            static std::string SerializeRecordType(const ContextItems& contextItems, QualType qt, const RecordType* recordType) { return RecordTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt, recordType).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeAttr>
-        static std::string Types(const ContextItems& contextItems, const clang::QualType& qualType)
+        static std::string Types(const ContextItems& contextItems, clang::QualType qualType)
         {
             using TypeSerializer = Serialize::Type<SerializeDecl, &Types<SerializeDecl, SerializeAttr>, SerializeAttr>;
             switch (qualType.getTypePtr()->getTypeClass())
             {
-            case clang::Type::TypeClass::Record: return TypeSerializer::SerializeRecordType(contextItems, qualType);
+            case clang::Type::TypeClass::Record: if (const RecordType* recordType = dyn_cast<RecordType>(qualType.getTypePtr())) return TypeSerializer::SerializeRecordType(contextItems, qualType, recordType); break;
          // case clang::Type::TypeClass::Builtin:
          // case clang::Type::TypeClass::Pointer:
          // case clang::Type::TypeClass::Record:

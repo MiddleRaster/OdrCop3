@@ -66,7 +66,10 @@ namespace OdrCop3
                 if (base.isVirtual())
                     out += "virtual ";
 
-                out += SerializeType(contextItems, base.getType());
+                out += IndentBlock(SerializeType(contextItems, base.getType()), out.size() - (out.rfind('\n')+1));
+                out  = out.substr(0, out.size()-1); // IndentBlock adds '\n' to every line
+                if (out.ends_with(";"))
+                    out = out.substr(0, out.size()-1); // if it's an anonymous namespace type, we put in the full definition which ends in ";"
             }
             if (firstBase == false)
                 out += " ";
@@ -110,7 +113,8 @@ namespace OdrCop3
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";
 
-            out += get_Bases();
+            out += IndentBlock(get_Bases(), out.size() - (out.rfind('\n')+1));
+            out  = out.substr(0, out.size()-1); // remove '\n'
             out += get_SizeComment();
 
             // data-members, methods, nested decls, etc.

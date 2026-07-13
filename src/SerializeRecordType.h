@@ -19,30 +19,18 @@ namespace OdrCop3
     template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class RecordTypeSerializer
     {
         const ContextItems& contextItems;
-        const QualType    & qt;
         const RecordType  * recordType;
+        QualType qt;
     public:
-        RecordTypeSerializer(const ContextItems& contextItems, const QualType& qt) : contextItems(contextItems), qt(qt), recordType(dyn_cast<RecordType>(qt.getTypePtr()))
-        {
-            if (!recordType)
-                throw OdrCop3::UnhandledException(std::string("bad dyn_cast in RecordTypeSerializer: ") + enum_name(qt.getTypePtr()->getTypeClass()));
-        }
+        RecordTypeSerializer(const ContextItems& contextItems, QualType qt, const RecordType* recordType) : contextItems(contextItems), qt(qt), recordType(recordType) {}
 
         std::string Serialize() const
         { // currently used for base types only. Will see how this unfolds in the future.
 
-            //// when a base is defined in an anonymous namespace, include the full definition here.
-            //const clang::Type* type = base.getType().getCanonicalType().getTypePtr();
-            //const auto* recordType  = dyn_cast<RecordType>(type);
-            //if (recordType && recordType->getDecl()->isInAnonymousNamespace())
-            //{
-            //    previousWasAnonymous = true;
-            //    out += IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())), out.size() - (out.rfind('\n') + 1));  // length of last line up to current spot
-            //    out  = out.substr(0, out.size()-2); // strip off last ";\n"
-            //}
-            //else
-
-            return qt.getAsString(contextItems.printPolicy);
+            if (recordType && recordType->getDecl()->isInAnonymousNamespace())
+                return SerializeDecl(contextItems, recordType->getDecl());
+            else
+                return qt.getAsString(contextItems.printPolicy);
         }
     };
 }
