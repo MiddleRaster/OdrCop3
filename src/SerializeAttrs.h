@@ -84,7 +84,11 @@ namespace OdrCop3
             case clang::attr::WarnUnusedResult: if (const auto*   nodiscard = clang::dyn_cast<clang::WarnUnusedResultAttr>(attr)) return Attr::Serialize(contextItems, nodiscard);   break;
             case clang::attr::Deprecated:       if (const auto*  deprecated = clang::dyn_cast<clang::DeprecatedAttr      >(attr)) return Attr::Serialize(contextItems, deprecated);  break;
             case clang::attr::Final:            if (const auto*       Final = clang::dyn_cast<clang::FinalAttr           >(attr)) return Attr::Serialize(contextItems, Final);       break;
-            default:                                                                                                              return Attr::Serialize(contextItems, attr);
+            case clang::attr::Override:         if (const auto*    override = clang::dyn_cast<clang::OverrideAttr        >(attr)) return Attr::Serialize(contextItems, override);    break;
+            case clang::attr::Unused:           if (const auto*      unused = clang::dyn_cast<clang::UnusedAttr          >(attr)) return Attr::Serialize(contextItems, unused);      break;
+            case clang::attr::MSInheritance: /* always skip these */                                                              return "";
+            default:                         // don't dump everything                                                             return Attr::Serialize(contextItems, attr);
+                break;
             };
             throw OdrCop3::UnhandledException(std::string("unhandled attr::getKind: ") + enum_name<clang::attr::Kind,0, 512>(attr->getKind()));
         }

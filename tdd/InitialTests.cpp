@@ -200,8 +200,9 @@ Test ExploratoryTestsOfClangAST[] =
     {"Testing SerializeTypes and SerializeTypeRecord", []
         {
             std::string code = "namespace { struct Foo { [[maybe_unused]] Foo* foo; }; } struct Bar : Foo {};"
-                               "struct S {}; struct A { S* p; const S& q; S r[2]; const Foo* a; Foo& b; Foo c[2]; Foo**& d; void (*callback)(S*); void (*callback2)(Foo*, int, double); };";
-
+                               "struct S {}; struct A { S* p; const S& q; S r[2]; const Foo* a; Foo& b; Foo c[2]; Foo**& d; void (*callback)(S*); void (*callback2)(Foo*, int, double);"
+                               "Foo (S::* mp)(double, const char*) = nullptr; };";
+ 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -212,7 +213,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("A",        it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("struct A { // sizeof=80\n"
+                Assert::AreEqual("struct A { // sizeof=88\n"
                                  "   S *p;\n"
                                  "   const S &q;\n"
                                  "   S r[2];\n"
@@ -232,6 +233,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   void (*callback2)(struct (anonymous namespace)::Foo { // sizeof=8\n"
                                  "                        [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
                                  "                     } *, int, double);\n"
+                                 "   struct (anonymous namespace)::Foo { // sizeof=8\n"
+                                 "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "   } (S::*mp)(double, const char *)=nullptr;\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the class");
                 Assert::AreEqual("struct Bar : public struct (anonymous namespace)::Foo { // sizeof=8\n"
@@ -256,18 +260,19 @@ Test ExploratoryTestsOfClangAST[] =
         void (*callback)(S*);
     };
 
-    The graph:
+    4a. pointer-to-methods
+    struct A
+    { 
+        Foo (S::* mp)(double, const char*);
+    };
 
-    FieldDecl
-     |
-     PointerType
-     |
-     FunctionProtoType
-           |
-           +-- return type
-           |
-           +-- parameter type
-
+    4b.
+    // also test pointer-to-member-function where the class (where the method is) is defined in an anonymous namespace
+    namespace { struct Foo { void Boo(double, const char*){} }; }
+    struct A
+    {
+        void (Foo::* mp)(double, const char*); // must inline FOO 
+    };
 
     5. Typedefs
 
@@ -320,12 +325,6 @@ Test ExploratoryTestsOfClangAST[] =
     {
         int S::* pm;
     };
-
-    Exercises:
-
-    MemberPointerType
-
-    A lot of serializers forget this one.
 
     */
 

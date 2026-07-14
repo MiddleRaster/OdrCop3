@@ -65,6 +65,18 @@ namespace OdrCop3
             clang::QualType qualType = fieldDecl->getType();
             for (;;)
             {
+                if (qualType->isMemberPointerType())
+                {
+                    const auto* mpt = qualType->getAs<clang::MemberPointerType>();
+                    if (const clang::CXXRecordDecl* recordDecl = mpt->getMostRecentCXXRecordDecl())
+                    {
+                        std::string className;
+                        llvm::raw_string_ostream os(className);
+                        recordDecl->getCanonicalDecl()->printQualifiedName(os);
+                        str += " " + className + "::*";
+                    }
+                    qualType = mpt->getPointeeType();
+                } else
                 if (qualType->isPointerType() || qualType->isReferenceType())
                 {
                     Level lvl;
@@ -76,8 +88,8 @@ namespace OdrCop3
                     levels.push_back(lvl);
 
                     qualType = qualType->getPointeeType();
-                }
-                else if (qualType->isArrayType())
+                } else
+                if (qualType->isArrayType())
                     qualType = clang::QualType(qualType->getArrayElementTypeNoTypeQual(), 0);
                 else
                     break;
@@ -142,9 +154,12 @@ namespace OdrCop3
 
         const clang::FunctionProtoType* get_PointToFunctionWithAnonymousReturnOrArgs() const
         {
+            //std::string diagnostic = fieldDecl->getType()->getTypeClassName();
+
             const clang::FunctionProtoType* fnProtoType = nullptr;
-            if (const auto* mpt = fieldDecl->getType()->getAs<clang::MemberPointerType>()) fnProtoType = mpt->getPointeeType()->getAs<clang::FunctionProtoType>();
-            else if (fieldDecl->getType()->isPointerType())                                fnProtoType = fieldDecl->getType()->getPointeeType()->getAs<clang::FunctionProtoType>();
+            QualType qualType = fieldDecl->getType();
+                 if (const auto* mpt = qualType->getAs<clang::MemberPointerType>()) fnProtoType = mpt->getPointeeType(     )->getAs<clang::FunctionProtoType>(); // Case 1: pointer-to-member-function
+            else if (qualType->isPointerType())                                     fnProtoType = qualType->getPointeeType()->getAs<clang::FunctionProtoType>(); // Case 2: pointer-to-function
             if (fnProtoType == nullptr)
                 return nullptr;
 
