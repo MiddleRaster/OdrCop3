@@ -26,16 +26,71 @@ namespace OdrCop3
     public:
         FieldDeclSerializer(const ContextItems& contextItems, const FieldDecl* fieldDecl) : contextItems(contextItems), fieldDecl(fieldDecl) {}
 
-        std::string get_PointerOrReference() const
+        std::string get_PointersAndReferences() const
         {
+            std::string str;
+
             clang::QualType qualType = fieldDecl->getType();
-            if (qualType->isPointerType())
-                return "*";
-            if (qualType->isReferenceType())
-                return "&";
-            return "";
+            while (qualType->isPointerType() || 
+                   qualType->isReferenceType())
+            {
+                if (qualType->isPointerType())
+                    str += " *";
+                if (qualType->isReferenceType())
+                    str += " &";
+
+                qualType = qualType->getPointeeType();
+            }
+            return str.size() == 0 ? " " : str;
         }
         std::string get_Name() const { return fieldDecl->getNameAsString(); }
+        std::string get_ArraySuffix() const
+        {
+            std::string suffix;
+
+            QualType qt = fieldDecl->getType();
+
+            for (;;)
+            {   // Peel off pointers/references/member pointers/function pointers
+                if (qt->isPointerType() ||
+                    qt->isReferenceType() ||
+                    qt->isMemberPointerType() ||
+                    qt->isFunctionPointerType() ||
+                    qt->isFunctionReferenceType())
+                    qt = qt->getPointeeType();
+                else
+                    break;
+            }
+
+            // Now peel array layers
+            while (qt->isArrayType())
+            {
+                if (const auto* CAT = llvm::dyn_cast<clang::ConstantArrayType>(qt))
+                {
+                    llvm::APInt size = CAT->getSize();
+                    suffix += "[" + std::to_string(size.getZExtValue()) + "]";
+                    qt = clang::QualType(CAT->getElementType().getTypePtr(), 0);
+                }
+                else if (const auto* IAT = llvm::dyn_cast<clang::IncompleteArrayType>(qt))
+                {
+                    suffix += "[]";
+                    qt = clang::QualType(IAT->getElementType().getTypePtr(), 0);
+                }
+                else if (const auto* VAT = llvm::dyn_cast<clang::VariableArrayType>(qt))
+                {
+                    suffix += "[/* variable length */]";
+                    qt = clang::QualType(VAT->getElementType().getTypePtr(), 0);
+                }
+                else if (const auto* DSAT = llvm::dyn_cast<clang::DependentSizedArrayType>(qt))
+                {
+                    suffix += "[/* dependent */]";
+                    qt = clang::QualType(DSAT->getElementType().getTypePtr(), 0);
+                }
+                else
+                    break;
+            }
+            return suffix;
+        }
 
         std::string Serialize() const
         {
@@ -71,12 +126,17 @@ namespace OdrCop3
             //        out += definition;
             //        out += ics.ConstructPointersAndReferences() + ics.ConstructSuffixWithName(field->getNameAsString());
 
-            if (IsInAnonymousNamespace(fieldDecl))
+            if (IsDefinedInAnonymousNamespace(fieldDecl))
             {
-                out += IndentBlock(SerializeDecl(contextItems, fieldDecl), out.size() - (out.rfind('\n')+1));
-                out  = out.substr(0, out.size()-1); // remove '\n'
-                out += get_PointerOrReference();
+                out += IndentBlock(SerializeDecl(contextItems, StripPointersAndReferences(fieldDecl)), out.size() - (out.rfind('\n')+1));
+
+                if (out.ends_with('\n'))
+                    out = out.substr(0, out.size()-1); // remove '\n'
+                if (out.ends_with(';'))
+                    out = out.substr(0, out.size()-1); // remove ';'
+                out += get_PointersAndReferences();
                 out += get_Name();
+                out += get_ArraySuffix();
             }
             else
             {

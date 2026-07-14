@@ -79,14 +79,61 @@ namespace OdrCop3
         return input;
     }
 
-    inline bool IsInAnonymousNamespace(const clang::Decl* decl)
+    inline const clang::Decl* StripPointersAndReferences(const clang::Decl* decl)
     {
-        for (const clang::DeclContext* declContext = decl->getDeclContext(); declContext != nullptr; declContext = declContext->getParent())
+        clang::QualType qualType;
+             if (const auto* vd = llvm::dyn_cast<clang::ValueDecl>(decl)) qualType = vd->getType();
+        else if (const auto* td = llvm::dyn_cast<clang::TypeDecl >(decl)) qualType = td->getTypeForDecl()->getCanonicalTypeInternal();
+        else
+            return nullptr; // no associated type → cannot be "defined" in anon ns via type
+        qualType = qualType.getCanonicalType();
+
+        for (;;)
         {
-            if (const auto* nameSpace = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
-                if (nameSpace->isAnonymousNamespace())
+            if (qualType->isPointerType()         || 
+                qualType->isReferenceType()       ||
+                qualType->isMemberPointerType()   ||
+                qualType->isFunctionPointerType() || 
+                qualType->isFunctionReferenceType())
+            {
+                qualType = qualType->getPointeeType();
+                continue;
+            }
+            if (qualType->isArrayType())
+            {
+                qualType = clang::QualType(qualType->getArrayElementTypeNoTypeQual(), 0);
+                continue;
+            }
+            break;
+        }
+
+        const clang::Decl* typeDecl = nullptr;
+             if (const auto* rt  = qualType->getAs<clang::RecordType >())              typeDecl = rt->getDecl();
+        else if (const auto* et  = qualType->getAs<clang::EnumType   >())              typeDecl = et->getDecl();
+        else if (const auto* tt  = qualType->getAs<clang::TypedefType>())              typeDecl = tt->getDecl();
+        else if (const auto* tst = qualType->getAs<clang::TemplateSpecializationType>())
+             if (clang::TemplateDecl* td = tst->getTemplateName().getAsTemplateDecl()) typeDecl = td;
+
+        return typeDecl;
+    }
+    inline bool IsDefinedInAnonymousNamespace(const clang::DeclContext* declContext)
+    {
+        while (declContext != nullptr)
+        {
+            if (const auto* ns = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
+                if (ns->isAnonymousNamespace())
                     return true;
+
+            declContext = declContext->getParent();
         }
         return false;
+    }
+    inline bool IsDefinedInAnonymousNamespace(const clang::Decl* decl)
+    {
+        if (true == IsDefinedInAnonymousNamespace(decl->getDeclContext()))
+            return true;
+        if (const clang::Decl* typeDecl = StripPointersAndReferences(decl))
+            return IsDefinedInAnonymousNamespace(typeDecl->getDeclContext());
+        return false; // builtin/dependent/no defining Decl → not in anonymous namespace
     }
 }

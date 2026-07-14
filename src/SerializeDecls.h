@@ -80,7 +80,7 @@ namespace OdrCop3
                 while (qualType->isPointerType() || qualType->isReferenceType())
                     qualType = qualType->getPointeeType();
 
-                return qualType.getAsString() + " ";
+                return qualType.getAsString();
             }
 
             using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeAttr>, SerializeType, SerializeAttr>;
