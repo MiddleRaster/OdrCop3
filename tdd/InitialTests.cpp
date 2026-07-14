@@ -200,7 +200,7 @@ Test ExploratoryTestsOfClangAST[] =
     {"Testing SerializeTypes and SerializeTypeRecord", []
         {
             std::string code = "namespace { struct Foo { [[maybe_unused]] Foo* foo; }; } struct Bar : Foo {};"
-                               "struct S {}; struct A { S* p; S& q; S r[2]; Foo* a; Foo& b; Foo c[2]; Foo**& d; };";
+                               "struct S {}; struct A { S* p; const S& q; S r[2]; const Foo* a; Foo& b; Foo c[2]; Foo**& d; void (*callback)(S*); void (*callback2)(Foo*, int, double); };";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -212,13 +212,13 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("A",        it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("struct A { // sizeof=64\n"
+                Assert::AreEqual("struct A { // sizeof=80\n"
                                  "   S *p;\n"
-                                 "   S &q;\n"
+                                 "   const S &q;\n"
                                  "   S r[2];\n"
-                                 "   struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "   } *a;\n"
+                                 "   const struct (anonymous namespace)::Foo { // sizeof=8\n"
+                                 "            [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "         } *a;\n"
                                  "   struct (anonymous namespace)::Foo { // sizeof=8\n"
                                  "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
                                  "   } &b;\n"
@@ -227,7 +227,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   } c[2];\n"
                                  "   struct (anonymous namespace)::Foo { // sizeof=8\n"
                                  "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "   } & * *d;\n"
+                                 "   } * * &d;\n"
+                                 "   void (*callback)(S *);\n"
+                                 "   void (*callback2)(struct (anonymous namespace)::Foo { // sizeof=8\n"
+                                 "                        [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "                     } *, int, double);\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the class");
                 Assert::AreEqual("struct Bar : public struct (anonymous namespace)::Foo { // sizeof=8\n"
@@ -241,5 +245,89 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-    // do Foo **&* test
+
+    /*
+
+    4. Function types
+
+    struct S {};
+    struct A
+    {
+        void (*callback)(S*);
+    };
+
+    The graph:
+
+    FieldDecl
+     |
+     PointerType
+     |
+     FunctionProtoType
+           |
+           +-- return type
+           |
+           +-- parameter type
+
+
+    5. Typedefs
+
+    struct S {};
+    using Alias = S;
+    struct A
+    {
+        Alias member;
+    };
+
+
+    FieldDecl
+     |
+     TypedefType
+          |
+          +-- TypedefNameDecl
+                  |
+                  +-- RecordType
+
+
+    6. Template specializations
+
+    struct S {};
+    template<typename T>
+    struct Box {};
+    struct A
+    {
+        Box<S> value;
+    };
+
+
+    TemplateSpecializationType
+            |
+            +-- TemplateDecl
+            |
+            +-- TemplateArgument
+                    |
+                    +-- RecordType
+
+
+    ?
+
+    7. Pointer-to-member (the oddball)
+
+    struct S
+    {
+        int x;
+    };
+    struct A
+    {
+        int S::* pm;
+    };
+
+    Exercises:
+
+    MemberPointerType
+
+    A lot of serializers forget this one.
+
+    */
+
+
 };
