@@ -121,19 +121,20 @@ namespace OdrCop3
                     const auto* mpt = qualType->getAs<clang::MemberPointerType>();
                     if (const clang::CXXRecordDecl* cxxRecordDecl = mpt->getMostRecentCXXRecordDecl())
                     {
+                        str += " ";
                         if (IsDefinedInAnonymousNamespace(static_cast<const Decl*>(cxxRecordDecl)))
                         {
-                            str += " " + IndentBlock(SerializeDecl(contextItems, cxxRecordDecl), 0);
+                            str += IndentBlock(SerializeDecl(contextItems, cxxRecordDecl), 0);
                             str  = str.substr(0, str.size()-2);
-                            str += "::*";
                         }
                         else
                         {
                             std::string className;
                             llvm::raw_string_ostream os(className);
                             cxxRecordDecl->getCanonicalDecl()->printQualifiedName(os);
-                            str += " " + className + "::*";
+                            str += className;
                         }
+                        str += "::*";
                     }
                     qualType = mpt->getPointeeType();
                 } else
@@ -279,8 +280,7 @@ namespace OdrCop3
                 out += get_ArraySuffix();
             }
             else
-            {
-                // field must be done this way to handle array fields as well.
+            {   // field must be done this way to handle array fields as well.
                 std::string fieldStr;
                 llvm::raw_string_ostream os(fieldStr);
                 fieldDecl->getType().print(os, contextItems.printPolicy, fieldDecl->getNameAsString());
