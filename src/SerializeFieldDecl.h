@@ -282,21 +282,16 @@ namespace OdrCop3
             else
             {   // field must be done this way to handle array fields as well.
                 std::string fieldStr;
+                clang::QualType qt = fieldDecl->getType().getCanonicalType(); // see through typedefs and using aliases
                 llvm::raw_string_ostream os(fieldStr);
-                fieldDecl->getType().print(os, contextItems.printPolicy, fieldDecl->getNameAsString());
+                qt.print(os, contextItems.printPolicy, fieldDecl->getName());
                 os.flush();
 
-                // is it an anonymous struct/class/union/enum?
+                // is it an anonymous struct/class/union/enum? If so, normalize text
                 if (auto* tagDecl = fieldDecl->getType()->getAsTagDecl();
                           tagDecl && (tagDecl->getIdentifier() == nullptr) && (tagDecl->getTypedefNameForAnonDecl() == nullptr))
                 {
-                    fieldStr = OdrCop3::MakeUnnamedAndAnonymousConsistent(fieldStr);
-
-                    std::string anonymous = "(anonymous type at ";
-                    auto pos = fieldStr.find(anonymous);
-                    if (pos != std::string::npos)
-                        if (auto* parentDecl = llvm::dyn_cast<clang::NamedDecl>(tagDecl->getDeclContext()))
-                            fieldStr.insert(pos, parentDecl->getQualifiedNameAsString() + "::");
+                    fieldStr = tagDecl->getKindName().str() + " " + OdrCop3::MakeUnnamedAndAnonymousConsistent(fieldStr);
                 }
                 out += fieldStr;
             }

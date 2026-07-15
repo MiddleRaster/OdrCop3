@@ -49,69 +49,6 @@ namespace OdrCop3
                     fqtd += "; // typedef " + resolvedType + " " + aliasName + ";\n";
                     return fqtd;
                 }
-
-                // anonymous-namespace function (or other ValueDecl) used as a non-type template argument
-                const ClassTemplateSpecializationDecl* specDecl = dyn_cast<ClassTemplateSpecializationDecl>(recordType->getDecl());
-                if (specDecl != nullptr)
-                {
-                    std::string fqtd2 = "using " + aliasName + " = " + specDecl->getSpecializedTemplate()->getNameAsString() + "<";
-
-                    // lastColumn and column are absolute
-                    int lastColumn = 0;
-
-                    std::string argList;
-
-                    bool anyInlined = false;
-                    const TemplateArgumentList& args = specDecl->getTemplateArgs();
-                    for (unsigned i=0; i<args.size(); ++i)
-                    {
-                        const TemplateArgument& arg = args.get(i);
-                        bool isAnonNsFunc = false;
-                        if (i != 0)
-                            argList += ", ";
-
-                        const FunctionDecl* funcDecl = nullptr;
-                        if (arg.getKind() == TemplateArgument::Declaration)
-                            funcDecl = dyn_cast<FunctionDecl>(arg.getAsDecl());
-                        if (funcDecl != nullptr) {
-                            const NamespaceDecl* nsDecl = dyn_cast<NamespaceDecl>(funcDecl->getDeclContext());
-                            if (nsDecl != nullptr && nsDecl->isAnonymousNamespace())
-                                isAnonNsFunc = true;
-                        }
-
-                        if (isAnonNsFunc) {
-                            argList += "&(";
-
-                            int column = static_cast<int>(argList.size() - (argList.rfind('\n') + 1));
-                            if (lastColumn == 0)
-                                column += static_cast<int>(fqtd2.size()); // only first time
-
-                            argList += IndentBlock(SerializeDecl(contextItems, funcDecl), column); // -lastColumn);
-                            argList  = argList.substr(0, argList.size()-1); // remove "\n"
-                            argList += ")";
-
-                            anyInlined = true;
-                            lastColumn = column;
-                        } else {
-                            llvm::raw_string_ostream stream(argList);
-                            arg.print(contextItems.printPolicy, stream, /*IncludeType=*/false);
-                        }
-                    }
-
-                    if (anyInlined)
-                    {
-                        size_t col1 = fqtd2.size() - (fqtd2.rfind('\n')+1);// get length of last line of fqtd2
-
-                        std::string whatWillBeReused = argList + ">";
-                        fqtd2 += whatWillBeReused + "; // typedef " + specDecl->getSpecializedTemplate()->getNameAsString() + "<";
-
-                        size_t col2 = fqtd2.size() - (fqtd2.rfind('\n')+1); // get length of last line of fqtd2
-                        fqtd2 += IndentBlock(whatWillBeReused, col2-col1);
-                        fqtd2  = fqtd2.substr(0, fqtd2.size()-1); // remove "\n"
-                        fqtd2 += " " + aliasName + ";\n";
-                        return fqtd2;
-                    }
-                }
             }
 
             // nameless or anonymous enums

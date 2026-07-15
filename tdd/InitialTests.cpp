@@ -254,29 +254,69 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+    {"Testing TypedefDecl and TypeAliasDecl", []
+        {
+            std::string code = "struct S {}; using Alias = S; typedef S Alias2;\n"
+                               "typedef     enum        { Red, Green, Blue } Color;\n" // Note: don't change the spacing as that changes the TU:line:col
+                               "namespace {                            using Color2 = Color; }\n"
+                               "namespace { enum Color3 { Red, Green, Blue }; }"
+                               "            enum Color4 { Red, Green, Blue };\n"
+                               "struct A { Alias member; Alias2 member2;"
+                               "   Color  color;"
+                               "   Color2 color2;"
+                               "   Color3 color3;"
+                               "   Color4 color4; };";
+ 
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            {
+                Assert::AreEqual(4, maps.typedefMap.size(), "wrong number of typedef/aliases in map");
+
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("(anonymous namespace)::Color2", it->first,        "should have gotten correct key");
+                Assert::AreEqual("input.cc",                      it->second[0].TU, "should have gotten the TU name");
+
+                Assert::AreEqual("using (anonymous namespace)::Color2 = enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 }; // typedef enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 } (anonymous namespace)::Color2;\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Alias = S; // typedef S Alias;\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Alias2 = S; // typedef S Alias2;\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 }; // typedef enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 } Color;\n"
+                               , (*it++).second[0].fullyQualified);
+            }
+            {
+                Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
+                auto it = maps.udtMap.begin();
+
+                Assert::AreEqual("struct A { // sizeof=20\n"
+                                 "   S member;\n"
+                                 "   S member2;\n"
+                                 "   Color color;\n"
+                                 "   Color color2;\n"
+                                 "   enum (anonymous namespace)::Color3 { Red=0, Green=1, Blue=2 } color3;\n"
+                                 "   Color4 color4;\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct S { // sizeof=1\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
+            }
+            {
+                Assert::AreEqual(2, maps.enumMap.size(), "wrong number of enums in map");
+                auto it = maps.enumMap.begin();
+
+                Assert::AreEqual("enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 };\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum Color4 { Red=0, Green=1, Blue=2 };\n"
+                               , (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
     /*
-
-    4. Function types
-
-    struct S {};
-    struct A
-    {
-        void (*callback)(S*);
-    };
-
-    4a. pointer-to-methods
-    struct A
-    { 
-        Foo (S::* mp)(double, const char*);
-    };
-
-    4b.
-    // also test pointer-to-member-function where the class (where the method is) is defined in an anonymous namespace
-    namespace { struct Foo { void Boo(double, const char*){} }; }
-    struct A
-    {
-        void (Foo::* mp)(double, const char*); // must inline FOO 
-    };
 
     5. Typedefs
 
