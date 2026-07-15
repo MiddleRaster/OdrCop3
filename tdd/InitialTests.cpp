@@ -201,7 +201,8 @@ Test ExploratoryTestsOfClangAST[] =
         {
             std::string code = "namespace { struct Foo { [[maybe_unused]] Foo* foo; }; } struct Bar : Foo {};"
                                "struct S {}; struct A { S* p; const S& q; S r[2]; const Foo* a; Foo& b; Foo c[2]; Foo**& d; void (*callback)(S*); void (*callback2)(Foo*, int, double);"
-                               "Foo (S::* mp)(double, const char*) = nullptr; };";
+                               "Foo (S::* mp)(double, const char*) = nullptr;"
+                               "int (Foo::*mp2)(int); };";
  
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -213,7 +214,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("A",        it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("struct A { // sizeof=88\n"
+                Assert::AreEqual("struct A { // sizeof=96\n"
                                  "   S *p;\n"
                                  "   const S &q;\n"
                                  "   S r[2];\n"
@@ -236,6 +237,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   struct (anonymous namespace)::Foo { // sizeof=8\n"
                                  "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
                                  "   } (S::*mp)(double, const char *)=nullptr;\n"
+                                 "   int (struct (anonymous namespace)::Foo { // sizeof=8\n"
+                                 "           [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "        }::*mp2)(int);\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the class");
                 Assert::AreEqual("struct Bar : public struct (anonymous namespace)::Foo { // sizeof=8\n"

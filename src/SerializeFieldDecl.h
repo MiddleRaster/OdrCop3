@@ -69,6 +69,16 @@ namespace OdrCop3
                    qualType->isFunctionPointerType() ||
                    qualType->isFunctionReferenceType();
         }
+        static const clang::FunctionProtoType* GetInnerFunctionProtoType(clang::QualType qualType)
+        {
+            if (const auto* fnProtoType = qualType->getAs<clang::FunctionProtoType>())
+                return fnProtoType;
+            if (qualType->isPointerType() || qualType->isReferenceType())
+                return GetInnerFunctionProtoType(qualType->getPointeeType());
+            if (const auto* memberPointerType = qualType->getAs<clang::MemberPointerType>())
+                return GetInnerFunctionProtoType(memberPointerType->getPointeeType());
+            return nullptr;
+        }
 
     public:
         std::string get_PrefixBeforeUnqualifiedPointeeType() const
@@ -111,10 +121,19 @@ namespace OdrCop3
                     const auto* mpt = qualType->getAs<clang::MemberPointerType>();
                     if (const clang::CXXRecordDecl* cxxRecordDecl = mpt->getMostRecentCXXRecordDecl())
                     {
-                        std::string className;
-                        llvm::raw_string_ostream os(className);
-                        cxxRecordDecl->getCanonicalDecl()->printQualifiedName(os);
-                        str += " " + className + "::*";
+                        if (IsDefinedInAnonymousNamespace(static_cast<const Decl*>(cxxRecordDecl)))
+                        {
+                            str += " " + IndentBlock(SerializeDecl(contextItems, cxxRecordDecl), 0);
+                            str  = str.substr(0, str.size()-2);
+                            str += "::*";
+                        }
+                        else
+                        {
+                            std::string className;
+                            llvm::raw_string_ostream os(className);
+                            cxxRecordDecl->getCanonicalDecl()->printQualifiedName(os);
+                            str += " " + className + "::*";
+                        }
                     }
                     qualType = mpt->getPointeeType();
                 } else
@@ -177,20 +196,11 @@ namespace OdrCop3
         }
         const clang::FunctionProtoType* get_PointerToFunctionWithAnonymousReturnOrArgs() const
         {
-         // std::string diagnostic = fieldDecl->getType()->getTypeClassName();
+            std::string diagnostic = fieldDecl->getType()->getTypeClassName();
 
-            const clang::FunctionProtoType* fnProtoType = nullptr;
             QualType qualType = fieldDecl->getType();
-            if (const auto* mpt = qualType->getAs<clang::MemberPointerType>()) fnProtoType = mpt->getPointeeType()->getAs<clang::FunctionProtoType>();      // pointer-to-member-function
-            else if (qualType->isPointerType())                                fnProtoType = qualType->getPointeeType()->getAs<clang::FunctionProtoType>(); // pointer-to-function
-            if (fnProtoType == nullptr)
-                return nullptr;
-
-            if (true == ContainsAnonymousType(fnProtoType->getReturnType()))
-                return fnProtoType;
-
-            for (clang::QualType paramType : fnProtoType->getParamTypes())
-                if (true == ContainsAnonymousType(paramType))
+            if (const clang::FunctionProtoType* fnProtoType = GetInnerFunctionProtoType(qualType))
+                if (true == ContainsAnonymousType(qualType))
                     return fnProtoType;
 
             return nullptr;
@@ -233,16 +243,26 @@ namespace OdrCop3
             // is the field actually a pointer-to-function or pointer-to-member-functin?
             if (const clang::FunctionProtoType* fnProtoType = get_PointerToFunctionWithAnonymousReturnOrArgs())
             {
+                int indentation = 0;
+
                 // insert function pointer variable name into function prototype
                 std::string fpStr = get_SuffixAfterUnqualifiedPointeeType();
                 if (fpStr.starts_with(" "))
                     fpStr = fpStr.substr(1); // skip space
                 fpStr += get_Name() + get_ArraySuffix();
 
+                if (fpStr.find("\n") != std::string::npos)
+                {   // if multiline, do this twice: first to figure out what the indentation needs to be; then again with the right indentation
+                    ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.recursingDecls, " (?????)");
+                    std::string placeHolder = SerializeType(ci2, clang::QualType(fnProtoType, 0));
+                    indentation = static_cast<int>(placeHolder.find("?????"));
+                }
+
                 ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.recursingDecls, " (" + fpStr + ")");
-                out += IndentBlock(SerializeType(ci, clang::QualType(fnProtoType, 0)), out.size() - (out.rfind('\n') + 1));
+                out += IndentBlock(SerializeType(ci, clang::QualType(fnProtoType, 0)), indentation);
                 if (out.ends_with('\n'))
                     out = out.substr(0, out.size() - 1); // remove '\n'
+
             }
             else if (IsDefinedInAnonymousNamespace(fieldDecl))
             {
