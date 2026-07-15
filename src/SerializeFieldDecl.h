@@ -21,11 +21,56 @@ namespace OdrCop3
 
     template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class FieldDeclSerializer
     {
-        const ContextItems & contextItems;
-        const FieldDecl     * fieldDecl;
+        const ContextItems& contextItems;
+        const FieldDecl   * fieldDecl;
     public:
         FieldDeclSerializer(const ContextItems& contextItems, const FieldDecl* fieldDecl) : contextItems(contextItems), fieldDecl(fieldDecl) {}
 
+    private:
+        static bool ContainsAnonymousType(clang::QualType qualType)
+        {
+            qualType = qualType.getCanonicalType();
+
+            if (const auto* recordType = qualType->getAs<clang::RecordType>())
+                return IsDefinedInAnonymousNamespace(static_cast<const Decl*>(recordType->getDecl()));
+
+            if (const auto* enumType = qualType->getAs<clang::EnumType>())
+                return IsDefinedInAnonymousNamespace(static_cast<const Decl*>(enumType->getDecl()));
+
+            if (qualType->isPointerType() || qualType->isReferenceType())
+                return ContainsAnonymousType(qualType->getPointeeType());
+
+            if (const auto* memberPointerType = qualType->getAs<clang::MemberPointerType>())
+            {
+                if (const clang::CXXRecordDecl* classDecl = memberPointerType->getMostRecentCXXRecordDecl())
+                    if (true == IsDefinedInAnonymousNamespace(static_cast<const Decl*>(classDecl)))
+                        return true;
+                return ContainsAnonymousType(memberPointerType->getPointeeType());
+            }
+
+            if (qualType->isArrayType())
+                return ContainsAnonymousType(clang::QualType(qualType->getArrayElementTypeNoTypeQual(), 0));
+
+            if (const auto* fnProtoType = qualType->getAs<clang::FunctionProtoType>())
+            {
+                if (true == ContainsAnonymousType(fnProtoType->getReturnType()))
+                    return true;
+                for (clang::QualType paramType : fnProtoType->getParamTypes())
+                    if (true == ContainsAnonymousType(paramType))
+                        return true;
+            }
+            return false;
+        }
+        static bool IsPointerOrReferenceType(clang::QualType qualType)
+        {
+            return qualType->isPointerType()         ||
+                   qualType->isReferenceType()       ||
+                   qualType->isMemberPointerType()   ||
+                   qualType->isFunctionPointerType() ||
+                   qualType->isFunctionReferenceType();
+        }
+
+    public:
         std::string get_PrefixBeforeUnqualifiedPointeeType() const
         {
             std::string str;
@@ -33,11 +78,7 @@ namespace OdrCop3
             clang::QualType qualType = fieldDecl->getType();
             for (;;)
             {
-                if (qualType->isPointerType()         ||
-                    qualType->isReferenceType()       ||
-                    qualType->isMemberPointerType()   ||
-                    qualType->isFunctionPointerType() ||
-                    qualType->isFunctionReferenceType())
+                if (IsPointerOrReferenceType(qualType))
                     qualType = qualType->getPointeeType();
                 else 
                 if (qualType->isArrayType())
@@ -68,25 +109,18 @@ namespace OdrCop3
                 if (qualType->isMemberPointerType())
                 {
                     const auto* mpt = qualType->getAs<clang::MemberPointerType>();
-                    if (const clang::CXXRecordDecl* recordDecl = mpt->getMostRecentCXXRecordDecl())
+                    if (const clang::CXXRecordDecl* cxxRecordDecl = mpt->getMostRecentCXXRecordDecl())
                     {
                         std::string className;
                         llvm::raw_string_ostream os(className);
-                        recordDecl->getCanonicalDecl()->printQualifiedName(os);
+                        cxxRecordDecl->getCanonicalDecl()->printQualifiedName(os);
                         str += " " + className + "::*";
                     }
                     qualType = mpt->getPointeeType();
                 } else
                 if (qualType->isPointerType() || qualType->isReferenceType())
                 {
-                    Level lvl;
-                    lvl.isPointer   = qualType->isPointerType();
-                    lvl.isReference = qualType->isReferenceType();
-                    lvl.isConst     = qualType.isConstQualified();
-                    lvl.isVolatile  = qualType.isVolatileQualified();
-
-                    levels.push_back(lvl);
-
+                    levels.push_back({qualType->isPointerType(), qualType->isReferenceType(), qualType.isConstQualified(), qualType.isVolatileQualified()});
                     qualType = qualType->getPointeeType();
                 } else
                 if (qualType->isArrayType())
@@ -109,18 +143,8 @@ namespace OdrCop3
             std::string suffix;
 
             QualType qt = fieldDecl->getType();
-
-            for (;;)
-            {   // Peel off pointers/references/member pointers/function pointers
-                if (qt->isPointerType()         ||
-                    qt->isReferenceType()       ||
-                    qt->isMemberPointerType()   ||
-                    qt->isFunctionPointerType() ||
-                    qt->isFunctionReferenceType())
-                    qt = qt->getPointeeType();
-                else
-                    break;
-            }
+            while (IsPointerOrReferenceType(qt))
+                qt = qt->getPointeeType();
 
             // Now peel array layers
             while (qt->isArrayType())
@@ -151,36 +175,22 @@ namespace OdrCop3
             }
             return suffix;
         }
-
-        const clang::FunctionProtoType* get_PointToFunctionWithAnonymousReturnOrArgs() const
+        const clang::FunctionProtoType* get_PointerToFunctionWithAnonymousReturnOrArgs() const
         {
-            //std::string diagnostic = fieldDecl->getType()->getTypeClassName();
+         // std::string diagnostic = fieldDecl->getType()->getTypeClassName();
 
             const clang::FunctionProtoType* fnProtoType = nullptr;
             QualType qualType = fieldDecl->getType();
-                 if (const auto* mpt = qualType->getAs<clang::MemberPointerType>()) fnProtoType = mpt->getPointeeType(     )->getAs<clang::FunctionProtoType>(); // Case 1: pointer-to-member-function
-            else if (qualType->isPointerType())                                     fnProtoType = qualType->getPointeeType()->getAs<clang::FunctionProtoType>(); // Case 2: pointer-to-function
+            if (const auto* mpt = qualType->getAs<clang::MemberPointerType>()) fnProtoType = mpt->getPointeeType()->getAs<clang::FunctionProtoType>();      // pointer-to-member-function
+            else if (qualType->isPointerType())                                fnProtoType = qualType->getPointeeType()->getAs<clang::FunctionProtoType>(); // pointer-to-function
             if (fnProtoType == nullptr)
                 return nullptr;
 
-            auto isAnonymous = [](clang::QualType qualType) -> bool
-            {
-                qualType = qualType.getCanonicalType();
-                for (;;)
-                    if (qualType->isPointerType() || qualType->isReferenceType()) qualType = qualType->getPointeeType();
-                    else break;
-
-                const clang::Decl* decl = nullptr;
-                     if (const auto* rt = qualType->getAs<clang::RecordType>()) decl = rt->getDecl();
-                else if (const auto* et = qualType->getAs<clang::EnumType  >()) decl = et->getDecl();
-                return decl != nullptr && IsDefinedInAnonymousNamespace(decl);
-            };
-
-            if (true == isAnonymous(fnProtoType->getReturnType()))
+            if (true == ContainsAnonymousType(fnProtoType->getReturnType()))
                 return fnProtoType;
 
             for (clang::QualType paramType : fnProtoType->getParamTypes())
-                if (true == isAnonymous(paramType))
+                if (true == ContainsAnonymousType(paramType))
                     return fnProtoType;
 
             return nullptr;
@@ -221,7 +231,7 @@ namespace OdrCop3
             //        out += ics.ConstructPointersAndReferences() + ics.ConstructSuffixWithName(field->getNameAsString());
 
             // is the field actually a pointer-to-function or pointer-to-member-functin?
-            if (const clang::FunctionProtoType* fnProtoType = get_PointToFunctionWithAnonymousReturnOrArgs())
+            if (const clang::FunctionProtoType* fnProtoType = get_PointerToFunctionWithAnonymousReturnOrArgs())
             {
                 // insert function pointer variable name into function prototype
                 std::string fpStr = get_SuffixAfterUnqualifiedPointeeType();
