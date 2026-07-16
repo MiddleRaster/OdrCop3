@@ -269,7 +269,24 @@ Test ExploratoryTestsOfClangAST[] =
                                "template <typename R, typename... Args> using NoexceptFuncPtr = R(*)(Args...) noexcept;"
                                "template <typename R, typename... Args> using VariadicFuncPtr = R(*)(Args..., ...);"
                                "template <typename C, typename R, typename... Args> using MemberFuncPtr = R(C::*)(Args...);"
-                               "struct A { Alias member; Alias2 member2;"
+                               "template <auto F, typename... Args> using ReturnTypeOf = decltype(F(Args{}...));\n"
+                               "template <auto F, auto... Fs> using AllTrue = decltype((F() && ... && Fs()));\n"
+                
+/* unhandled decl::getKind: clang::Decl::ClassTemplateSpecialization
+"template <typename T> struct Inner { using type = T; };"
+"template <template <typename> class Inner, typename U> struct Outer { using type = typename Inner<U>::type; };"
+"template <typename X> struct Wrap { using type = X; };"
+"template <\n"
+"    template <\n"
+"        template <typename T> class Inner,\n"
+"        typename U\n"
+"    > class Outer,\n"
+"    template <typename X> class Wrap\n"
+">\n"
+"using RecursiveAlias = typename Outer<Wrap, int>::type;\n"
+*/
+
+                               "struct A { Alias member; Alias2 member2;\n"
                                "   Color  color;"
                                "   Color2 color2;"
                                "   Color3 color3;"
@@ -282,6 +299,9 @@ Test ExploratoryTestsOfClangAST[] =
                                "   NoexceptFuncPtr<void, int, long, long long, float, double, long double> tuapfnne;"
                                "   VariadicFuncPtr<int> tuapfnv;"
                                "   MemberFuncPtr<S, int, const char*> tuapfm;"
+                               "   ReturnTypeOf<[](auto x, auto y) { return x*y; }, int, long> fieldDemoingReturnTypeOfNTTP;"
+                               "   AllTrue<[]{ return true; },[]{ return true; },[]{ return false; }> allTrueField; "
+                            // "   RecursiveAlias<Outer, Wrap> field;"
                                "};";
  
             OdrCop3::AllMaps maps;
@@ -289,7 +309,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::IsTrue(ok);
 
             {
-                Assert::AreEqual(12, maps.typedefMap.size(), "wrong number of typedef/aliases in map");
+                Assert::AreEqual(14, maps.typedefMap.size(), "wrong number of typedef/aliases in map");
 
                 auto it = maps.typedefMap.begin();
                 Assert::AreEqual("(anonymous namespace)::AnonNamespaceTypedefToFuncionPointer", it->first,        "should have gotten correct key");
@@ -305,11 +325,15 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using Alias2 = S; // typedef S Alias2;\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <auto F, auto... Fs> using AllTrue = decltype((F() && ... && Fs())); // no typedef equivalent\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 }; // typedef enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 } Color;\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename C, typename R, typename... Args> using MemberFuncPtr = R (C::*)(Args...); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename R, typename... Args> using NoexceptFuncPtr = R (*)(Args...) noexcept; // no typedef equivalent\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <auto F, typename... Args> using ReturnTypeOf = decltype(F(Args{}...)); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename R, typename... Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
@@ -324,7 +348,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
                 auto it = maps.udtMap.begin();
 
-                Assert::AreEqual("struct A { // sizeof=88\n"
+                Assert::AreEqual("struct A { // sizeof=96\n"
                                  "   S member;\n"
                                  "   S member2;\n"
                                  "   Color color;\n"
@@ -339,6 +363,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   void (*tuapfnne)(int, long, long long, float, double, long double) noexcept;\n"
                                  "   int (*tuapfnv)(...);\n"
                                  "   int (S::*tuapfm)(const char *);\n"
+                                 "   long fieldDemoingReturnTypeOfNTTP;\n"
+                                 "   bool allTrueField;\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct S { // sizeof=1\n"
