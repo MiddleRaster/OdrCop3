@@ -25,16 +25,7 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-            //std::string params;
-            //for (const NamedDecl* param : *typeAliasTemplateDecl->getTemplateParameters())
-            //{
-            //    if (!params.empty())
-            //        params += ", ";
-            //    params += param->getNameAsString();
-            //}
-
             std::string params;
-
             for (const NamedDecl* param : *typeAliasTemplateDecl->getTemplateParameters())
             {
                 if (!params.empty())

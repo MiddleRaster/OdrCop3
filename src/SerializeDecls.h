@@ -17,6 +17,7 @@
 
 #include "SerializationUtils.h"
 #include "SerializeFunctionDecl.h"
+#include "SerializeFunctionTemplateDecl.h"
 #include "SerializeCXXRecordDecl.h"
 #include "SerializeEnumDecl.h"
 #include "SerializeFieldDecl.h"
@@ -35,7 +36,7 @@ namespace OdrCop3
         template<auto SerializeDecl, auto SerializeType, auto SerializeAttr>
         struct Decl
         {
-            static std::string SerializeFunctionTemplateDecl (const ContextItems& contextItems, const FunctionTemplateDecl *  functionTemplateDecl) { return FunctionDeclSerializer         <SerializeDecl, SerializeType, SerializeAttr>(contextItems, functionTemplateDecl->getTemplatedDecl()).Serialize(); } // TODO: fix this
+            static std::string SerializeFunctionTemplateDecl (const ContextItems& contextItems, const FunctionTemplateDecl *  functionTemplateDecl) { return FunctionTemplateDeclSerializer <SerializeDecl, SerializeType, SerializeAttr>(contextItems,  functionTemplateDecl).Serialize(); }
             static std::string SerializeFunctionDecl         (const ContextItems& contextItems, const FunctionDecl         *              funcDecl) { return FunctionDeclSerializer         <SerializeDecl, SerializeType, SerializeAttr>(contextItems,              funcDecl).Serialize(); }
             static std::string SerializeAccessSpecDecl       (const ContextItems& contextItems, const AccessSpecDecl       *            accessDecl) { return AccessSpecDeclSerializer       <SerializeDecl, SerializeType, SerializeAttr>(contextItems,            accessDecl).Serialize(); }
             static std::string SerializeTypedefDecl          (const ContextItems& contextItems, const TypedefDecl          *           typedefDecl) { return TypedefDeclSerializer          <SerializeDecl, SerializeType, SerializeAttr>(contextItems,           typedefDecl).Serialize(); }
