@@ -25,9 +25,35 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-            QualType    underlying   = typeAliasDecl->getUnderlyingType().getCanonicalType();
+            // typeAliasDecl->getUnderlyingType().dump();
+
             std::string aliasName    = typeAliasDecl->getQualifiedNameAsString();
+            QualType    underlying   = typeAliasDecl->getUnderlyingType().getCanonicalType();
             std::string resolvedType = underlying.getAsString(contextItems.printPolicy);
+
+            // if it's a template type, we don't want "the "type-parameter-0-0"; we want "T"
+            if (const auto * templateTypeParmType = typeAliasDecl->getUnderlyingType()->getAs<clang::TemplateTypeParmType>())
+            if (const clang::TemplateTypeParmDecl * templateTypeParm = templateTypeParmType->getDecl())
+            {
+                resolvedType = templateTypeParm->getNameAsString();
+                return "using " + aliasName + " = " + resolvedType + "; // typedef " + resolvedType + " " + aliasName + ";\n";
+            }
+
+            // if it's a template template type, we don't want "the "type-parameter-0-0"; we want "T"
+            if (const auto* dependentNameType = typeAliasDecl->getUnderlyingType()->getAs<clang::DependentNameType>())
+            {
+                std::string result;
+
+                llvm::raw_string_ostream os(result);
+                dependentNameType->getQualifier().print(os, contextItems.printPolicy);
+                os.flush();
+
+                if (const clang::IdentifierInfo* identifier = dependentNameType->getIdentifier())
+                    result += identifier->getName();
+
+                resolvedType = result;
+                return "using " + aliasName + " = " + resolvedType + "; // typedef " + resolvedType + " " + aliasName + ";\n";
+            }
 
             // nameless or anonymous UDTs
             bool needsFullInlining = false;

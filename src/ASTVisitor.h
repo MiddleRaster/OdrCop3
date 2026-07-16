@@ -47,7 +47,7 @@ namespace OdrCop3
             , context      (context)
             , printPolicy  (context->getLangOpts())
             , maps         (maps)
-            , contextItems (context, printPolicy, TU, recursingDecls)
+            , contextItems (context, printPolicy, this->TU, recursingDecls)
         {}
     private:
         static std::string SerializeDecls(const ContextItems& contextItems, const clang::Decl  * decl) { return Serialize::Decls<                 &SerializeTypes, &SerializeAttrs>(contextItems, decl); }

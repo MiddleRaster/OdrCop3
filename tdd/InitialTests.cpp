@@ -271,21 +271,17 @@ Test ExploratoryTestsOfClangAST[] =
                                "template <typename C, typename R, typename... Args> using MemberFuncPtr = R(C::*)(Args...);"
                                "template <auto F, typename... Args> using ReturnTypeOf = decltype(F(Args{}...));\n"
                                "template <auto F, auto... Fs> using AllTrue = decltype((F() && ... && Fs()));\n"
-                
-/* unhandled decl::getKind: clang::Decl::ClassTemplateSpecialization
-"template <typename T> struct Inner { using type = T; };"
-"template <template <typename> class Inner, typename U> struct Outer { using type = typename Inner<U>::type; };"
-"template <typename X> struct Wrap { using type = X; };"
-"template <\n"
-"    template <\n"
-"        template <typename T> class Inner,\n"
-"        typename U\n"
-"    > class Outer,\n"
-"    template <typename X> class Wrap\n"
-">\n"
-"using RecursiveAlias = typename Outer<Wrap, int>::type;\n"
-*/
-
+                               "template <typename T> struct Inner { using type = T; };"
+                               "template <template <typename> class Inner, typename U> struct Outer { using type = typename Inner<U>::type; };"
+                               "template <typename X> struct Wrap { using type = X; };"
+                               "template <\n"
+                               "    template <\n"
+                               "        template <typename T> class Inner,\n"
+                               "        typename U\n"
+                               "    > class Outer,\n"
+                               "    template <typename X> class Wrap\n"
+                               ">\n"
+                               "using RecursiveAlias = typename Outer<Wrap, int>::type;\n"
                                "struct A { Alias member; Alias2 member2;\n"
                                "   Color  color;"
                                "   Color2 color2;"
@@ -301,7 +297,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "   MemberFuncPtr<S, int, const char*> tuapfm;"
                                "   ReturnTypeOf<[](auto x, auto y) { return x*y; }, int, long> fieldDemoingReturnTypeOfNTTP;"
                                "   AllTrue<[]{ return true; },[]{ return true; },[]{ return false; }> allTrueField; "
-                            // "   RecursiveAlias<Outer, Wrap> field;"
+                               "   RecursiveAlias<Outer, Wrap> recursivelyDefinedField;"
                                "};";
  
             OdrCop3::AllMaps maps;
@@ -309,7 +305,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::IsTrue(ok);
 
             {
-                Assert::AreEqual(14, maps.typedefMap.size(), "wrong number of typedef/aliases in map");
+                Assert::AreEqual(15, maps.typedefMap.size(), "wrong number of typedef/aliases in map");
 
                 auto it = maps.typedefMap.begin();
                 Assert::AreEqual("(anonymous namespace)::AnonNamespaceTypedefToFuncionPointer", it->first,        "should have gotten correct key");
@@ -333,6 +329,8 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename R, typename... Args> using NoexceptFuncPtr = R (*)(Args...) noexcept; // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <template <template <typename T> class Inner, typename U> class Outer, template <typename X> class Wrap> using RecursiveAlias = typename Outer<Wrap, int>::type; // no typedef equivalent\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <auto F, typename... Args> using ReturnTypeOf = decltype(F(Args{}...)); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename R, typename... Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...); // no typedef equivalent\n"
@@ -345,10 +343,10 @@ Test ExploratoryTestsOfClangAST[] =
                              , (*it++).second[0].fullyQualified);
             }
             {
-                Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
+                Assert::AreEqual(5, maps.udtMap.size(), "wrong number of UDTs in map");
                 auto it = maps.udtMap.begin();
 
-                Assert::AreEqual("struct A { // sizeof=96\n"
+                Assert::AreEqual("struct A { // sizeof=104\n"
                                  "   S member;\n"
                                  "   S member2;\n"
                                  "   Color color;\n"
@@ -365,11 +363,25 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   int (S::*tuapfm)(const char *);\n"
                                  "   long fieldDemoingReturnTypeOfNTTP;\n"
                                  "   bool allTrueField;\n"
+                                 "   int recursivelyDefinedField;\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct Inner {\n"
+                                 "   using Inner::type = T; // typedef T Inner::type;\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<template<typename> class Inner, typename U> struct Outer {\n"
+                                 "   using Outer::type = Inner<U>::type; // typedef Inner<U>::type Outer::type;\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct S { // sizeof=1\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename X> struct Wrap {\n"
+                                 "   using Wrap::type = X; // typedef X Wrap::type;\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
+
             }
             {
                 Assert::AreEqual(2, maps.enumMap.size(), "wrong number of enums in map");
