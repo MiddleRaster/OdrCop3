@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 
-#include "..\src\SerializationUtils.h"
+#include "..\src\TemplateSerializationUtils.h"
 #include "..\src\SerializeDecls.h"
 #include "..\src\SerializeTypes.h"
 #include "..\src\SerializeAttrs.h"
@@ -47,7 +47,7 @@ namespace OdrCop3
             , context      (context)
             , printPolicy  (context->getLangOpts())
             , maps         (maps)
-            , contextItems (context, printPolicy, recursingDecls)
+            , contextItems (context, printPolicy, TU, recursingDecls)
         {}
     private:
         static std::string SerializeDecls(const ContextItems& contextItems, const clang::Decl  * decl) { return Serialize::Decls<                 &SerializeTypes, &SerializeAttrs>(contextItems, decl); }
@@ -90,11 +90,15 @@ namespace OdrCop3
             if (recordDecl->isLambda())
                 return true; // skip lambdas
 
+            if (auto* classTemplateSpec = dyn_cast<ClassTemplateSpecializationDecl>(recordDecl))
+                if (classTemplateSpec->getSpecializationKind() == TSK_ImplicitInstantiation) // not actually a specialization
+                    return true;
+
             if (recordDecl->isThisDeclarationADefinition())
             {
                 std::string key = recordDecl->getQualifiedNameAsString();
                      if (recordDecl->getDescribedClassTemplate())                            key += "<>";
-            //  else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(recordDecl)) key += TemplateArgsToString(CTSD, true);
+                else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(recordDecl)) key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
 
                 maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, recordDecl) });
             }
@@ -488,163 +492,6 @@ namespace OdrCop3
             }
 
             return "using " + aliasName + " = " + resolvedType + "; // typedef " + resolvedType + " " + aliasName + ";";
-        }
-        std::string TemplateArgsToString(const clang::ClassTemplateSpecializationDecl* ctsd, bool wantAnonymousNamespaceWithTU = false)
-        {
-            std::string out;
-            out += "<";
-
-            const clang::TemplateArgumentList &   args = ctsd->getTemplateArgs();
-            const clang::TemplateParameterList* params = ctsd->getSpecializedTemplate()->getTemplateParameters();
-
-            for (unsigned i=0; i<args.size(); ++i)
-            {
-                if (i > 0)
-                    out += ", ";
-
-                bool prependAddressOf = false;
-                const clang::NamedDecl * paramDecl = params->getParam(i);
-                if (const auto* nttp = dyn_cast<NonTypeTemplateParmDecl>(paramDecl); nttp)
-                {
-                    QualType paramType = nttp->getType();
-                    if (paramType->isPointerType())
-                        prependAddressOf = true;
-                }
-
-                const clang::TemplateArgument& arg = args[i];
-                switch (arg.getKind())
-                {
-                case clang::TemplateArgument::Integral:
-                { // if it's actually an enum value, try to display the enum
-                    const auto* enumTy = arg.getIntegralType()->getAs<clang::EnumType>();
-                    if (enumTy) {
-                        llvm::APSInt val = arg.getAsIntegral();
-                        for (const auto* ecd : enumTy->getDecl()->enumerators()) {
-                            if (ecd->getInitVal() == val) {
-                                out += ConstructEnumDefinition(enumTy->getDecl()) + "::" + ecd->getNameAsString();
-                                break;
-                            }
-                        }
-                    } else
-                        out += llvm::toString(arg.getAsIntegral(), 10);
-                    break;
-                }
-                case clang::TemplateArgument::Declaration:
-                {
-                    if (prependAddressOf == true)
-                        out += "&";
-
-                    const ValueDecl* vd   = arg.getAsDecl();
-                    IndirectionCvStripper ics(vd->getType().getCanonicalType());
-                    QualType baseQT       = ics.GetBaseType();
-                    const Type* baseTy    = baseQT.getTypePtr();
-                    if (const auto* recTy = dyn_cast<RecordType>(baseTy))
-                    {
-                        const auto* recDecl = recTy->getDecl();
-                        if (recDecl->isInAnonymousNamespace())
-                        {
-                            out += ics.ConstructPrefix();
-                            out += IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recDecl)), out.size() - (out.rfind('\n')+1));
-                            out  = out.substr(0, out.size()-2); // strip ";\n"
-                            out += ics.ConstructPointersAndReferences();
-
-                            // Clang has a weird way of specifying when it's a reference
-                            QualType argType     = arg.getAsDecl()->getType();
-                            bool isPointer       = argType->isPointerType();
-                            bool isMemberPointer = argType->isMemberPointerType(); // already encoded in the type
-                            bool isReference     = !isPointer && !isMemberPointer;
-                            out += " ";
-                            if (isPointer)
-                                out += "* ";
-                            else if (isReference)
-                                out += "& ";
-                        }
-                    } 
-                    out += vd->getQualifiedNameAsString();
-                    break;
-                }
-                case clang::TemplateArgument::NullPtr:           out += "nullptr";                                                                                    break;
-                case clang::TemplateArgument::Null:              out += "null";                                                                                       break;
-                case clang::TemplateArgument::Template:          out += arg.getAsTemplate().getAsTemplateDecl()->getQualifiedNameAsString();                          break;
-                case clang::TemplateArgument::TemplateExpansion: out += arg.getAsTemplateOrTemplatePattern().getAsTemplateDecl()->getQualifiedNameAsString() + "..."; break;
-                case clang::TemplateArgument::Type:
-                {
-                    const auto* rd = arg.getAsType()->getAsCXXRecordDecl();
-                    if (rd && rd->isInAnonymousNamespace())
-                    {
-                        std::string line = IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(rd)), out.size());
-                        if (wantAnonymousNamespaceWithTU)
-                        {
-                            const std::string from = "anonymous namespace";
-                            if (auto pos = line.find(from); pos != std::string::npos)
-                                line.replace(pos, from.size(), "anonymous namespace in " + TU);
-                        }
-                        out += line;
-                        out  = out.substr(0, out.size()-2); // strip last ";\n"
-                    } else
-                        out += arg.getAsType().getAsString();
-                }
-                    break;
-                case clang::TemplateArgument::Expression:
-                {
-                    std::string s;
-                    llvm::raw_string_ostream os(s);
-                    arg.getAsExpr()->printPretty(os, nullptr, context->getPrintingPolicy());
-                    out += os.str();
-                    break;
-                }
-                case clang::TemplateArgument::Pack:
-                {
-                    out += "{";
-                    auto pack = arg.pack_elements();
-                    for (unsigned j = 0; j < pack.size(); ++j) {
-                        if (j > 0)
-                            out += ", ";
-
-                        // Inline handling for pack elements
-                        const clang::TemplateArgument& pe = pack[j];
-                        switch (pe.getKind())
-                        {
-                        case clang::TemplateArgument::Type:              out += pe.getAsType().getAsString();                                                                break;
-                        case clang::TemplateArgument::Integral:          out += llvm::toString(pe.getAsIntegral(), 10);                                                      break;
-                        case clang::TemplateArgument::NullPtr:           out += "nullptr";                                                                                   break;
-                        case clang::TemplateArgument::Declaration:       out += pe.getAsDecl()->getQualifiedNameAsString();                                                  break;
-                        case clang::TemplateArgument::Null:              out += "null";                                                                                      break;
-                        case clang::TemplateArgument::Template:          out += pe.getAsTemplate().getAsTemplateDecl()->getQualifiedNameAsString();                          break;
-                        case clang::TemplateArgument::TemplateExpansion: out += pe.getAsTemplateOrTemplatePattern().getAsTemplateDecl()->getQualifiedNameAsString() + "..."; break;
-                        case clang::TemplateArgument::Expression:
-                        {
-                            std::string s;
-                            llvm::raw_string_ostream os(s);
-                            pe.getAsExpr()->printPretty(os, nullptr, context->getPrintingPolicy());
-                            out += os.str();
-                            break;
-                        }
-                        default:
-                        {
-                            std::string tmp;
-                            llvm::raw_string_ostream os(tmp);
-                            pe.print(printPolicy, os, true);
-                            out += os.str();
-                            break;
-                        }
-                        }
-                    }
-                    out += "}";
-                    break;
-                }
-                default:
-                {
-                    std::string tmp;
-                    llvm::raw_string_ostream os(tmp);
-                    arg.print(printPolicy, os, true);
-                    out += os.str();
-                    break;
-                }
-                }
-            }
-            out += ">";
-            return out;
         }
 
         class IndirectionCvStripper

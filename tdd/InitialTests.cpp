@@ -439,5 +439,34 @@ Test ExploratoryTestsOfClangAST[] =
 
     */
 
+    {"Testing ClassTemplateSpecialization", []
+        {
+            std::string code = "template<typename T> struct Box{}; struct S{}; struct A { Box<S> value; };\n";
+ 
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(3, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct A { // sizeof=1\n"
+                                 "   Box<S> value;\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct Box {\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct S { // sizeof=1\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 };

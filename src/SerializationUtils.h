@@ -24,11 +24,13 @@ namespace OdrCop3
     {
         ASTContext& context;
         const PrintingPolicy& printPolicy;
+        const std::string& TU;
         std::unordered_set<const Decl*>& recursingDecls;
         std::string aux;
-        ContextItems(ASTContext* context, const PrintingPolicy& policy, std::unordered_set<const Decl*>& recursingDecls, const std::string& aux="")
+        ContextItems(ASTContext* context, const PrintingPolicy& policy, const std::string& TU, std::unordered_set<const Decl*>& recursingDecls, const std::string& aux="")
             : context       (*context)
             , printPolicy   (policy)
+            , TU            (TU)
             , recursingDecls(recursingDecls)
             , aux           (aux)
         {}

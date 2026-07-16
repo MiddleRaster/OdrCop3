@@ -87,13 +87,11 @@ namespace OdrCop3
             if (cxxRecordDecl->isLambda())
                 return out;
 
-        // std::string ConstructRecordSignature(const CXXRecordDecl * cxxRecordDecl) {
-        //    // template
-        //    const clang::ClassTemplateDecl* ctd = cxxRecordDecl->getDescribedClassTemplate();
-        //    if (ctd)
-        //        out += ConstructTemplateParameterList(ctd->getTemplateParameters());
-        //    else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
-        //        out += "template<> ";
+            // template
+            if (const clang::ClassTemplateDecl* ctd = cxxRecordDecl->getDescribedClassTemplate())
+                out += ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ctd->getTemplateParameters());
+            else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
+                out += "template<> ";
             
             out += get_Kind(); // struct/class/union keyword
 
@@ -101,12 +99,12 @@ namespace OdrCop3
             out += get_Attributes(&hasFinal);
             out += get_Name(); // NOTE: no " " until after template stuff
 
-        //    // if it's a template instantiation, add <arg> 
-        //    if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
-        //    {
-        //        out += IndentBlock(TemplateArgsToString(CTSD), out.size());
-        //        out  = out.substr(0, out.size()-1); // strip off last "\n"
-        //    }
+            // if it's a template instantiation, add <arg> 
+            if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
+            {
+                out += IndentBlock(TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, CTSD), out.size());
+                out  = out.substr(0, out.size()-1); // strip off last "\n"
+            }
 
             out += " ";
 

@@ -254,12 +254,12 @@ namespace OdrCop3
 
                 if (fpStr.find("\n") != std::string::npos)
                 {   // if multiline, do this twice: first to figure out what the indentation needs to be; then again with the right indentation
-                    ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.recursingDecls, " (?????)");
+                    ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (?????)");
                     std::string placeHolder = SerializeType(ci2, clang::QualType(fnProtoType, 0));
                     indentation = static_cast<int>(placeHolder.find("?????"));
                 }
 
-                ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.recursingDecls, " (" + fpStr + ")");
+                ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (" + fpStr + ")");
                 out += IndentBlock(SerializeType(ci, clang::QualType(fnProtoType, 0)), indentation);
                 if (out.ends_with('\n'))
                     out = out.substr(0, out.size() - 1); // remove '\n'
