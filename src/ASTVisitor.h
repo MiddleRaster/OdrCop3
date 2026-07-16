@@ -141,11 +141,11 @@ namespace OdrCop3
         }
         bool VisitTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* tatDecl)
         {
-            //if (context->getSourceManager().isInSystemHeader(tatDecl->getLocation()))
-            //    return true;
+            if (context->getSourceManager().isInSystemHeader(tatDecl->getLocation()))
+                return true;
 
-            //std::string     aliasName = tatDecl->getQualifiedNameAsString();
-            //maps.typedefMap[aliasName].push_back({TU, ConstructTemplateAliasSignature(tatDecl)});
+            std::string     aliasName = tatDecl->getQualifiedNameAsString();
+            maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, tatDecl)});
             return true;
         }
 
@@ -488,34 +488,6 @@ namespace OdrCop3
             }
 
             return "using " + aliasName + " = " + resolvedType + "; // typedef " + resolvedType + " " + aliasName + ";";
-        }
-        std::string ConstructTemplateAliasSignature(const clang::TypeAliasTemplateDecl* tatDecl)
-        {
-            std::string params;
-            for (const NamedDecl* param : *tatDecl->getTemplateParameters())
-            {
-                if (!params.empty())
-                    params += ", ";
-                params += param->getNameAsString();
-            }
-
-            TypeAliasDecl* aliasDecl = tatDecl->getTemplatedDecl();
-            std::string    aliasName = tatDecl->getQualifiedNameAsString();
-
-            std::string fqtd = "template <" + params + "> using " + aliasName + " = ";
-            
-            QualType             underlying = aliasDecl->getUnderlyingType();
-            const RecordType   * recordType = underlying.getCanonicalType()->getAs<RecordType>();
-            const NamespaceDecl* nsDeclCtx  = recordType != nullptr ? dyn_cast<NamespaceDecl>(recordType->getDecl()->getDeclContext()) : nullptr;
-            if (recordType != nullptr && (recordType->getDecl()->isAnonymousStructOrUnion() || (nsDeclCtx != nullptr && nsDeclCtx->isAnonymousNamespace())))
-            {
-                fqtd += IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())), fqtd.size());
-                fqtd  = fqtd.substr(0, fqtd.size()-2); // strip last ";\n"
-                fqtd += "; // no typedef equivalent";
-            } else
-                fqtd += underlying.getAsString(printPolicy) + "; // no typedef equivalent";
-
-            return fqtd;
         }
         std::string TemplateArgsToString(const clang::ClassTemplateSpecializationDecl* ctsd, bool wantAnonymousNamespaceWithTU = false)
         {
