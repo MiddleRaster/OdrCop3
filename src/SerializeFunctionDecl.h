@@ -92,6 +92,23 @@ namespace OdrCop3
                 os.flush();
                 return templatePrefix;
             }
+
+            if (const auto* info = funcDecl->getTemplateSpecializationInfo())
+            {
+                switch (info->getTemplateSpecializationKind())
+                {
+                case clang::TSK_ExplicitInstantiationDeclaration:
+                case clang::TSK_ExplicitInstantiationDefinition:
+                    return "template ";
+
+                case clang::TSK_ExplicitSpecialization:
+                    return "template<> ";
+
+                default:
+                    break;
+                }
+            }
+
             return "";
         }
 

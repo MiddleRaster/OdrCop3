@@ -155,6 +155,9 @@ namespace OdrCop3
 
         bool VisitVarDecl(const VarDecl* varDecl)
         {
+            if (isa<ParmVarDecl>(varDecl))
+                return true; // skipping parameters
+
             //if (context->getSourceManager().isInSystemHeader(varDecl->getLocation()))
             //    return true; // skip anything not in the main file or a user header
 

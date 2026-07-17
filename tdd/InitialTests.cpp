@@ -399,25 +399,6 @@ Test ExploratoryTestsOfClangAST[] =
 
     /*
 
-    5. Typedefs
-
-    struct S {};
-    using Alias = S;
-    struct A
-    {
-        Alias member;
-    };
-
-
-    FieldDecl
-     |
-     TypedefType
-          |
-          +-- TypedefNameDecl
-                  |
-                  +-- RecordType
-
-
     6. Template specializations
 
     struct S {};
@@ -436,21 +417,6 @@ Test ExploratoryTestsOfClangAST[] =
             +-- TemplateArgument
                     |
                     +-- RecordType
-
-
-    ?
-
-    7. Pointer-to-member (the oddball)
-
-    struct S
-    {
-        int x;
-    };
-    struct A
-    {
-        int S::* pm;
-    };
-
     */
 
     {"Testing ClassTemplateSpecialization and ClassTemplatePartialSpecialization", []
@@ -458,7 +424,13 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code = "template<typename T> struct Box{}; struct S{}; struct A { Box<S> value; };\n"
                                "template<typename T, unsigned N> struct Array { T data[N];  T get(unsigned i) const { return data[i]; } void set(unsigned i, const T& value) { data[i] = value; } };\n"
                                "template<unsigned N> struct Array<bool, N> { unsigned char data[(N+7)/8]; bool get(unsigned i) const { return (data[i/8]>>(i%8))&1u;}\n"
-                               "void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u<<(i%8)); if (value) data[i/8] |= mask; else data[i/8] &= static_cast<unsigned char>(~mask); } };\n";
+                               "void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u<<(i%8)); if (value) data[i/8] |= mask; else data[i/8] &= static_cast<unsigned char>(~mask); } };\n"
+                               "template<typename T> T identity(T value) { return value; }"
+                               "template int identity<int>(int);"
+                               "template<> bool identity<bool>(bool value) { return !value; }"
+                               "int  a = identity<int>(42);"
+                               "bool b = identity<bool>(true);";
+
  
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -468,7 +440,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(4, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(7, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -516,6 +488,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    else\n"
                                  "        data[i / 8] &= static_cast<unsigned char>(~mask);\n"
                                  "}\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("template<> bool __cdecl identity(bool value) { return !value; }\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template int __cdecl identity(int value) { return value; }\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T __cdecl identity(T value) { return value; }\n"
                               , (*it++).second[0].fullyQualified);
             }
 
