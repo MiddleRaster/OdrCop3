@@ -12,10 +12,6 @@
 #include <clang\AST\RecordLayout.h>
 #include <llvm\Support\raw_ostream.h>
 
-#include <vector>
-
-//#include <windows.h>
-
 #include "SerializationUtils.h"
 #include "magic_enum.h"
 

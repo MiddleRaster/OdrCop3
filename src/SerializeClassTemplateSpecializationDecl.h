@@ -12,8 +12,6 @@
 #include <clang\AST\RecordLayout.h>
 #include <llvm\Support\raw_ostream.h>
 
-#include <vector>
-
 #include "SerializationUtils.h"
 
 namespace OdrCop3
@@ -26,6 +24,8 @@ namespace OdrCop3
         ClassTemplateSpecializationDeclSerializer(const ContextItems& contextItems, const ClassTemplateSpecializationDecl* classTemplateSpecializationDecl) : contextItems(contextItems), classTemplateSpecializationDecl(classTemplateSpecializationDecl) {}
         std::string Serialize() const
         {
+            classTemplateSpecializationDecl->dump();
+
             return "this is where the ClassTemplateSpecializationDecl serialization happens";
         }
     };

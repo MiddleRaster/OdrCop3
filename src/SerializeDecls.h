@@ -12,7 +12,6 @@
 #include <clang\AST\RecordLayout.h>
 #include <llvm\Support\raw_ostream.h>
 
-#include <vector>
 #include <exception>
 
 #include "SerializationUtils.h"
