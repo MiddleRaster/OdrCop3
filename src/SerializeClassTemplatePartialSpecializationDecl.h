@@ -12,7 +12,6 @@
 #include <clang\AST\RecordLayout.h>
 #include <llvm\Support\raw_ostream.h>
 
-//#include "SerializationUtils.h"
 #include "SerializeCXXRecordDecl.h"
 
 namespace OdrCop3
@@ -29,7 +28,7 @@ namespace OdrCop3
 
             std::string out;
 
-            { // the "unspeciailized" template parameters
+            { // the "unspecialized" template parameters
                 llvm::raw_string_ostream os(out);
                 classTemplatePartialSpecializationDecl->getTemplateParameters()->print(os, contextItems.context, contextItems.printPolicy);
                 os.flush();
