@@ -304,7 +304,7 @@ namespace OdrCop3
                 std::string fieldStr;
                 clang::QualType qt = fieldDecl->getType().getCanonicalType(); // see through typedefs and using aliases
                 llvm::raw_string_ostream os(fieldStr);
-                qt.print(os, contextItems.printPolicy, fieldDecl->getName());
+                qt.print(os, contextItems.printPolicy, (qt->isMemberDataPointerType() ? " " : "") + fieldDecl->getName()); // adding a space before the field in the pointer-to-member-data case only
                 os.flush();
 
                 // is it an anonymous struct/class/union/enum? If so, normalize text

@@ -298,6 +298,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "   ReturnTypeOf<[](auto x, auto y) { return x*y; }, int, long> fieldDemoingReturnTypeOfNTTP;"
                                "   AllTrue<[]{ return true; },[]{ return true; },[]{ return false; }> allTrueField; "
                                "   RecursiveAlias<Outer, Wrap> recursivelyDefinedField;"
+                               "   int S::* pointertodatamember;"
                                "};";
  
             OdrCop3::AllMaps maps;
@@ -364,6 +365,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   long fieldDemoingReturnTypeOfNTTP;\n"
                                  "   bool allTrueField;\n"
                                  "   int recursivelyDefinedField;\n"
+                                 "   int S::* pointertodatamember;\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct Inner {\n"
