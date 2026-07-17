@@ -79,6 +79,13 @@ namespace OdrCop3
                 return GetInnerFunctionProtoType(memberPointerType->getPointeeType());
             return nullptr;
         }
+        const clang::TemplateTypeParmType* IsTemplateArrayType() const
+        {
+            if (const auto* arrayType = llvm::dyn_cast<clang::DependentSizedArrayType>(fieldDecl->getType().getTypePtr()))
+                if (const auto* ttp = arrayType->getElementType()->getAs<clang::TemplateTypeParmType>())
+                    return ttp;
+            return nullptr;
+        }
 
     public:
         std::string get_PrefixBeforeUnqualifiedPointeeType() const
@@ -263,7 +270,6 @@ namespace OdrCop3
                 out += IndentBlock(SerializeType(ci, clang::QualType(fnProtoType, 0)), indentation);
                 if (out.ends_with('\n'))
                     out = out.substr(0, out.size() - 1); // remove '\n'
-
             }
             else if (IsDefinedInAnonymousNamespace(fieldDecl))
             {
@@ -278,6 +284,20 @@ namespace OdrCop3
                 out += get_SuffixAfterUnqualifiedPointeeType();
                 out += get_Name();
                 out += get_ArraySuffix();
+            }
+            else if (const clang::TemplateTypeParmType* ttp = IsTemplateArrayType())
+            {   // e.g., T field[N];
+                const clang::TemplateTypeParmDecl* paramDecl = ttp->getDecl();
+                out += paramDecl->getNameAsString();   // "T"
+                out += " " + get_Name();
+
+                const auto   * arrayType = llvm::dyn_cast<clang::DependentSizedArrayType>(fieldDecl->getType().getTypePtr());
+                const clang::Expr * expr = arrayType->getSizeExpr();
+                llvm::StringRef     text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
+
+                out += "[";
+                out += text.str();
+                out += "]";
             }
             else
             {   // field must be done this way to handle array fields as well.

@@ -90,8 +90,8 @@ namespace OdrCop3
             // template
             if (const clang::ClassTemplateDecl* ctd = cxxRecordDecl->getDescribedClassTemplate())
                 out += ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ctd->getTemplateParameters());
-            else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
-                out += "template<> ";
+         // else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
+         //     out += "template<> "; // handled outside
             
             out += get_Kind(); // struct/class/union keyword
 

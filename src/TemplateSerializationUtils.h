@@ -5,13 +5,10 @@
 namespace OdrCop3
 {
     template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
-    inline std::string TemplateArgsToString(const ContextItems& contextItems, const clang::ClassTemplateSpecializationDecl* ctsd, bool wantAnonymousNamespaceWithTU = false)
+    inline std::string TemplateArgsToString(const ContextItems& contextItems, const clang::TemplateArgumentList& args, const clang::TemplateParameterList* params, bool wantAnonymousNamespaceWithTU=false)
     {
         std::string out;
         out += "<";
-
-        const clang::TemplateArgumentList &   args = ctsd->getTemplateArgs();
-        const clang::TemplateParameterList* params = ctsd->getSpecializedTemplate()->getTemplateParameters();
 
         for (unsigned i=0; i<args.size(); ++i)
         {
@@ -98,9 +95,9 @@ namespace OdrCop3
                     out += line;
                     out  = out.substr(0, out.size()-2); // strip last ";\n"
                 } else
-                    out += arg.getAsType().getAsString();
-            }
+                    out += arg.getAsType().getAsString(contextItems.printPolicy);
                 break;
+            }
             case clang::TemplateArgument::Expression:
             {
                 std::string s;
@@ -161,6 +158,14 @@ namespace OdrCop3
         }
         out += ">";
         return out;
+    }
+
+    template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
+    inline std::string TemplateArgsToString(const ContextItems& contextItems, const clang::ClassTemplateSpecializationDecl* ctsd, bool wantAnonymousNamespaceWithTU=false)
+    {
+        const clang::TemplateArgumentList & args   = ctsd->getTemplateArgs();
+        const clang::TemplateParameterList* params = ctsd->getSpecializedTemplate()->getTemplateParameters();
+        return TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, args, params);
     }
 
     template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
