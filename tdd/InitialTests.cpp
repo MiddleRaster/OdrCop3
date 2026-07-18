@@ -405,6 +405,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u<<(i%8)); if (value) data[i/8] |= mask; else data[i/8] &= static_cast<unsigned char>(~mask); } };\n"
                                "template<> struct Array<bool, 8> { unsigned char data; bool get(unsigned i) const { return (data >> i) & 1u; }\n"
                                "void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u << i);  if (value) data |= mask; else data &= static_cast<unsigned char>(~mask); } }; \n"
+                               "template struct Array<int, 4>;\nextern template struct Array<double, 8>;\n"
                                "template<typename T> T identity(T value) { return value; }"
                                "template int identity<int>(int);"
                                "template<> bool identity<bool>(bool value) { return !value; }"
@@ -416,11 +417,11 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(6, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.varMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(9, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual( 8, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(11, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -459,6 +460,19 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> struct Array<double, 8> { // sizeof=64\n"
+                                 "   double data[8];\n"
+                                 "   double __cdecl get(unsigned int i) const;\n"
+                                 "   void __cdecl set(unsigned int i, const double & value);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("template<> struct Array<int, 4> { // sizeof=16\n"
+                                 "   int data[4];\n"
+                                 "   int __cdecl get(unsigned int i) const { return data[i]; }\n"
+                                 "   void __cdecl set(unsigned int i, const int & value) { data[i] = value; }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct Box {\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
@@ -493,7 +507,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        data[i / 8] &= static_cast<unsigned char>(~mask);\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-
+                Assert::AreEqual("int __cdecl get(unsigned int i) const { return data[i]; }\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void __cdecl set(unsigned int i, const int & value) { data[i] = value; }\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> bool __cdecl identity(bool value) { return !value; }\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template int __cdecl identity(int value) { return value; }\n"
