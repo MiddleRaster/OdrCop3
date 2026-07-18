@@ -397,34 +397,14 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
-    /*
-
-    6. Template specializations
-
-    struct S {};
-    template<typename T>
-    struct Box {};
-    struct A
-    {
-        Box<S> value;
-    };
-
-
-    TemplateSpecializationType
-            |
-            +-- TemplateDecl
-            |
-            +-- TemplateArgument
-                    |
-                    +-- RecordType
-    */
-
     {"Testing ClassTemplateSpecialization and ClassTemplatePartialSpecialization", []
         {
             std::string code = "template<typename T> struct Box{}; struct S{}; struct A { Box<S> value; };\n"
                                "template<typename T, unsigned N> struct Array { T data[N];  T get(unsigned i) const { return data[i]; } void set(unsigned i, const T& value) { data[i] = value; } };\n"
                                "template<unsigned N> struct Array<bool, N> { unsigned char data[(N+7)/8]; bool get(unsigned i) const { return (data[i/8]>>(i%8))&1u;}\n"
                                "void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u<<(i%8)); if (value) data[i/8] |= mask; else data[i/8] &= static_cast<unsigned char>(~mask); } };\n"
+                               "template<> struct Array<bool, 8> { unsigned char data; bool get(unsigned i) const { return (data >> i) & 1u; }\n"
+                               "void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u << i);  if (value) data |= mask; else data &= static_cast<unsigned char>(~mask); } }; \n"
                                "template<typename T> T identity(T value) { return value; }"
                                "template int identity<int>(int);"
                                "template<> bool identity<bool>(bool value) { return !value; }"
@@ -436,11 +416,11 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(5, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(6, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(7, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(9, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -452,6 +432,19 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   T data[N];\n"
                                  "   T __cdecl get(unsigned int i) const { return data[i]; }\n"
                                  "   void __cdecl set(unsigned int i, const T & value) { data[i] = value; }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("template<> struct Array<bool, 8> { // sizeof=1\n"
+                                 "   unsigned char data;\n"
+                                 "   bool __cdecl get(unsigned int i) const { return (data >> i) & 1U; }\n"
+                                 "   void __cdecl set(unsigned int i, bool value) {\n"
+                                 "       unsigned char mask = static_cast<unsigned char>(1U << i);\n"
+                                 "       if (value)\n"
+                                 "           data |= mask;\n"
+                                 "       else\n"
+                                 "           data &= static_cast<unsigned char>(~mask);\n"
+                                 "   }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <unsigned int N> struct Array<bool, N> {\n"
@@ -478,6 +471,17 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("T __cdecl get(unsigned int i) const { return data[i]; }\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void __cdecl set(unsigned int i, const T & value) { data[i] = value; }\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("bool __cdecl get(unsigned int i) const { return (data >> i) & 1U; }\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("void __cdecl set(unsigned int i, bool value) {\n"
+                                 "    unsigned char mask = static_cast<unsigned char>(1U << i);\n"
+                                 "    if (value)\n"
+                                 "        data |= mask;\n"
+                                 "    else\n"
+                                 "        data &= static_cast<unsigned char>(~mask);\n"
+                                 "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("bool __cdecl get(unsigned int i) const { return (data[i / 8] >> (i % 8)) & 1U; }\n"
                               , (*it++).second[0].fullyQualified);
