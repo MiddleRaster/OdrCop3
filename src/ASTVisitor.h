@@ -171,6 +171,10 @@ namespace OdrCop3
                 return true; // internal linkage (anon namespace, static, const at file scope, etc.)
 
             std::string key = varDecl->getQualifiedNameAsString();
+            if (varDecl->getDescribedVarTemplate())
+                key += "<>";
+            else if (auto* vtsd = dyn_cast<VarTemplateSpecializationDecl>(varDecl)) 
+                key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, vtsd->getTemplateArgs(), vtsd->getSpecializedTemplate()->getTemplateParameters(), true);
 
             if (const auto* varTemplateDecl = varDecl->getDescribedVarTemplate())
             {

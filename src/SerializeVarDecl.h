@@ -39,12 +39,18 @@ namespace OdrCop3
             if (varDecl->isStaticDataMember())
                 out += "static ";
 
-            { // static field: use same type+name print trick as non-static
+            {
                 std::string fieldStr;
                 llvm::raw_string_ostream os(fieldStr);
                 varDecl->getType().print(os, contextItems.printPolicy, varDecl->getNameAsString());
                 os.flush();
                 out += fieldStr;
+            }
+
+            // if it's a VarTemplateSpecializationDecl, add <whatever> after the name
+            if (const auto* varTemplateSpecializationDecl = llvm::dyn_cast<clang::VarTemplateSpecializationDecl>(varDecl))
+            {
+                out += TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, varTemplateSpecializationDecl->getTemplateArgs(), varTemplateSpecializationDecl->getSpecializedTemplate()->getTemplateParameters());
             }
 
             if (varDecl->hasInit())
