@@ -36,12 +36,15 @@ namespace OdrCop3
             else if (varDecl->isInline()) // constexpr is inline; don't print both
                 out += "inline ";
 
+            if (varDecl->isStaticDataMember())
+                out += "static ";
+
             { // static field: use same type+name print trick as non-static
                 std::string fieldStr;
                 llvm::raw_string_ostream os(fieldStr);
                 varDecl->getType().print(os, contextItems.printPolicy, varDecl->getNameAsString());
                 os.flush();
-                out += "static " + fieldStr;
+                out += fieldStr;
             }
 
             if (varDecl->hasInit())

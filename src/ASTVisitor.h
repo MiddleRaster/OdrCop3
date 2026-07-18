@@ -158,19 +158,33 @@ namespace OdrCop3
             if (isa<ParmVarDecl>(varDecl))
                 return true; // skipping parameters
 
-            //if (context->getSourceManager().isInSystemHeader(varDecl->getLocation()))
-            //    return true; // skip anything not in the main file or a user header
+            if (context->getSourceManager().isInSystemHeader(varDecl->getLocation()))
+                return true; // skip anything not in the main file or a user header
 
-            //if (varDecl->isLocalVarDecl())
-            //    return true; // local variables can't be ODR violations
-            //if (isa<CXXRecordDecl>(varDecl->getDeclContext()))
-            //    return true; // struct/class statics:  already done during CXXRecordDecl parsing
-            //auto linkage = varDecl->getLinkageAndVisibility().getLinkage();
-            //if (linkage != clang::Linkage::External &&
-            //    linkage != clang::Linkage::UniqueExternal)
-            //    return true; // internal linkage (anon namespace, static, const at file scope, etc.)
+            if (varDecl->isLocalVarDecl())
+                return true; // local variables can't be ODR violations
+            if (isa<CXXRecordDecl>(varDecl->getDeclContext()))
+                return true; // struct/class statics:  already done during CXXRecordDecl parsing
+            auto linkage = varDecl->getLinkageAndVisibility().getLinkage();
+            if (linkage != clang::Linkage::External &&
+                linkage != clang::Linkage::UniqueExternal)
+                return true; // internal linkage (anon namespace, static, const at file scope, etc.)
 
-            //std::string key = varDecl->getQualifiedNameAsString();
+            std::string key = varDecl->getQualifiedNameAsString();
+
+            if (const auto* varTemplateDecl = varDecl->getDescribedVarTemplate())
+            {
+                std::string out = ConstructTemplateParameterList<SerializeDecls, SerializeTypes, SerializeAttrs>(contextItems, varTemplateDecl->getTemplateParameters());
+                out += SerializeDecls(contextItems, varDecl);
+
+                maps.varMap[key].push_back({TU, out});
+                return true;
+            }
+
+         // varDecl->dump();
+
+
+
             //std::string out;
 
             //if (varDecl->isInline())
@@ -284,7 +298,7 @@ namespace OdrCop3
             //}
             //out += ";";
 
-            //maps.varMap[key].push_back({TU, out});
+            maps.varMap[key].push_back({TU, SerializeDecls(contextItems, varDecl)});
             return true;
         }
 

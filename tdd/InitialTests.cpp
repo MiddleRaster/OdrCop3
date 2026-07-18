@@ -418,7 +418,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::IsTrue(ok);
 
             Assert::AreEqual( 8, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual( 0, maps.varMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 2, maps.varMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(11, maps.functionMap.size(), "wrong number of functions in map");
@@ -481,6 +481,13 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
             }
             {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("int a=identity<int>(42);\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("bool b=identity<bool>(true);\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("T __cdecl get(unsigned int i) const { return data[i]; }\n"
                               , (*it++).second[0].fullyQualified);
@@ -519,6 +526,34 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
             }
 
+        }
+    },
+
+    {"Testing VarDecl, VarTemplateDecl and VarTemplateSpecializationDecl", []
+        {
+            std::string code = "template<typename T> constexpr T DefaultValue = T{};\n"
+                          /*   "template<> constexpr int DefaultValue<int> = 42;\n"
+                               "template<int N> constexpr int Square = N*N;\n"
+                               "int    x = DefaultValue<int>;\n"
+                               "double y = DefaultValue<double>;\n"
+                               "int    z = Square<5>;\n"  */
+                               ;
+ 
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(1, maps.varMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("template<typename T> constexpr const T DefaultValue=T{};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
         }
     },
 
