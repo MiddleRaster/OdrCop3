@@ -531,8 +531,9 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Testing VarDecl, VarTemplateDecl and VarTemplateSpecializationDecl", []
         {
-            std::string code = "template<typename T> constexpr T DefaultValue = T{};\n"
-                               "template<> constexpr int DefaultValue<int> = 42;\n"
+            std::string code = "template<typename T, int Tag=0> constexpr T DefaultValue = T{};\n"
+                               "template<> constexpr int DefaultValue<int, 0> = 42;\n"
+                               "template<typename T> constexpr T* DefaultValue<T*, 0> = nullptr;\n"
                            /*  "template<int N> constexpr int Square = N*N;\n"
                                "int    x = DefaultValue<int>;\n"
                                "double y = DefaultValue<double>;\n"
@@ -544,16 +545,18 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::IsTrue(ok);
 
             Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(2, maps.varMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(3, maps.varMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("template<typename T> constexpr const T DefaultValue=T{};\n"
+                Assert::AreEqual("template<typename T, int Tag=0> constexpr const T DefaultValue=T{};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> constexpr const int DefaultValue<int>=42;\n"
+                Assert::AreEqual("template<typename T> constexpr T *const DefaultValue<T*, 0>=nullptr;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> constexpr const int DefaultValue<int, 0>=42;\n"
                               , (*it++).second[0].fullyQualified);
             }
         }

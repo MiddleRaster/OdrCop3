@@ -29,6 +29,7 @@
 #include "SerializeClassTemplateSpecializationDecl.h"
 #include "SerializeClassTemplatePartialSpecializationDecl.h"
 #include "SerializeVarTemplateSpecializationDecl.h"
+#include "SerializeVarTemplatePartialSpecializationDecl.h"
 #include "magic_enum.h"
 
 namespace OdrCop3
@@ -49,9 +50,10 @@ namespace OdrCop3
             static std::string SerializeEnumDecl                              (const ContextItems& contextItems, const EnumDecl                                    * enumDecl) { return EnumDeclSerializer                              <SerializeDecl, SerializeType, SerializeAttr>(contextItems,              enumDecl).Serialize(); }
             static std::string SerializeParmVarDecl                           (const ContextItems& contextItems, const ParmVarDecl                             *  parmVarDecl) { return ParmVarDeclSerializer                           <SerializeDecl, SerializeType, SerializeAttr>(contextItems,           parmVarDecl).Serialize(); }
             static std::string SerializeCXXRecordDecl                         (const ContextItems& contextItems, const CXXRecordDecl                          * cxxRecordDecl) { return CXXRecordDeclSerializer                         <SerializeDecl, SerializeType, SerializeAttr>(contextItems,         cxxRecordDecl).Serialize(); }
-            static std::string SerializeClassTemplatePartialSpecializationDecl(const ContextItems& contextItems, const ClassTemplatePartialSpecializationDecl         * ctpsd) { return ClassTemplatePartialSpecializationDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems,                 ctpsd).Serialize(); }
             static std::string SerializeClassTemplateSpecializationDecl       (const ContextItems& contextItems, const ClassTemplateSpecializationDecl                 * ctsd) { return ClassTemplateSpecializationDeclSerializer       <SerializeDecl, SerializeType, SerializeAttr>(contextItems,                  ctsd).Serialize(); }
+            static std::string SerializeClassTemplatePartialSpecializationDecl(const ContextItems& contextItems, const ClassTemplatePartialSpecializationDecl         * ctpsd) { return ClassTemplatePartialSpecializationDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems,                 ctpsd).Serialize(); }
             static std::string SerializeVarTemplateSpecializationDecl         (const ContextItems& contextItems, const VarTemplateSpecializationDecl                   * vtsd) { return VarTemplateSpecializationDeclSerializer         <SerializeDecl, SerializeType, SerializeAttr>(contextItems,                  vtsd).Serialize(); }
+            static std::string SerializeVarTemplatePartialSpecializationDecl  (const ContextItems& contextItems, const VarTemplatePartialSpecializationDecl           * vtpsd) { return VarTemplatePartialSpecializationDeclSerializer  <SerializeDecl, SerializeType, SerializeAttr>(contextItems,                 vtpsd).Serialize(); }
         };
 
         template<auto SerializeType, auto SerializeAttr>
@@ -113,6 +115,7 @@ namespace OdrCop3
             case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);        break;
             case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<       ClassTemplateSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);         break;
             case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<         VarTemplateSpecializationDecl>(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);         break;
+            case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<  VarTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);        break;
             default: break;
             }
             decl->dump();

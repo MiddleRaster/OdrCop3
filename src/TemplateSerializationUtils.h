@@ -95,7 +95,36 @@ namespace OdrCop3
                     out += line;
                     out  = out.substr(0, out.size()-2); // strip last ";\n"
                 } else
-                    out += arg.getAsType().getAsString(contextItems.printPolicy);
+                {
+                    // was:
+                    // out += arg.getAsType().getAsString(contextItems.printPolicy);
+                    // but that gives type-parameter-0-0, for example. Do it manually (recursively, too).
+
+                    auto printType = [&](auto &&self, clang::QualType qt) -> std::string
+                    {
+                        qt = qt.getCanonicalType();
+                        const clang::Type *ty = qt.getTypePtr();
+
+                        if (auto *            pointerType = llvm::dyn_cast<clang::PointerType            >(ty)) return self(self, pointerType->getPointeeType()) + "*";
+                        if (auto *          referenceType = llvm::dyn_cast<clang::ReferenceType          >(ty)) return self(self, referenceType->getPointeeType()) + (referenceType->isRValueReferenceType() ? "&&" : "&");
+                        if (auto *      constantArrayType = llvm::dyn_cast<clang::ConstantArrayType      >(ty)) return self(self, constantArrayType->getElementType()) + "[" + std::to_string(constantArrayType->getSize().getZExtValue()) + "]";
+                        if (auto *      variableArrayType = llvm::dyn_cast<clang::VariableArrayType      >(ty)) return self(self, variableArrayType->getElementType()) + "[]";
+                        if (auto *    incompleteArrayType = llvm::dyn_cast<clang::IncompleteArrayType    >(ty)) return self(self, incompleteArrayType->getElementType()) + "[]";
+                        if (auto *dependentSizedArrayType = llvm::dyn_cast<clang::DependentSizedArrayType>(ty)) return self(self, dependentSizedArrayType->getElementType()) + "[]";
+                        if (auto *  templateTypeParamType = llvm::dyn_cast<clang::TemplateTypeParmType   >(ty)) {
+                            const clang::NamedDecl *paramDecl = params->getParam(templateTypeParamType->getIndex());
+                            return paramDecl->getNameAsString();
+                        }
+
+                        std::string s;
+                        llvm::raw_string_ostream os(s);
+                        qt.print(os, contextItems.printPolicy); // if none of the above
+                        os.flush();
+                        return s;
+                    };
+
+                    out += printType(printType, arg.getAsType());
+                }
                 break;
             }
             case clang::TemplateArgument::Expression:
