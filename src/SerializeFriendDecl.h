@@ -29,7 +29,8 @@ namespace OdrCop3
                 if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(namedDecl))
                 {
                     ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-                    ci2.doNotWantFunctionBody = true;
+                    ci2.wantFunctionBody = functionDecl->doesThisDeclarationHaveABody();
+                                        
                     return SerializeDecl(ci2, functionDecl);
                 }
                 if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(namedDecl)) return SerializeDecl(contextItems, cxxRecordDecl);

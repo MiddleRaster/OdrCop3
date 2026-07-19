@@ -27,7 +27,7 @@ namespace OdrCop3
         const std::string& TU;
         std::unordered_set<const Decl*>& recursingDecls;
         std::string aux;
-        bool doNotWantFunctionBody = false;
+        bool wantFunctionBody = true;
         ContextItems(ASTContext* context, const PrintingPolicy& policy, const std::string& TU, std::unordered_set<const Decl*>& recursingDecls, const std::string& aux="")
             : context       (*context)
             , printPolicy   (policy)
