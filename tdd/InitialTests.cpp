@@ -612,9 +612,41 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+    {"Friend declarations inside UDTs and templates", []
+        {
+            std::string code = "struct A { friend void f(A&); };"
+                               "struct B { friend void f(B&); }; void f(B&) {}";
+
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(1, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct A { // sizeof=1\n"
+                                 "   friend void __cdecl f(A &);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct B { // sizeof=1\n"
+                                 "   friend void __cdecl f(B &);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("void __cdecl f(B &) {}\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
 };
-/*
- 1. Function template explicit specializations (different return types / signatures)
+/* 
  2. Friend declarations (especially inside templates)
  3. Nested namespaces and qualified names
  4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)

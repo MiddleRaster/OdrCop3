@@ -1,0 +1,49 @@
+#pragma once
+
+#include <clang\AST\AST.h>
+#include <clang\AST\RecursiveASTVisitor.h>
+#include <clang\Frontend\FrontendActions.h>
+#include <clang\Frontend\CompilerInstance.h>
+#include <clang\Tooling\Tooling.h>
+#include <clang\Tooling\CompilationDatabase.h>
+#include <clang\AST\Mangle.h>
+#include <clang\AST\Decl.h>
+#include <clang\AST\GlobalDecl.h>
+#include <clang\AST\RecordLayout.h>
+#include <llvm\Support\raw_ostream.h>
+
+#include "SerializationUtils.h"
+
+namespace OdrCop3
+{
+    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class FriendDeclSerializer
+    {
+        const ContextItems& contextItems;
+        const FriendDecl  * friendDecl;
+    public:
+        FriendDeclSerializer(const ContextItems& contextItems, const FriendDecl* friendDecl) : contextItems(contextItems), friendDecl(friendDecl) {}
+        std::string Serialize() const
+        {
+            if (const NamedDecl* namedDecl = friendDecl->getFriendDecl())
+            {
+                if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(namedDecl))
+                {
+                    ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
+                    ci2.doNotWantFunctionBody = true;
+                    return SerializeDecl(ci2, functionDecl);
+                }
+                if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(namedDecl)) return SerializeDecl(contextItems, cxxRecordDecl);
+            }
+            if (const TypeSourceInfo* typeSourceInfo = friendDecl->getFriendType())
+            {
+                QualType qualType       = typeSourceInfo->getType();
+                TypeLoc  typeLoc        = typeSourceInfo->getTypeLoc();
+                SourceRange sourceRange = typeLoc.getSourceRange();
+                StringRef text = Lexer::getSourceText(CharSourceRange::getTokenRange(sourceRange), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
+
+                return "friend " + text.str();
+            }
+            return "";
+        }
+    };
+}

@@ -14,6 +14,7 @@
 
 #include <exception>
 
+#include "magic_enum.h"
 #include "SerializationUtils.h"
 #include "SerializeFunctionDecl.h"
 #include "SerializeFunctionTemplateDecl.h"
@@ -30,7 +31,7 @@
 #include "SerializeClassTemplatePartialSpecializationDecl.h"
 #include "SerializeVarTemplateSpecializationDecl.h"
 #include "SerializeVarTemplatePartialSpecializationDecl.h"
-#include "magic_enum.h"
+#include "SerializeFriendDecl.h"
 
 namespace OdrCop3
 {
@@ -54,6 +55,7 @@ namespace OdrCop3
             static std::string SerializeClassTemplatePartialSpecializationDecl(const ContextItems& contextItems, const ClassTemplatePartialSpecializationDecl         * ctpsd) { return ClassTemplatePartialSpecializationDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems,                 ctpsd).Serialize(); }
             static std::string SerializeVarTemplateSpecializationDecl         (const ContextItems& contextItems, const VarTemplateSpecializationDecl                   * vtsd) { return VarTemplateSpecializationDeclSerializer         <SerializeDecl, SerializeType, SerializeAttr>(contextItems,                  vtsd).Serialize(); }
             static std::string SerializeVarTemplatePartialSpecializationDecl  (const ContextItems& contextItems, const VarTemplatePartialSpecializationDecl           * vtpsd) { return VarTemplatePartialSpecializationDeclSerializer  <SerializeDecl, SerializeType, SerializeAttr>(contextItems,                 vtpsd).Serialize(); }
+            static std::string SerializeFriendDecl                            (const ContextItems& contextItems, const FriendDecl                                * friendDecl) { return FriendDeclSerializer                            <SerializeDecl, SerializeType, SerializeAttr>(contextItems,            friendDecl).Serialize(); }
         };
 
         template<auto SerializeType, auto SerializeAttr>
@@ -113,9 +115,10 @@ namespace OdrCop3
             case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<TypeAliasDecl                         >(decl)) return DeclSerializer::SerializeTypeAliasDecl                         (contextItems, tad);          break;
             case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<TypeAliasTemplateDecl                 >(decl)) return DeclSerializer::SerializeTypeAliasTemplateDecl                 (contextItems, tatd);         break;
             case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);        break;
-            case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<       ClassTemplateSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);         break;
-            case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<         VarTemplateSpecializationDecl>(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);         break;
-            case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<  VarTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);        break;
+            case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);         break;
+            case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);         break;
+            case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);        break;
+            case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<FriendDecl                            >(decl)) return DeclSerializer::SerializeFriendDecl                            (contextItems, friendDecl);   break;
             default: break;
             }
             decl->dump();

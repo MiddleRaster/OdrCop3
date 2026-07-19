@@ -476,7 +476,7 @@ namespace OdrCop3
             fqn += get_Deleted();
             fqn += get_ConstructorInitializers(); // if it's a ctor and if it has any initializers
 
-            if (!(funcDecl->hasBody() && funcDecl->getBody()))
+            if (!(funcDecl->hasBody() && funcDecl->getBody()) || contextItems.doNotWantFunctionBody) // either there is no body, or we don't want to serialize the body
             { // no body:  end prototype with ';'
                 if (fqn.ends_with(' '))
                     fqn = fqn.substr(0, fqn.size()-1);
