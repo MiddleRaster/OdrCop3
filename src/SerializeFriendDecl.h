@@ -30,20 +30,13 @@ namespace OdrCop3
                 {
                     ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
                     ci2.wantFunctionBody = functionDecl->doesThisDeclarationHaveABody();
-                                        
                     return SerializeDecl(ci2, functionDecl);
                 }
-                if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(namedDecl)) return SerializeDecl(contextItems, cxxRecordDecl);
+                if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(namedDecl))
+                    return SerializeDecl(contextItems, cxxRecordDecl);
             }
             if (const TypeSourceInfo* typeSourceInfo = friendDecl->getFriendType())
-            {
-                QualType qualType       = typeSourceInfo->getType();
-                TypeLoc  typeLoc        = typeSourceInfo->getTypeLoc();
-                SourceRange sourceRange = typeLoc.getSourceRange();
-                StringRef text = Lexer::getSourceText(CharSourceRange::getTokenRange(sourceRange), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
-
-                return "friend " + text.str();
-            }
+                return "friend " + SerializeType(contextItems, friendDecl->getFriendType()->getType()) + ";";
             return "";
         }
     };

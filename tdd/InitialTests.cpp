@@ -616,14 +616,14 @@ Test ExploratoryTestsOfClangAST[] =
         {
             std::string code = "struct A { friend void f(A&); };"
                                "struct B { friend void f(B&); }; void f(B&) {}"
-                               "struct C { friend void f(C&) {} };";
-
+                               "struct C { friend void f(C&) {} };"
+                               "class D; struct E { friend class D; };";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(3, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -643,7 +643,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   friend void __cdecl f(C &) {}\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-
+                Assert::AreEqual("struct E { // sizeof=1\n"
+                                 "   friend class D;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
