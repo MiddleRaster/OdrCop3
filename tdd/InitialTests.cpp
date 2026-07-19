@@ -12,19 +12,20 @@ Test ExploratoryTestsOfClangAST[] =
         {
             std::string code = "[[maybe_unused]] void foo(volatile int* i=nullptr) noexcept { (void)i; }\n"
                                "template<typename T> T multiply(T a, T b) { return a*b; }\n"
-                               "struct complex { double r; double i; }; template<> complex multiply<complex>(complex a, complex b) { return { a.r*b.r-a.i*b.i, a.r*b.i+a.i*b.r }; }";
+                               "struct complex { double r; double i; }; template<> complex multiply<complex>(complex a, complex b) { return { a.r*b.r-a.i*b.i, a.r*b.i+a.i*b.r }; }"
+                               "template<typename T, typename U> T    add            (T   t, U     u) { return t + u; }\n"
+                               "template<                      > int  add<int, short>(int t, short u) { return t - u; }\n";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(4, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
+            Assert::AreEqual(6, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
 
             const auto& vec = maps.functionMap.begin()->second;
             Assert::AreEqual("input.cc", vec[0].TU, "should have gotten the TU name");
 
             {
                 Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs found");
-
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct complex { // sizeof=16\n"
                                  "   double r;\n"
@@ -33,17 +34,14 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
             }
             {
-                Assert::AreEqual(3, maps.functionMap.size(), "wrong number of functions found");
-
+                Assert::AreEqual(5, maps.functionMap.size(), "wrong number of functions found");
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n"
-                              , (*it++).second[0].fullyQualified, "should have gotten the function and body");
-
-                Assert::AreEqual("template<> complex __cdecl multiply(complex a, complex b) { return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r}; }\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> T __cdecl multiply(T a, T b) { return a * b; }\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> int __cdecl add(int t, short u) { return t - u; }\n",                                                         (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> T __cdecl add(T t, U u) { return t + u; }\n",                                          (*it++).second[0].fullyQualified);
+                Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n",                                  (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> complex __cdecl multiply(complex a, complex b) { return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r}; }\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T __cdecl multiply(T a, T b) { return a * b; }\n",                                                 (*it++).second[0].fullyQualified);
             }
-
         }
     },
     {"Testing FunctionDeclSerializer on methods", []
