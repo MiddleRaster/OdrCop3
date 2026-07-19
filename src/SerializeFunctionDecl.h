@@ -271,72 +271,25 @@ namespace OdrCop3
                 conv->getConversionType().print(os, contextItems.printPolicy);
                 return "operator " + typeName;
             }
-            return funcDecl->getNameAsString();
 
-            //{
-            //    const FunctionDecl* funcDecl2 = funcDecl->getDescribedFunctionTemplate()
-            //        ? funcDecl->getDescribedFunctionTemplate()->getTemplatedDecl()
-            //        : funcDecl;
-            //    if (const auto* conv = llvm::dyn_cast<clang::CXXConversionDecl>(funcDecl2))
-            //    {
-            //        std::string typeName;
-            //        llvm::raw_string_ostream typeOs(typeName);
-            //        conv->getConversionType().print(typeOs, contextItems.printPolicy);
-            //        //if (wantFullyQualifiedMethodName)
-            //        //{
-            //        //    std::string className;
-            //        //    llvm::raw_string_ostream classOs(className);
-            //        //    conv->getParent()->printQualifiedName(classOs, printPolicy);
-            //        //    fqn += className + "::operator " + typeName;
-            //        //}
-            //        //else
-            //        fqn += "operator " + typeName;
-            //    }
-            //    //else if (wantFullyQualifiedMethodName)
-            //    //{
-            //    //    std::string              out;
-            //    //    llvm::raw_string_ostream os(out);
-            //    //    funcDecl2->printQualifiedName(os, printPolicy);
-            //    //    os.flush();
-            //    //    fqn += out;
-            //    //}
-            //    else
-            //        fqn += funcDecl2->getNameAsString();
-
-            //    //    if (const auto* args = funcDecl->getTemplateSpecializationArgs())
-            //    //    {
-            //    //        fqn += "<";
-            //    //        bool first = true;
-            //    //        for (const TemplateArgument& arg : args->asArray())
-            //    //        {
-            //    //            if (!first)
-            //    //                fqn += ", ";
-            //    //            first = false;
-
-            //    //            bool handled = false;
-            //    //            if (arg.getKind() == TemplateArgument::Type)
-            //    //            {
-            //    //                QualType qt = arg.getAsType();
-            //    //                if (const auto* rd = qt.getTypePtr()->getAsCXXRecordDecl())
-            //    //                {
-            //    //                    if (rd->isInAnonymousNamespace() && rd->getIdentifier() != nullptr)
-            //    //                    {
-            //    //                        fqn += IndentBlock(ConstructRecordSignature(rd), fqn.size());
-            //    //                        fqn = fqn.substr(0, fqn.size() - 2); // strip last ";\n"
-            //    //                        handled = true;
-            //    //                    }
-            //    //                }
-            //    //            }
-            //    //            if (!handled)
-            //    //            {
-            //    //                llvm::raw_string_ostream os2(fqn);
-            //    //                arg.print(printPolicy, os2, true);
-            //    //                os2.flush();
-            //    //            }
-            //    //        }
-            //    //        fqn += ">";
-            //    //    }
-            //}
+            std::string name = funcDecl->getNameAsString();
+            if (auto* args = funcDecl->getTemplateSpecializationArgs())
+            {   // explicit specialization
+                std::string out;
+                llvm::raw_string_ostream os(out);
+                os << "<";
+                for (unsigned i=0; i<args->size(); ++i)
+                {
+                    if (i > 0)
+                        os << ", ";
+                    args->get(i).print(contextItems.printPolicy, os, false);
+                }
+                os << ">";
+                os.flush();
+                name += out;
+            }
+            return name;
+        
         }
 
         std::string get_ConstructorInitializers() const

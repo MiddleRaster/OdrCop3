@@ -36,10 +36,10 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 Assert::AreEqual(5, maps.functionMap.size(), "wrong number of functions found");
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("template<> int __cdecl add(int t, short u) { return t - u; }\n",                                                         (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> int __cdecl add<int, short>(int t, short u) { return t - u; }\n",                                             (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T, typename U> T __cdecl add(T t, U u) { return t + u; }\n",                                          (*it++).second[0].fullyQualified);
                 Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n",                                  (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> complex __cdecl multiply(complex a, complex b) { return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r}; }\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> complex __cdecl multiply<complex>(complex a, complex b) { return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r}; }\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> T __cdecl multiply(T a, T b) { return a * b; }\n",                                                 (*it++).second[0].fullyQualified);
             }
         }
@@ -519,10 +519,8 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("int a=identity<int>(42);\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("bool b=identity<bool>(true);\n"
-                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int a=identity<int>(42);\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("bool b=identity<bool>(true);\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -551,16 +549,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        data[i / 8] &= static_cast<unsigned char>(~mask);\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int __cdecl get(unsigned int i) const { return data[i]; }\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("void __cdecl set(unsigned int i, const int & value) { data[i] = value; }\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> bool __cdecl identity(bool value) { return !value; }\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template int __cdecl identity(int value) { return value; }\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> T __cdecl identity(T value) { return value; }\n"
-                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int __cdecl get(unsigned int i) const { return data[i]; }\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void __cdecl set(unsigned int i, const int & value) { data[i] = value; }\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> bool __cdecl identity<bool>(bool value) { return !value; }\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template int __cdecl identity<int>(int value) { return value; }\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T __cdecl identity(T value) { return value; }\n"     , (*it++).second[0].fullyQualified);
             }
 
         }
@@ -619,13 +612,14 @@ Test ExploratoryTestsOfClangAST[] =
                                "struct C { friend void f(C&) {} };"
                                "class D; struct E { friend class D; };"
                                "struct F; struct G { friend struct F; };"
-                               "template<typename T> struct H { template<typename U> friend void f(U); };";
+                               "template<typename T> struct H { template<typename U> friend void f(U); };"
+                               "template<typename T> void fi(T); struct I { friend void fi<int>(int); };";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(6, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(7, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -655,6 +649,10 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct H {\n"
                                  "   template <typename U> friend void __cdecl f(U);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct I { // sizeof=1\n"
+                                 "   friend void __cdecl fi<int>(int);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
