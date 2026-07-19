@@ -10,16 +10,40 @@ Test ExploratoryTestsOfClangAST[] =
 {
     {"Initial Serialize::Decls and FunctionDeclSerializer test", []
         {
-            std::string code = "[[maybe_unused]] void foo(volatile int* i=nullptr) noexcept { (void)i; }";
+            std::string code = "[[maybe_unused]] void foo(volatile int* i=nullptr) noexcept { (void)i; }\n"
+                               "template<typename T> T multiply(T a, T b) { return a*b; }\n"
+                               "struct complex { double r; double i; }; template<> complex multiply<complex>(complex a, complex b) { return { a.r*b.r-a.i*b.i, a.r*b.i+a.i*b.r }; }";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(1, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
+            Assert::AreEqual(4, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
 
             const auto& vec = maps.functionMap.begin()->second;
             Assert::AreEqual("input.cc", vec[0].TU, "should have gotten the TU name");
-            Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n", vec[0].fullyQualified, "should have gotten the function and body");
+
+            {
+                Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs found");
+
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct complex { // sizeof=16\n"
+                                 "   double r;\n"
+                                 "   double i;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                Assert::AreEqual(3, maps.functionMap.size(), "wrong number of functions found");
+
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n"
+                              , (*it++).second[0].fullyQualified, "should have gotten the function and body");
+
+                Assert::AreEqual("template<> complex __cdecl multiply(complex a, complex b) { return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r}; }\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T __cdecl multiply(T a, T b) { return a * b; }\n", (*it++).second[0].fullyQualified);
+            }
+
         }
     },
     {"Testing FunctionDeclSerializer on methods", []
@@ -529,23 +553,22 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
-    {"Testing VarDecl, VarTemplateDecl and VarTemplateSpecializationDecl", []
+    {"Testing VarDecl, VarTemplateDecl, VarTemplateSpecializationDecl and VarTemplatePartialSpecializationDecl", []
         {
             std::string code = "template<typename T, int Tag=0> constexpr T DefaultValue = T{};\n"
                                "template<> constexpr int DefaultValue<int, 0> = 42;\n"
                                "template<typename T> constexpr T* DefaultValue<T*, 0> = nullptr;\n"
-                           /*  "template<int N> constexpr int Square = N*N;\n"
+                               "template<int N> constexpr int Square = N*N;\n"
                                "int    x = DefaultValue<int>;\n"
                                "double y = DefaultValue<double>;\n"
-                               "int    z = Square<5>;\n"  */
-                               ;
+                               "int    z = Square<5>;\n";
  
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
             Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(3, maps.varMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(7, maps.varMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
@@ -557,6 +580,14 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<typename T> constexpr T *const DefaultValue<T*, 0>=nullptr;\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> constexpr const int DefaultValue<int, 0>=42;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<int N> constexpr const int Square=N*N;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int x=DefaultValue<int>;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("double y=DefaultValue<double>;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int z=Square<5>;\n"
                               , (*it++).second[0].fullyQualified);
             }
         }

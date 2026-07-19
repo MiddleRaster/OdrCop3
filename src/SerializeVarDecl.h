@@ -28,6 +28,10 @@ namespace OdrCop3
         {
             std::string out;
 
+            // first thing:  this serializer may be called for varDecls that are actually varTemplateDecl; in that case, add template header
+            if (const auto* varTemplateDecl = varDecl->getDescribedVarTemplate())
+                out = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, varTemplateDecl->getTemplateParameters());
+
             for (const auto* attr : varDecl->attrs())
                 out += SerializeAttr(contextItems, attr); // attributes on static data-members
 

@@ -155,16 +155,16 @@ namespace OdrCop3
 
         bool VisitVarDecl(const VarDecl* varDecl)
         {
-            if (isa<ParmVarDecl>(varDecl))
-                return true; // skipping parameters
-
             if (context->getSourceManager().isInSystemHeader(varDecl->getLocation()))
                 return true; // skip anything not in the main file or a user header
 
+            if (isa<ParmVarDecl>(varDecl))
+                return true; // skipping parameters to functions/methods
             if (varDecl->isLocalVarDecl())
                 return true; // local variables can't be ODR violations
             if (isa<CXXRecordDecl>(varDecl->getDeclContext()))
                 return true; // struct/class statics:  already done during CXXRecordDecl parsing
+
             auto linkage = varDecl->getLinkageAndVisibility().getLinkage();
             if (linkage != clang::Linkage::External &&
                 linkage != clang::Linkage::UniqueExternal)
@@ -173,134 +173,12 @@ namespace OdrCop3
             std::string key = varDecl->getQualifiedNameAsString();
             if (varDecl->getDescribedVarTemplate())
                 key += "<>";
-            else if (auto* vtsd = dyn_cast<VarTemplateSpecializationDecl>(varDecl)) 
-                key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, vtsd->getTemplateArgs(), vtsd->getSpecializedTemplate()->getTemplateParameters(), true);
-
-            if (const auto* varTemplateDecl = varDecl->getDescribedVarTemplate())
+            else if (auto* vtsd = dyn_cast<VarTemplateSpecializationDecl>(varDecl))
             {
-                std::string out = ConstructTemplateParameterList<SerializeDecls, SerializeTypes, SerializeAttrs>(contextItems, varTemplateDecl->getTemplateParameters());
-                out += SerializeDecls(contextItems, varDecl);
-
-                maps.varMap[key].push_back({TU, out});
-                return true;
+                if (vtsd->getSpecializationKind() == clang::TSK_ImplicitInstantiation)
+                    return true;
+                key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, vtsd->getTemplateArgs(), vtsd->getSpecializedTemplate()->getTemplateParameters(), true);
             }
-
-         // varDecl->dump();
-
-
-
-            //std::string out;
-
-            //if (varDecl->isInline())
-            //    out = "inline ";
-            //if (varDecl->isConstexpr())
-            //    out += "constexpr ";
-
-            //std::string ptrSuffix;
-            //QualType qt = varDecl->getType();
-            //while (!qt->getPointeeType().isNull())
-            //{
-            //    ptrSuffix = std::string(qt.isConstQualified() ? " const" : "") + std::string(qt->isPointerType() ? " *" : " &") + ptrSuffix;
-            //    qt = qt->getPointeeType();
-            //}
-
-            //std::string cvPrefix;
-            //if (qt.isConstQualified())    cvPrefix += "const ";
-            //if (qt.isVolatileQualified()) cvPrefix += "volatile ";
-            //qt = qt.getUnqualifiedType();
-
-            //qt = qt.getCanonicalType(); // normalize sugar (typedef, decltype, elaborated, etc.)
-
-            //CXXRecordDecl* record = qt->getAsCXXRecordDecl();
-            //if (record && record->isInAnonymousNamespace() && record->getIdentifier() != nullptr)
-            //{
-            //    out += cvPrefix;
-            //    out += IndentBlock(ConstructRecordSignature(record), out.size());
-            //    out  = out.substr(0, out.size()-2); // strip last ";\n"
-            //    out += ptrSuffix + " " + key;
-            //}
-            //else if (record && record->isLambda())
-            //    out += "auto " + key;
-            //else if (record && llvm::isa<clang::ClassTemplateSpecializationDecl>(record))
-            //{
-            //    auto* spec = llvm::cast<clang::ClassTemplateSpecializationDecl>(record);
-            //    out += spec->getQualifiedNameAsString();
-            //    out += IndentBlock(TemplateArgsToString(spec), out.size());
-            //    out = out.substr(0, out.size() - 1); // strip off last "\n"
-            //    out += " " + key;
-            //}
-            //else if (const auto* enumTy = dyn_cast<clang::EnumType>(qt.getTypePtr()); enumTy && enumTy->getDecl()->isInAnonymousNamespace())
-            //{
-            //    out += cvPrefix + ConstructEnumDefinition(enumTy->getDecl());
-            //    out += ptrSuffix + " " + key;
-            //} 
-            //else if (const auto* arr = dyn_cast<clang::ArrayType>(qt.getTypePtr()))
-            //{
-            //    QualType elem = arr->getElementType().getCanonicalType();
-
-            //    if (auto* elemRec = elem->getAsCXXRecordDecl()) {
-            //        out += cvPrefix;
-            //        out += IndentBlock(ConstructRecordSignature(elemRec), out.size());
-            //        out = out.substr(0, out.size()-2); // strip off last ";\n"
-            //    }
-            //    else if (auto* elemEnumTy = dyn_cast<clang::EnumType>(elem.getTypePtr()))
-            //        out += cvPrefix + ConstructEnumDefinition(elemEnumTy->getDecl());
-            //    else
-            //        out += cvPrefix + elem.getUnqualifiedType().getAsString(printPolicy);
-
-            //    if (const auto* cat = dyn_cast<clang::ConstantArrayType>(arr)) {
-            //        uint64_t n = cat->getSize().getZExtValue();
-            //        out += ptrSuffix + " " + key + "[" + std::to_string(n) + "]";
-            //    } else
-            //        out += ptrSuffix + " " + key + "[]";
-            //}
-            //else if (const auto* funcTy = llvm::dyn_cast<clang::FunctionProtoType>(qt.getTypePtr()))
-            //    out += ConstructPointerToFunctionSignature(funcTy, ptrSuffix, key);
-            //else
-            //    out += varDecl->getType().getUnqualifiedType().getAsString(printPolicy) + " " + key;
-
-            //if (varDecl->isInline() || varDecl->isConstexpr()) // inlines/constexpres get initiallizers; for everything else initializers are not ODR-relevant
-            //if (varDecl->getInit())
-            //{
-            //    SourceLocation nameLoc = varDecl->getLocation();
-            //    SourceLocation  endLoc = varDecl->getEndLoc();
-            //    if (endLoc != nameLoc)
-            //    {
-            //        const Expr* init = varDecl->getInit()->IgnoreImplicit();
-            //        if (const auto* ctor = dyn_cast<CXXConstructExpr>(init))
-            //        {
-            //            out += "{";
-            //            for (unsigned i=0; i<ctor->getNumArgs(); ++i)
-            //            {
-            //                if (i > 0) out += ", ";
-            //                out += Lexer::getSourceText(CharSourceRange::getTokenRange(ctor->getArg(i)->getSourceRange()), context->getSourceManager(), context->getLangOpts());
-            //            }
-            //            out += "}";
-            //        }
-            //        else if (const auto* initList = dyn_cast<InitListExpr>(init))
-            //        {
-            //            out += "{";
-            //            for (unsigned i=0; i<initList->getNumInits(); ++i)
-            //            {
-            //                if (i > 0) out += ", ";
-            //                out += Lexer::getSourceText(CharSourceRange::getTokenRange(initList->getInit(i)->getSourceRange()), context->getSourceManager(), context->getLangOpts());
-            //            }
-            //            out += "}";
-            //        }
-            //        else
-            //        {
-            //            std::string text = Lexer::getSourceText(CharSourceRange::getTokenRange(nameLoc, endLoc), context->getSourceManager(), context->getLangOpts()).str();
-            //            StringRef suffix = StringRef(text).drop_front(varDecl->getName().size()).ltrim();
-            //            if (suffix.starts_with("{"))
-            //                out += suffix;
-            //            else if (suffix.starts_with("="))
-            //                out += " " + suffix.str();
-            //            else
-            //                out += " = " + suffix.str();
-            //        }
-            //    }
-            //}
-            //out += ";";
 
             maps.varMap[key].push_back({TU, SerializeDecls(contextItems, varDecl)});
             return true;
