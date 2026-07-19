@@ -442,7 +442,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::IsTrue(ok);
 
             Assert::AreEqual( 8, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual( 2, maps.varMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 2, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(11, maps.functionMap.size(), "wrong number of functions in map");
@@ -559,6 +559,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<> constexpr int DefaultValue<int, 0> = 42;\n"
                                "template<typename T> constexpr T* DefaultValue<T*, 0> = nullptr;\n"
                                "template<int N> constexpr int Square = N*N;\n"
+                               "template const int Square<5>; extern template const int Square<7>;\n"
                                "int    x = DefaultValue<int>;\n"
                                "double y = DefaultValue<double>;\n"
                                "int    z = Square<5>;\n";
@@ -568,27 +569,20 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::IsTrue(ok);
 
             Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(7, maps.varMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(7, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("template<typename T, int Tag=0> constexpr const T DefaultValue=T{};\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> constexpr T *const DefaultValue<T*, 0>=nullptr;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> constexpr const int DefaultValue<int, 0>=42;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<int N> constexpr const int Square=N*N;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int x=DefaultValue<int>;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("double y=DefaultValue<double>;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int z=Square<5>;\n"
-                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T, int Tag=0> constexpr const T DefaultValue=T{};\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> constexpr T *const DefaultValue<T*, 0>=nullptr;\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> constexpr const int DefaultValue<int, 0>=42;\n"              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<int N> constexpr const int Square=N*N;\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int x=DefaultValue<int>;\n"                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("double y=DefaultValue<double>;\n"                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int z=Square<5>;\n"                                                     , (*it++).second[0].fullyQualified);
             }
         }
     },
