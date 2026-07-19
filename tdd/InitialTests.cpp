@@ -577,24 +577,36 @@ Test ExploratoryTestsOfClangAST[] =
                                "template const int Square<5>; extern template const int Square<7>;\n"
                                "int    x = DefaultValue<int>;\n"
                                "double y = DefaultValue<double>;\n"
-                               "int    z = Square<5>;\n";
+                               "int    z = Square<5>;\n"
+                               "template<typename T> T GlobalValue={};\n"
+                               "       template    int GlobalValue<int>;\n"
+                               "extern template double GlobalValue<double>;\n"
+                               "template<>        char GlobalValue<char> = 42;\n"
+                               "            int    a = GlobalValue<int>;\n"
+                               "            double b = GlobalValue<double>;\n"
+                               "              char c = GlobalValue<char>;\n";
  
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(7, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(12, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.varMap.begin();
                 Assert::AreEqual("template<typename T, int Tag=0> constexpr const T DefaultValue=T{};\n"  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> constexpr T *const DefaultValue<T*, 0>=nullptr;\n" , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> constexpr const int DefaultValue<int, 0>=42;\n"              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> T GlobalValue{};\n"                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> char GlobalValue<char>=42;\n"                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<int N> constexpr const int Square=N*N;\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int a=GlobalValue<int>;\n"                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("double b=GlobalValue<double>;\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("char c=GlobalValue<char>;\n"                                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int x=DefaultValue<int>;\n"                                             , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("double y=DefaultValue<double>;\n"                                       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int z=Square<5>;\n"                                                     , (*it++).second[0].fullyQualified);
@@ -603,3 +615,15 @@ Test ExploratoryTestsOfClangAST[] =
     },
 
 };
+/*
+ 1. Function template explicit specializations (different return types / signatures)
+ 2. Friend declarations (especially inside templates)
+ 3. Nested namespaces and qualified names
+ 4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)
+ 5. Concept declarations (ConceptDecl)
+ 6. Out-of-class static data member definitions
+ 7. Class template deduction guides (CXXDeductionGuideDecl) 
+ 8. Explicit instantiations vs explicit specializations across translation units
+ 9. Deleted and defaulted functions
+10. Inline variables and inline functions across translation units
+*/
