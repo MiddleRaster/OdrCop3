@@ -617,13 +617,15 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code = "struct A { friend void f(A&); };"
                                "struct B { friend void f(B&); }; void f(B&) {}"
                                "struct C { friend void f(C&) {} };"
-                               "class D; struct E { friend class D; };";
+                               "class D; struct E { friend class D; };"
+                               "struct F; struct G { friend struct F; };"
+                               "template<typename T> struct H { template<typename U> friend void f(U); };";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(6, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -645,6 +647,14 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct E { // sizeof=1\n"
                                  "   friend class D;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct G { // sizeof=1\n"
+                                 "   friend struct F;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct H {\n"
+                                 "   template <typename U> friend void __cdecl f(U);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }

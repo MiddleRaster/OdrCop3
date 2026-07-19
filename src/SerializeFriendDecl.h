@@ -26,6 +26,13 @@ namespace OdrCop3
         {
             if (const NamedDecl* namedDecl = friendDecl->getFriendDecl())
             {
+                if (const FunctionTemplateDecl* functionTemplateDecl = dyn_cast<FunctionTemplateDecl>(namedDecl))
+                {
+                    ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
+                    if (const FunctionDecl* functionDecl = functionTemplateDecl->getTemplatedDecl())
+                        ci2.wantFunctionBody = functionDecl->doesThisDeclarationHaveABody();
+                    return SerializeDecl(ci2, functionTemplateDecl);
+                }
                 if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(namedDecl))
                 {
                     ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
