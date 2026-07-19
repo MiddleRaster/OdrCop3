@@ -434,14 +434,16 @@ Test ExploratoryTestsOfClangAST[] =
                                "template int identity<int>(int);"
                                "template<> bool identity<bool>(bool value) { return !value; }"
                                "int  a = identity<int>(42);"
-                               "bool b = identity<bool>(true);";
-
+                               "bool b = identity<bool>(true);"
+                               "template<typename T> struct Wrapper      {   T value;            };"
+                               "template<          > struct Wrapper<int> { int value; int extra; };"
+                               "struct User { Wrapper<int> x; };";
  
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual( 8, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(11, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 2, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -501,6 +503,19 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct S { // sizeof=1\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct User { // sizeof=8\n"
+                                 "   Wrapper<int> x;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct Wrapper {\n"
+                                 "   T value;\n"
+                                 "};\n"                    
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> struct Wrapper<int> { // sizeof=8\n"
+                                 "   int value;\n"
+                                 "   int extra;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }

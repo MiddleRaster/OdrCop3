@@ -27,6 +27,17 @@ namespace OdrCop3
         FieldDeclSerializer(const ContextItems& contextItems, const FieldDecl* fieldDecl) : contextItems(contextItems), fieldDecl(fieldDecl) {}
 
     private:
+        const clang::FunctionProtoType* get_PointerToFunctionWithAnonymousReturnOrArgs() const
+        {
+            std::string diagnostic = fieldDecl->getType()->getTypeClassName();
+
+            QualType qualType = fieldDecl->getType();
+            if (const clang::FunctionProtoType* fnProtoType = GetInnerFunctionProtoType(qualType))
+                if (true == ContainsAnonymousType(qualType))
+                    return fnProtoType;
+
+            return nullptr;
+        }
         static bool ContainsAnonymousType(clang::QualType qualType)
         {
             qualType = qualType.getCanonicalType();
@@ -79,12 +90,104 @@ namespace OdrCop3
                 return GetInnerFunctionProtoType(memberPointerType->getPointeeType());
             return nullptr;
         }
-        const clang::TemplateTypeParmType* IsTemplateArrayType() const
+        bool IsTemplateParamType() const
         {
-            if (const auto* arrayType = llvm::dyn_cast<clang::DependentSizedArrayType>(fieldDecl->getType().getTypePtr()))
-                if (const auto* ttp = arrayType->getElementType()->getAs<clang::TemplateTypeParmType>())
-                    return ttp;
-            return nullptr;
+            const clang::Type* ty = fieldDecl->getType().getTypePtr();
+            while (true)
+            {
+                     if (auto*   ptr = llvm::dyn_cast<clang::PointerType>(ty))   ty = ptr->getPointeeType().getTypePtr();
+                else if (auto*   ref = llvm::dyn_cast<clang::ReferenceType>(ty)) ty = ref->getPointeeType().getTypePtr();
+                else if (auto*   arr = llvm::dyn_cast<clang::ArrayType>(ty))     ty = arr->getElementType().getTypePtr();
+                else if (auto* paren = llvm::dyn_cast<clang::ParenType>(ty))     ty = paren->getInnerType().getTypePtr();
+                else
+                    break;
+            }
+            return llvm::isa<clang::TemplateTypeParmType>(ty);
+        }
+        std::string GetTemplateParamTypeString() const
+        {
+            clang::QualType qt    = fieldDecl->getType();
+            const clang::Type* ty = qt.getTypePtr();
+
+            std::string out;
+
+            if (qt.isConstQualified   ()) out += "const ";
+            if (qt.isVolatileQualified()) out += "volatile ";
+
+            struct Wrapper
+            {
+                enum Kind { Pointer, LValueRef, RValueRef, Array } kind;
+                std::string extra;
+            };
+            std::vector<Wrapper> wrappers;
+
+            const clang::Type* cur = ty;
+
+            while (true)
+            {
+                if (auto* ptr = llvm::dyn_cast<clang::PointerType>(cur))
+                {
+                    wrappers.push_back({Wrapper::Pointer, ""});
+                    cur = ptr->getPointeeType().getTypePtr();
+                    continue;
+                }
+                if (auto* ref = llvm::dyn_cast<clang::ReferenceType>(cur))
+                {
+                    if (llvm::isa<clang::RValueReferenceType>(ref))
+                        wrappers.push_back({Wrapper::RValueRef, ""});
+                    else
+                        wrappers.push_back({Wrapper::LValueRef, ""});
+                    cur = ref->getPointeeType().getTypePtr();
+                    continue;
+                }
+                if (auto* arr = llvm::dyn_cast<clang::ArrayType>(cur))
+                {
+                    std::string size;
+                    if (auto* dsa = llvm::dyn_cast<clang::DependentSizedArrayType>(arr))
+                    {
+                        const clang::Expr* expr = dsa->getSizeExpr();
+                        llvm::StringRef text = clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts() );
+                        size = text.str();
+                    }
+                    else if (auto* ca = llvm::dyn_cast<clang::ConstantArrayType>(arr))
+                        size = std::to_string(ca->getSize().getZExtValue());
+                    else
+                        size = ""; // unsized array: T[]
+
+                    wrappers.push_back({Wrapper::Array, size});
+                    cur = arr->getElementType().getTypePtr();
+                    continue;
+                }
+                if (auto* paren = llvm::dyn_cast<clang::ParenType>(cur)) {
+                    cur = paren->getInnerType().getTypePtr();
+                    continue;
+                }
+
+                break;
+            }
+            
+            auto * ttp = llvm::cast<clang::TemplateTypeParmType>(cur); // must be true: only call this method AFTER a successful cal to IsTemplateParamType(), above
+            out += ttp->getDecl()->getName().str();   // "T"
+
+            // Reapply wrappers from inner to outer
+            bool isArray = false;
+            for (auto it=wrappers.rbegin(); it != wrappers.rend(); ++it)
+            {
+                const Wrapper& w = *it;
+                switch (w.kind)
+                {
+                default:                              break;
+                case Wrapper::Pointer:   out += "*";  break;
+                case Wrapper::LValueRef: out += "&";  break;
+                case Wrapper::RValueRef: out += "&&"; break;
+                case Wrapper::Array:
+                    out += " " + get_Name() + "[" + std::string(w.extra) + "]";
+                    isArray = true;                   break;
+                }
+            }
+            if (isArray == false)
+                out += " " + get_Name();
+            return out;
         }
 
     public:
@@ -202,17 +305,6 @@ namespace OdrCop3
             }
             return suffix;
         }
-        const clang::FunctionProtoType* get_PointerToFunctionWithAnonymousReturnOrArgs() const
-        {
-            std::string diagnostic = fieldDecl->getType()->getTypeClassName();
-
-            QualType qualType = fieldDecl->getType();
-            if (const clang::FunctionProtoType* fnProtoType = GetInnerFunctionProtoType(qualType))
-                if (true == ContainsAnonymousType(qualType))
-                    return fnProtoType;
-
-            return nullptr;
-        }
 
         std::string Serialize() const
         {
@@ -224,29 +316,6 @@ namespace OdrCop3
             // attributes on data-members
             for (const Attr* attr : fieldDecl->attrs())
                 out += SerializeAttr(contextItems, attr);
-
-            //{ // when a field is defined in an anonymous namespace, include the full definition here with the field.
-            //    IndirectionCvStripper ics(field->getType().getCanonicalType());
-            //    const QualType qualType = ics.GetBaseType();
-            //    const clang::Type* type = qualType.getTypePtr();
-
-            //    std::string definition;
-
-            //    const auto* recordType  = clang::dyn_cast<clang::RecordType>(type);
-            //    if (recordType && recordType->getDecl()->isInAnonymousNamespace())
-            //    {
-            //        definition = IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())), 3);
-            //        definition = definition.substr(0, definition.size()-2);
-            //    }
-            //    else if (const auto* enumTy = llvm::dyn_cast<clang::EnumType>(type); enumTy && !enumTy->getDecl()->getIdentifier())
-            //        definition = ConstructEnumDefinition(enumTy->getDecl()); // nameless enum
-            //    else if (const auto* enumTy = llvm::dyn_cast<clang::EnumType>(type); enumTy && enumTy->getDecl()->isInAnonymousNamespace())
-            //        definition = ConstructEnumDefinition(enumTy->getDecl()); // enum defined in anonymous namespace
-
-            //    if (!definition.empty()) {
-            //        out += ics.ConstructPrefix() + ConstructAttributes(field);
-            //        out += definition;
-            //        out += ics.ConstructPointersAndReferences() + ics.ConstructSuffixWithName(field->getNameAsString());
 
             // is the field actually a pointer-to-function or pointer-to-member-functin?
             if (const clang::FunctionProtoType* fnProtoType = get_PointerToFunctionWithAnonymousReturnOrArgs())
@@ -285,19 +354,9 @@ namespace OdrCop3
                 out += get_Name();
                 out += get_ArraySuffix();
             }
-            else if (const clang::TemplateTypeParmType* ttp = IsTemplateArrayType())
-            {   // e.g., T field[N];
-                const clang::TemplateTypeParmDecl* paramDecl = ttp->getDecl();
-                out += paramDecl->getNameAsString();   // "T"
-                out += " " + get_Name();
-
-                const auto   * arrayType = llvm::dyn_cast<clang::DependentSizedArrayType>(fieldDecl->getType().getTypePtr());
-                const clang::Expr * expr = arrayType->getSizeExpr();
-                llvm::StringRef     text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
-
-                out += "[";
-                out += text.str();
-                out += "]";
+            else if (IsTemplateParamType())
+            {
+                out += GetTemplateParamTypeString(); // all things template-y; includes name of the field in the right place
             }
             else
             {   // field must be done this way to handle array fields as well.
