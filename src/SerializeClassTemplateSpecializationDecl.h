@@ -26,7 +26,7 @@ namespace OdrCop3
         {   // classTemplateSpecializationDecl->dump();
             // a classTemplateSpecializationDecl* "is a" CXXRecordDecl, so I can't call SerializeDecl, as the RecursionPreventor will kick in. 
             // So, call the right serializer directly.
-            return "template<> " + IndentBlock(CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, static_cast<const clang::CXXRecordDecl*>(classTemplateSpecializationDecl)).Serialize(), 0);
+            return "template<> " + IndentBlock(CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, static_cast<const clang::CXXRecordDecl*>(classTemplateSpecializationDecl)).Serialize(), 0) + "\n";
         }
     };
 }

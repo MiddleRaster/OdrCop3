@@ -59,7 +59,7 @@ namespace OdrCop3
             } else
                 out  += indentation + line + "\n";
         }
-        return out;
+        return out.substr(0, out.size()-1); // always remove last "\n"
     }
 
     inline std::string MakeUnnamedAndAnonymousConsistent(std::string input)

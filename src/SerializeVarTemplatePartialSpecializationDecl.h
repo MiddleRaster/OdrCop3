@@ -34,7 +34,7 @@ namespace OdrCop3
             if (pos != std::string::npos)
                 templatePrefix.replace(pos, 10, "template<");
 
-            return templatePrefix + IndentBlock(VarDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, static_cast<const clang::VarDecl*>(varTemplatePartialSpecializationDecl)).Serialize(), 0);
+            return templatePrefix + IndentBlock(VarDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, static_cast<const clang::VarDecl*>(varTemplatePartialSpecializationDecl)).Serialize(), 0) + "\n";
         }
     };
 }

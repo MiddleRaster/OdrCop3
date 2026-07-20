@@ -94,7 +94,6 @@ namespace OdrCop3
             out += contextItems.aux; // I don't particularly like this design... but this is how I insert " (*callback2)"
             out += "(";
             out += IndentBlock(get_Parameters(), out.size() - (out.rfind('\n') + 1));
-            out  = out.substr(0, out.size()-1); // strip off last '\n'
             out += ")";
             return out;
         }

@@ -44,7 +44,8 @@ namespace OdrCop3
             if (true == ContainsAnonymousType(parmVarDecl->getType()))
             {
                 out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), out.size() - (out.rfind('\n')+1));
-                out  = out.substr(0, out.size()-2); // strip off ";\n"
+                if (out.ends_with(";"))
+                    out = out.substr(0, out.size()-1);
             } else
                 out += parmVarDecl->getType().getAsString(contextItems.printPolicy);
 

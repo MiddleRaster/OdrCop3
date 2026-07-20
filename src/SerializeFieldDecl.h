@@ -201,7 +201,7 @@ namespace OdrCop3
                         if (IsDefinedInAnonymousNamespace(static_cast<const Decl*>(cxxRecordDecl)))
                         {
                             str += IndentBlock(SerializeDecl(contextItems, cxxRecordDecl), 0);
-                            str  = str.substr(0, str.size()-2);
+                            str  = str.substr(0, str.size()-1);
                         }
                         else
                         {
@@ -303,16 +303,12 @@ namespace OdrCop3
 
                 ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (" + fpStr + ")");
                 out += IndentBlock(SerializeType(ci, clang::QualType(fnProtoType, 0)), indentation);
-                if (out.ends_with('\n'))
-                    out = out.substr(0, out.size() - 1); // remove '\n'
             }
             else if (IsDefinedInAnonymousNamespace(fieldDecl))
             {
                 out += get_PrefixBeforeUnqualifiedPointeeType();
 
                 out += IndentBlock(SerializeDecl(contextItems, StripPointersAndReferences(fieldDecl)), out.size() - (out.rfind('\n')+1));
-                if (out.ends_with('\n'))
-                    out = out.substr(0, out.size()-1); // remove '\n'
                 if (out.ends_with(';'))
                     out = out.substr(0, out.size()-1); // remove ';'
 

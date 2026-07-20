@@ -24,7 +24,7 @@ namespace OdrCop3
         VarTemplateSpecializationDeclSerializer(const ContextItems& contextItems, const VarTemplateSpecializationDecl* varTemplateSpecializationDecl) : contextItems(contextItems), varTemplateSpecializationDecl(varTemplateSpecializationDecl) {}
         std::string Serialize() const
         {
-            return "template<> " + IndentBlock(VarDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, static_cast<const clang::VarDecl*>(varTemplateSpecializationDecl)).Serialize(), 0);
+            return "template<> " + IndentBlock(VarDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, static_cast<const clang::VarDecl*>(varTemplateSpecializationDecl)).Serialize(), 0) + "\n";
         }
     };
 }
