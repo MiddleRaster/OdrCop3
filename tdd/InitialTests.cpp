@@ -620,13 +620,14 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T> struct N { friend typename T::type; };"
                                "namespace { struct Hidden {}; } struct O { friend void fo(Hidden ); };"
                                "                                struct P { friend void fp(Hidden*); };"
-                               "                                struct Q { friend void fq(Hidden&); };";
+                               "                                struct Q { friend void fq(Hidden&); };"
+                               "                                struct R { friend void fr(Hidden[10]); };";
 
             /* TODO
             //void fo(Hidden);
             //void fo(Hidden*);
             //void fo(Hidden&);
-            void fo(Hidden[10]);
+            //void fo(Hidden[10]);
             void fo(Hidden(*)());
             void fo(void  (*)(Hidden));
             void fo(void  (*)(const Hidden&));
@@ -637,7 +638,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(14, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(15, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -702,6 +703,11 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Q { // sizeof=1\n"
                                  "   friend void __cdecl fq(struct (anonymous namespace)::Hidden { // sizeof=1\n"
                                  "                          } &);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct R { // sizeof=1\n"
+                                 "   friend void __cdecl fr(struct (anonymous namespace)::Hidden { // sizeof=1\n"
+                                 "                          }[10]);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }

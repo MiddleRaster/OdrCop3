@@ -21,6 +21,8 @@
 #include "SerializeDependentNameType.h"
 #include "SerializePointerType.h"
 #include "SerializeLValueReferenceType.h"
+#include "SerializeDecayedType.h"
+#include "SerializeConstantArrayType.h"
 
 namespace OdrCop3
 {
@@ -35,6 +37,8 @@ namespace OdrCop3
             static std::string SerializeDependentNameType   (const ContextItems& contextItems, QualType qt, const    DependentNameType*    dependentNameType) { return    DependentNameTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,    dependentNameType).Serialize(); }
             static std::string SerializePointerType         (const ContextItems& contextItems, QualType qt, const          PointerType*          pointerType) { return          PointerTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,          pointerType).Serialize(); }
             static std::string SerializeLValueReferenceType (const ContextItems& contextItems, QualType qt, const  LValueReferenceType*  lValueReferenceType) { return  LValueReferenceTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,  lValueReferenceType).Serialize(); }
+            static std::string SerializeDecayedType         (const ContextItems& contextItems, QualType qt, const          DecayedType*          decayedType) { return          DecayedTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,          decayedType).Serialize(); }
+            static std::string SerializeConstantArrayType   (const ContextItems& contextItems, QualType qt, const    ConstantArrayType*    constantArrayType) { return    ConstantArrayTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,    constantArrayType).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeAttr>
@@ -49,6 +53,9 @@ namespace OdrCop3
             case clang::Type::TypeClass::DependentName:    if (const    DependentNameType*    dependentNameType = dyn_cast<   DependentNameType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentNameType   (contextItems, qualType,    dependentNameType); break;
             case clang::Type::TypeClass::Pointer:          if (const          PointerType*          pointerType = dyn_cast<         PointerType>(qualType.getTypePtr())) return TypeSerializer::SerializePointerType         (contextItems, qualType,          pointerType); break;
             case clang::Type::TypeClass::LValueReference:  if (const  LValueReferenceType*  lValueReferenceType = dyn_cast< LValueReferenceType>(qualType.getTypePtr())) return TypeSerializer::SerializeLValueReferenceType (contextItems, qualType,  lValueReferenceType); break;
+            case clang::Type::TypeClass::Decayed:          if (const          DecayedType*          decayedType = dyn_cast<         DecayedType>(qualType.getTypePtr())) return TypeSerializer::SerializeDecayedType         (contextItems, qualType,          decayedType); break;
+            case clang::Type::TypeClass::ConstantArray:    if (const    ConstantArrayType*    constantArrayType = dyn_cast<   ConstantArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeConstantArrayType   (contextItems, qualType,    constantArrayType); break;
+
          // case clang::Type::TypeClass::Builtin:
          // case clang::Type::TypeClass::Record:
          // case clang::Type::TypeClass::Enum:
@@ -59,6 +66,7 @@ namespace OdrCop3
             default:
                 break;
             };
+            qualType.dump();
             throw OdrCop3::UnhandledException(std::string("unhandled type::getTypeClass: ") + enum_name(qualType.getTypePtr()->getTypeClass()));
         }
     }
