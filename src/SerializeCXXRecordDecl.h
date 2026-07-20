@@ -26,6 +26,7 @@ namespace OdrCop3
         std::string get_Kind()        const { return cxxRecordDecl->getKindName().str() + " "; }
         std::string get_Name()        const { return MakeUnnamedAndAnonymousConsistent(cxxRecordDecl->getQualifiedNameAsString()); }
         std::string get_SizeComment() const { return cxxRecordDecl->isCompleteDefinition() && !cxxRecordDecl->isDependentType() ? " // sizeof=" + std::to_string(contextItems.context.getASTRecordLayout(cxxRecordDecl).getSize().getQuantity()) + "\n" : "\n"; }
+        std::string get_Friend()      const { return contextItems.needsFriend ? "friend " : ""; }
 
         std::string get_Attributes(bool* hasFinal) const
         {
@@ -90,7 +91,8 @@ namespace OdrCop3
                 out += ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ctd->getTemplateParameters());
          // else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
          //     out += "template<> "; // handled outside
-            
+
+            out += get_Friend();
             out += get_Kind(); // struct/class/union keyword
 
             bool hasFinal = false; // final is treated as an attribute, but it's really a keyword
@@ -103,6 +105,9 @@ namespace OdrCop3
                 out += IndentBlock(TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, CTSD), out.size());
                 out  = out.substr(0, out.size()-1); // strip off last "\n"
             }
+
+            if (!cxxRecordDecl->isThisDeclarationADefinition())
+                return out + ";\n"; // if it's a declaration, go no farther
 
             out += " ";
 

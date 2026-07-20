@@ -37,10 +37,10 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual(5, maps.functionMap.size(), "wrong number of functions found");
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("template<> int __cdecl add<int, short>(int t, short u) { return t - u; }\n",                                             (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T, typename U> T __cdecl add(T t, U u) { return t + u; }\n",                                          (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T, typename U> T __cdecl add(T t, U u) { return t + u; }\n",                                           (*it++).second[0].fullyQualified);
                 Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n",                                  (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> complex __cdecl multiply<complex>(complex a, complex b) { return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r}; }\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> T __cdecl multiply(T a, T b) { return a * b; }\n",                                                 (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> T __cdecl multiply(T a, T b) { return a * b; }\n",                                                  (*it++).second[0].fullyQualified);
             }
         }
     },
@@ -69,7 +69,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("export void __cdecl Baz([[deprecated]] int x, int y [[maybe_unused]]) {}\n",    (*it++).second[0].fullyQualified, "should have gotten the function and body");
                 Assert::AreEqual("explicit void __cdecl Foo(int i) : x(7), i(i) { i++; }\n",                      (*it++).second[0].fullyQualified, "should have gotten the ctor and body");
                 Assert::AreEqual("[[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }\n",(*it++).second[0].fullyQualified, "should have gotten the method and body");
-                Assert::AreEqual("template <typename T> T __cdecl doTemplateyStuff(const T & value) "
+                Assert::AreEqual("template<typename T> T __cdecl doTemplateyStuff(const T & value) "
                                  "requires requires { typename T::value_type; } const { return value; }\n",       (*it++).second[0].fullyQualified, "should have gotten the method and body");
                 Assert::AreEqual("auto __cdecl make_lambda() const {\n"
                                  "    return [this](int x) {\n"
@@ -96,7 +96,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 "           return x + i;\n"
                                 "       };\n"
                                 "   }\n"
-                                "   template <typename T> T __cdecl doTemplateyStuff(const T & value) requires requires { typename T::value_type; } const { return value; }\n"
+                                "   template<typename T> T __cdecl doTemplateyStuff(const T & value) requires requires { typename T::value_type; } const { return value; }\n"
                                 "   explicit int __cdecl operator int() const { return 7; }\n"
                                 "};\n"
                               , (*it++).second[0].fullyQualified, "should have gotten the struct");
@@ -344,25 +344,25 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using Alias2 = S; // typedef S Alias2;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <auto F, auto... Fs> using AllTrue = decltype((F() && ... && Fs())); // no typedef equivalent\n"
+                Assert::AreEqual("template<auto F, auto... Fs> using AllTrue = decltype((F() && ... && Fs())); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 }; // typedef enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 } Color;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename C, typename R, typename... Args> using MemberFuncPtr = R (C::*)(Args...); // no typedef equivalent\n"
+                Assert::AreEqual("template<typename C, typename R, typename... Args> using MemberFuncPtr = R (C::*)(Args...); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename R, typename... Args> using NoexceptFuncPtr = R (*)(Args...) noexcept; // no typedef equivalent\n"
+                Assert::AreEqual("template<typename R, typename... Args> using NoexceptFuncPtr = R (*)(Args...) noexcept; // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <template <template <typename T> class Inner, typename U> class Outer, template <typename X> class Wrap> using RecursiveAlias = typename Outer<Wrap, int>::type; // no typedef equivalent\n"
+                Assert::AreEqual("template<template <template <typename T> class Inner, typename U> class Outer, template <typename X> class Wrap> using RecursiveAlias = typename Outer<Wrap, int>::type; // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <auto F, typename... Args> using ReturnTypeOf = decltype(F(Args{}...)); // no typedef equivalent\n"
+                Assert::AreEqual("template<auto F, typename... Args> using ReturnTypeOf = decltype(F(Args{}...)); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename R, typename... Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...); // no typedef equivalent\n"
+                Assert::AreEqual("template<typename R, typename... Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using TypedefForPointerToFunction = int (*)(double, const char *); // typedef int (*)(double, const char *) TypedefForPointerToFunction;\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using UsingAliasForPointerToFunction = int (*)(double, const char *); // typedef int (*)(double, const char *) UsingAliasForPointerToFunction;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename R, typename... Args> using VariadicFuncPtr = R (*)(Args..., ...); // no typedef equivalent\n"
+                Assert::AreEqual("template<typename R, typename... Args> using VariadicFuncPtr = R (*)(Args..., ...); // no typedef equivalent\n"
                              , (*it++).second[0].fullyQualified);
             }
             {
@@ -553,7 +553,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("void __cdecl set(unsigned int i, const int & value) { data[i] = value; }\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> bool __cdecl identity<bool>(bool value) { return !value; }\n"   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template int __cdecl identity<int>(int value) { return value; }\n"         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> T __cdecl identity(T value) { return value; }\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> T __cdecl identity(T value) { return value; }\n"     , (*it++).second[0].fullyQualified);
             }
 
         }
@@ -613,13 +613,15 @@ Test ExploratoryTestsOfClangAST[] =
                                "class D; struct E { friend class D; };"
                                "struct F; struct G { friend struct F; };"
                                "template<typename T> struct H { template<typename U> friend void f(U); };"
-                               "template<typename T> void fi(T); struct I { friend void fi<int>(int); };";
+                               "template<typename T> void fi(T); struct I { friend void fi<int>(int); };"
+                               "template<typename T> class J; struct K { template<typename T> friend class J; };";
+
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(7, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(8, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -648,11 +650,15 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct H {\n"
-                                 "   template <typename U> friend void __cdecl f(U);\n"
+                                 "   template<typename U> friend void __cdecl f(U);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct I { // sizeof=1\n"
                                  "   friend void __cdecl fi<int>(int);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct K { // sizeof=1\n"
+                                 "   template<typename T> friend class J;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }

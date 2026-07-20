@@ -26,24 +26,30 @@ namespace OdrCop3
         {
             if (const NamedDecl* namedDecl = friendDecl->getFriendDecl())
             {
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
+
                 if (const FunctionTemplateDecl* functionTemplateDecl = dyn_cast<FunctionTemplateDecl>(namedDecl))
                 {
-                    ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
                     if (const FunctionDecl* functionDecl = functionTemplateDecl->getTemplatedDecl())
                         ci2.wantFunctionBody = functionDecl->doesThisDeclarationHaveABody();
                     return SerializeDecl(ci2, functionTemplateDecl);
                 }
                 if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(namedDecl))
                 {
-                    ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
                     ci2.wantFunctionBody = functionDecl->doesThisDeclarationHaveABody();
                     return SerializeDecl(ci2, functionDecl);
+                }
+                if (const ClassTemplateDecl* classTemplateDecl = dyn_cast<ClassTemplateDecl>(namedDecl))
+                {
+                    ci2.needsFriend = true;
+                    return SerializeDecl(ci2, classTemplateDecl);
                 }
                 if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(namedDecl))
                     return SerializeDecl(contextItems, cxxRecordDecl);
             }
             if (const TypeSourceInfo* typeSourceInfo = friendDecl->getFriendType())
                 return "friend " + SerializeType(contextItems, friendDecl->getFriendType()->getType()) + ";";
+
             return "";
         }
     };

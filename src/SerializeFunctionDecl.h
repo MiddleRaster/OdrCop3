@@ -90,6 +90,12 @@ namespace OdrCop3
                 llvm::raw_string_ostream os(templatePrefix);
                 ftd->getTemplateParameters()->print(os, contextItems.context, contextItems.printPolicy);
                 os.flush();
+
+                // change "template <" to "template<"
+                std::string::size_type pos = templatePrefix.find("template <");
+                if (pos != std::string::npos)
+                    templatePrefix.replace(pos, 10, "template<");
+
                 return templatePrefix;
             }
 

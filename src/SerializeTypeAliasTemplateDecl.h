@@ -79,7 +79,7 @@ namespace OdrCop3
 
             TypeAliasDecl* aliasDecl = typeAliasTemplateDecl->getTemplatedDecl();
             std::string    aliasName = typeAliasTemplateDecl->getQualifiedNameAsString();
-            std::string         fqtd = "template <" + params + "> using " + aliasName + " = ";
+            std::string         fqtd = "template<" + params + "> using " + aliasName + " = ";
 
             QualType            underlying = aliasDecl->getUnderlyingType();
             const RecordType  * recordType = underlying.getCanonicalType()->getAs<RecordType>();
