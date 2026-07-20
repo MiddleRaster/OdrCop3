@@ -66,8 +66,7 @@ namespace OdrCop3
                     out += "virtual ";
 
                 out += IndentBlock(SerializeType(contextItems, base.getType()), out.size() - (out.rfind('\n')+1));
-                if (out.ends_with(";"))
-                    out = out.substr(0, out.size()-1); // if it's an anonymous namespace type, we put in the full definition which ends in ";"
+                out  = TrimRightIf(out, ";");
             }
             if (firstBase == false)
                 out += " ";

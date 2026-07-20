@@ -201,7 +201,7 @@ namespace OdrCop3
                         if (IsDefinedInAnonymousNamespace(static_cast<const Decl*>(cxxRecordDecl)))
                         {
                             str += IndentBlock(SerializeDecl(contextItems, cxxRecordDecl), 0);
-                            str  = str.substr(0, str.size()-1);
+                            str  = TrimRightIf(str, ";");
                         }
                         else
                         {
@@ -309,8 +309,7 @@ namespace OdrCop3
                 out += get_PrefixBeforeUnqualifiedPointeeType();
 
                 out += IndentBlock(SerializeDecl(contextItems, StripPointersAndReferences(fieldDecl)), out.size() - (out.rfind('\n')+1));
-                if (out.ends_with(';'))
-                    out = out.substr(0, out.size()-1); // remove ';'
+                out  = TrimRightIf(out, ";");
 
                 out += get_SuffixAfterUnqualifiedPointeeType();
                 out += get_Name();

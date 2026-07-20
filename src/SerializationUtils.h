@@ -45,6 +45,13 @@ namespace OdrCop3
 		const char* what() const noexcept override { return message.c_str(); }
 	};
 
+    inline std::string TrimRightIf(std::string out, const std::string& what)
+    {
+        if (out.ends_with(what))
+            out = out.substr(0, out.size()-what.size());
+        return out;
+    }
+
     inline std::string IndentBlock(const std::string& block, size_t indentWidth, const std::string& firstLinePrefix = "")
     {
         std::istringstream iss(block);
@@ -59,7 +66,7 @@ namespace OdrCop3
             } else
                 out  += indentation + line + "\n";
         }
-        return out.substr(0, out.size()-1); // always remove last "\n"
+        return TrimRightIf(out, "\n");
     }
 
     inline std::string MakeUnnamedAndAnonymousConsistent(std::string input)

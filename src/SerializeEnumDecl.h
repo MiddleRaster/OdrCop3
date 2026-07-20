@@ -98,8 +98,8 @@ namespace OdrCop3
                 std::string val = llvm::toString(enumeratorDecl->getInitVal(), 10);
                 fqe += enumeratorName + "=" + val + ", ";
             }
-            fqe = fqe.substr(0, fqe.size()-2) + " };\n";
-            return fqe;
+            fqe = TrimRightIf(fqe, ", ");
+            return fqe + " };\n";
         }
     };
 }

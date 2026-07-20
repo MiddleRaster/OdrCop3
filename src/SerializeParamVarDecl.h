@@ -44,8 +44,7 @@ namespace OdrCop3
             if (true == ContainsAnonymousType(parmVarDecl->getType()))
             {
                 out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), out.size() - (out.rfind('\n')+1));
-                if (out.ends_with(";"))
-                    out = out.substr(0, out.size()-1);
+                out  = TrimRightIf(out, ";");
             } else
                 out += parmVarDecl->getType().getAsString(contextItems.printPolicy);
 
@@ -72,7 +71,7 @@ namespace OdrCop3
                         if (attr->getLocation() < typeLoc)
                             continue; // leading attribute
                         out += " " + SerializeAttr(contextItems, attr);
-                        out = out.substr(0, out.size() - 1); // strip off last " "
+                        out  = TrimRightIf(out, " ");
                     }
                 }
             }

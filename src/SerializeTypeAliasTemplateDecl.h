@@ -87,7 +87,7 @@ namespace OdrCop3
             if (recordType != nullptr && (recordType->getDecl()->isAnonymousStructOrUnion() || (nsDeclCtx != nullptr && nsDeclCtx->isAnonymousNamespace())))
             {
                 fqtd += IndentBlock(SerializeDecl(contextItems, dyn_cast<CXXRecordDecl>(recordType->getDecl())), fqtd.size());
-                fqtd  = fqtd.substr(0, fqtd.size()-2); // strip last ";\n"
+                fqtd  = TrimRightIf(fqtd, ";");
             } else
                 fqtd += underlying.getAsString(contextItems.printPolicy);
 

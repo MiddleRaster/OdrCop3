@@ -71,7 +71,7 @@ namespace OdrCop3
                 {
                     std::string fqtd = "using " + aliasName + " = ";
                     fqtd += IndentBlock(SerializeDecl(contextItems, dyn_cast<CXXRecordDecl>(recordType->getDecl())), fqtd.size());
-                    fqtd  = fqtd.substr(0, fqtd.size()-2); // strip last ";\n"
+                    fqtd  = TrimRightIf(fqtd, ";\n");
                     fqtd += "; // typedef " + resolvedType + " " + aliasName + ";\n";
                     return fqtd;
                 }
@@ -113,7 +113,7 @@ namespace OdrCop3
                                 column += static_cast<int>(fqtd2.size()); // only first time
 
                             argList += IndentBlock(SerializeDecl(contextItems, funcDecl), column); // -lastColumn);
-                            argList  = argList.substr(0, argList.size()-1); // remove "\n"
+                            argList  = TrimRightIf(argList, "\n");
                             argList += ")";
 
                             anyInlined = true;
@@ -133,7 +133,7 @@ namespace OdrCop3
 
                         size_t col2 = fqtd2.size() - (fqtd2.rfind('\n')+1); // get length of last line of fqtd2
                         fqtd2 += IndentBlock(whatWillBeReused, col2-col1);
-                        fqtd2  = fqtd2.substr(0, fqtd2.size()-1); // remove "\n"
+                        fqtd2  = TrimRightIf(fqtd2, "\n");
                         fqtd2 += " " + aliasName + ";\n";
                         return fqtd2;
                     }
@@ -156,7 +156,7 @@ namespace OdrCop3
             if (isNameless || isAnonymousNamespace)
             {   // if nameless, enumSig will look like this:  "enum (unnamed enum : Red) { Red = 0, Green = 1, Blue = 2 };"
                 std::string enumSig = SerializeDecl(contextItems, enumType->getDecl());
-                enumSig = enumSig.substr(0, enumSig.size()-2); // strip off ";\n"
+                enumSig = TrimRightIf(enumSig, ";\n");
                 if (isAnonymousNamespace && isNameless)
                 {   // if both, need to insert "(anonymous namespace)::" between the "enum " and "(unnamed enum"
                     enumSig = enumSig.substr(5); // strip off "enum "

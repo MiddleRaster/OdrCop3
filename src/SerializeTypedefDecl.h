@@ -45,7 +45,7 @@ namespace OdrCop3
                 {
                     std::string fqtd = "using " + aliasName + " = ";
                     fqtd += IndentBlock(SerializeDecl(contextItems, dyn_cast<CXXRecordDecl>(recordType->getDecl())), fqtd.size());
-                    fqtd  = fqtd.substr(0, fqtd.size()-2); // strip last ";\n"
+                    fqtd  = TrimRightIf(fqtd, ";");
                     fqtd += "; // typedef " + resolvedType + " " + aliasName + ";\n";
                     return fqtd;
                 }
@@ -67,7 +67,7 @@ namespace OdrCop3
             if (isNameless || isAnonymousNamespace)
             {   // if nameless, enumSig will look like this:  "enum (unnamed enum : Red) { Red = 0, Green = 1, Blue = 2 };"
                 std::string enumSig = SerializeDecl(contextItems, enumType->getDecl());
-                enumSig = enumSig.substr(0, enumSig.size()-2); // strip off ";\n"
+                enumSig = TrimRightIf(enumSig, ";\n");
                 if (isAnonymousNamespace && isNameless)
                 {   // if both, need to insert "(anonymous namespace)::" between the "enum " and "(unnamed enum"
                     enumSig = enumSig.substr(5); // strip off "enum "

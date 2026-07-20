@@ -84,12 +84,9 @@ namespace OdrCop3
         std::string Serialize() const
         { // e.g., for "void (*callback2)(Foo*);", QualType::print() returns "void (Foo *)"
             std::string out;
-
             out += get_ReturnType();
-            if (out.ends_with("\n"))
-                out = out.substr(0, out.size()-1);
-            if (out.ends_with(";"))
-                out = out.substr(0, out.size() - 1);
+            out  = TrimRightIf(out, "\n");
+            out  = TrimRightIf(out, ";");
 
             out += contextItems.aux; // I don't particularly like this design... but this is how I insert " (*callback2)"
             out += "(";

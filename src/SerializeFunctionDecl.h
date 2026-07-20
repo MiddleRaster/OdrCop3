@@ -383,12 +383,11 @@ namespace OdrCop3
                     body.replace(pos, 2, " ");
 
                 while (body.ends_with(' '))
-                    body = body.substr(0, body.size() - 1); // strip off last ' '
+                    body = body.substr(0, body.size()-1); // strip off last ' '
 
                 body += "\n";
             }
-            if (body.ends_with('\n'))
-                body = body.substr(0, body.size()-1); // strip off last '\n'
+            body = TrimRightIf(body, "\n");
             return body;
         }
 
@@ -420,8 +419,7 @@ namespace OdrCop3
                 fqn += IndentBlock(SerializeDecl(contextItems, param), fqn.size() - (fqn.rfind('\n')+1));
                 fqn += ", ";
             }
-            if (fqn.substr(fqn.size()-2) == ", ")   // if there are args
-                fqn = fqn.substr(0, fqn.size()-2);  // strip off last ", "
+            fqn  = TrimRightIf(fqn, ", ");
             fqn += ") ";
 
             fqn += get_TrailingRequiresClause();
@@ -439,11 +437,8 @@ namespace OdrCop3
             fqn += get_ConstructorInitializers(); // if it's a ctor and if it has any initializers
 
             if (!(funcDecl->hasBody() && funcDecl->getBody()) || !contextItems.wantFunctionBody) // either there is no body, or we don't want to serialize the body
-            { // no body:  end prototype with ';'
-                if (fqn.ends_with(' '))
-                    fqn = fqn.substr(0, fqn.size()-1);
-                fqn += ";";
-            } else
+                fqn  = TrimRightIf(fqn, " ") +  ";"; // no body:  end prototype with ';'
+            else
                 fqn += get_Body();
 
             return fqn + "\n";

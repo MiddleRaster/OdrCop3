@@ -93,7 +93,7 @@ namespace OdrCop3
                             line.replace(pos, from.size(), "anonymous namespace in " + contextItems.TU);
                     }
                     out += line;
-                    out  = out.substr(0, out.size()-2); // strip last ";\n"
+                    out = TrimRightIf(out, ";\n");
                 } else
                 {
                     // was:

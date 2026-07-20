@@ -27,8 +27,7 @@ namespace OdrCop3
         std::string Serialize() const
         { // in theory, all I have to do is output the type, followed by a *
             std::string out = SerializeType(contextItems, qt->getPointeeType());
-            out = out.substr(0, out.size()-2); // strip off ";\n"
-            return  out + " *";
+            return TrimRightIf(out, ";\n") + " *";
         }
     };
 }
