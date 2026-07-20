@@ -38,40 +38,6 @@ namespace OdrCop3
 
             return nullptr;
         }
-        static bool ContainsAnonymousType(clang::QualType qualType)
-        {
-            qualType = qualType.getCanonicalType();
-
-            if (const auto* recordType = qualType->getAs<clang::RecordType>())
-                return IsDefinedInAnonymousNamespace(static_cast<const Decl*>(recordType->getDecl()));
-
-            if (const auto* enumType = qualType->getAs<clang::EnumType>())
-                return IsDefinedInAnonymousNamespace(static_cast<const Decl*>(enumType->getDecl()));
-
-            if (qualType->isPointerType() || qualType->isReferenceType())
-                return ContainsAnonymousType(qualType->getPointeeType());
-
-            if (const auto* memberPointerType = qualType->getAs<clang::MemberPointerType>())
-            {
-                if (const clang::CXXRecordDecl* classDecl = memberPointerType->getMostRecentCXXRecordDecl())
-                    if (true == IsDefinedInAnonymousNamespace(static_cast<const Decl*>(classDecl)))
-                        return true;
-                return ContainsAnonymousType(memberPointerType->getPointeeType());
-            }
-
-            if (qualType->isArrayType())
-                return ContainsAnonymousType(clang::QualType(qualType->getArrayElementTypeNoTypeQual(), 0));
-
-            if (const auto* fnProtoType = qualType->getAs<clang::FunctionProtoType>())
-            {
-                if (true == ContainsAnonymousType(fnProtoType->getReturnType()))
-                    return true;
-                for (clang::QualType paramType : fnProtoType->getParamTypes())
-                    if (true == ContainsAnonymousType(paramType))
-                        return true;
-            }
-            return false;
-        }
         static bool IsPointerOrReferenceType(clang::QualType qualType)
         {
             return qualType->isPointerType()         ||
