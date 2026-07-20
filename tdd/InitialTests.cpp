@@ -615,17 +615,20 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T> struct H { template<typename U> friend void f(U); };"
                                "template<typename T> void fi(T); struct I { friend void fi<int>(int); };"
                                "template<typename T> class J; struct K { template<typename T> friend class J; };"
-                               "template<typename T> struct L { friend T; };";
+                               "template<typename T> struct L { friend T; };"
+                               "template<typename T> struct M { friend void fm(M); };"
+                               "template<typename T> struct N { friend typename T::type; };";
+
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(9, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(11, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual( 2, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -663,6 +666,14 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct L {\n"
                                  "   friend T;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct M {\n"
+                                 "   friend void __cdecl fm(M<T>);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct N {\n"
+                                 "   friend typename T::type;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }

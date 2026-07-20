@@ -19,6 +19,7 @@
 #include "SerializeFunctionProtoType.h"
 #include "SerializePointerType.h"
 #include "SerializeTemplateTypeParmType.h"
+#include "SerializeDependentNameType.h"
 
 namespace OdrCop3
 {
@@ -31,6 +32,7 @@ namespace OdrCop3
             static std::string SerializeFunctionProtoType   (const ContextItems& contextItems, QualType qt, const    FunctionProtoType*    functionProtoType) { return    FunctionProtoTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,    functionProtoType).Serialize(); }
             static std::string SerializePointerType         (const ContextItems& contextItems, QualType qt, const          PointerType*          pointerType) { return          PointerTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,          pointerType).Serialize(); }
             static std::string SerializeTemplateTypeParmType(const ContextItems& contextItems, QualType qt, const TemplateTypeParmType* templateTypeParmType) { return TemplateTypeParmTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt, templateTypeParmType).Serialize(); }
+            static std::string SerializeDependentNameType   (const ContextItems& contextItems, QualType qt, const    DependentNameType*    dependentNameType) { return    DependentNameTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,    dependentNameType).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeAttr>
@@ -43,6 +45,8 @@ namespace OdrCop3
             case clang::Type::TypeClass::FunctionProto:    if (const    FunctionProtoType*    functionProtoType = dyn_cast<   FunctionProtoType>(qualType.getTypePtr())) return TypeSerializer::SerializeFunctionProtoType   (contextItems, qualType,    functionProtoType); break;
             case clang::Type::TypeClass::Pointer:          if (const          PointerType*          pointerType = dyn_cast<         PointerType>(qualType.getTypePtr())) return TypeSerializer::SerializePointerType         (contextItems, qualType,          pointerType); break;
             case clang::Type::TypeClass::TemplateTypeParm: if (const TemplateTypeParmType* templateTypeParmType = dyn_cast<TemplateTypeParmType>(qualType.getTypePtr())) return TypeSerializer::SerializeTemplateTypeParmType(contextItems, qualType, templateTypeParmType); break;
+            case clang::Type::TypeClass::DependentName:    if (const    DependentNameType*    dependentNameType = dyn_cast<   DependentNameType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentNameType   (contextItems, qualType,    dependentNameType); break;
+
          // case clang::Type::TypeClass::Builtin:
          // case clang::Type::TypeClass::Record:
          // case clang::Type::TypeClass::Enum:
