@@ -25,8 +25,14 @@ namespace OdrCop3
         PointerTypeSerializer(const ContextItems& contextItems, QualType qt, const PointerType* pointerType) : contextItems(contextItems), qt(qt), pointerType(pointerType) {}
 
         std::string Serialize() const
-        { // in theory, all I have to do is output the type, followed by a *
+        {
             std::string out = SerializeType(contextItems, qt->getPointeeType());
+
+            // pointers-to-functions have unusual syntax:  the "*" is not appended (in fact, it's already handled)
+            if (qt->getPointeeType()->isFunctionProtoType())
+                return out;
+
+            // normal case
             return TrimRightIf(out, ";\n") + " *";
         }
     };

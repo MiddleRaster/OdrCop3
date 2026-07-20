@@ -23,6 +23,7 @@
 #include "SerializeLValueReferenceType.h"
 #include "SerializeDecayedType.h"
 #include "SerializeConstantArrayType.h"
+#include "SerializeParenType.h"
 
 namespace OdrCop3
 {
@@ -39,6 +40,7 @@ namespace OdrCop3
             static std::string SerializeLValueReferenceType (const ContextItems& contextItems, QualType qt, const  LValueReferenceType*  lValueReferenceType) { return  LValueReferenceTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,  lValueReferenceType).Serialize(); }
             static std::string SerializeDecayedType         (const ContextItems& contextItems, QualType qt, const          DecayedType*          decayedType) { return          DecayedTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,          decayedType).Serialize(); }
             static std::string SerializeConstantArrayType   (const ContextItems& contextItems, QualType qt, const    ConstantArrayType*    constantArrayType) { return    ConstantArrayTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,    constantArrayType).Serialize(); }
+            static std::string SerializeParenType           (const ContextItems& contextItems, QualType qt, const            ParenType*            parenType) { return            ParenTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,            parenType).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeAttr>
@@ -55,9 +57,9 @@ namespace OdrCop3
             case clang::Type::TypeClass::LValueReference:  if (const  LValueReferenceType*  lValueReferenceType = dyn_cast< LValueReferenceType>(qualType.getTypePtr())) return TypeSerializer::SerializeLValueReferenceType (contextItems, qualType,  lValueReferenceType); break;
             case clang::Type::TypeClass::Decayed:          if (const          DecayedType*          decayedType = dyn_cast<         DecayedType>(qualType.getTypePtr())) return TypeSerializer::SerializeDecayedType         (contextItems, qualType,          decayedType); break;
             case clang::Type::TypeClass::ConstantArray:    if (const    ConstantArrayType*    constantArrayType = dyn_cast<   ConstantArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeConstantArrayType   (contextItems, qualType,    constantArrayType); break;
+            case clang::Type::TypeClass::Paren:            if (const            ParenType*            parenType = dyn_cast<           ParenType>(qualType.getTypePtr())) return TypeSerializer::SerializeParenType           (contextItems, qualType,            parenType); break;
 
          // case clang::Type::TypeClass::Builtin:
-         // case clang::Type::TypeClass::Record:
          // case clang::Type::TypeClass::Enum:
          // case clang::Type::TypeClass::Typedef:
          // case clang::Type::TypeClass::TemplateSpecialization:
