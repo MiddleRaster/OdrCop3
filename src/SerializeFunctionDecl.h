@@ -418,8 +418,6 @@ namespace OdrCop3
             for (const ParmVarDecl* param : funcDecl->parameters())
             {
                 fqn += IndentBlock(SerializeDecl(contextItems, param), fqn.size() - (fqn.rfind('\n')+1));
-                if (fqn.ends_with("\n"))
-                    fqn = fqn.substr(0, fqn.size()-1); // strip off last \n
                 fqn += ", ";
             }
             if (fqn.substr(fqn.size()-2) == ", ")   // if there are args

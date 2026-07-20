@@ -619,11 +619,13 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T> struct M { friend void fm(M); };"
                                "template<typename T> struct N { friend typename T::type; };"
                                "namespace { struct Hidden {}; } struct O { friend void fo(Hidden ); };"
-                               "                                struct P { friend void fp(Hidden*); };";
+                               "                                struct P { friend void fp(Hidden*); };"
+                               "                                struct Q { friend void fq(Hidden&); };";
+
             /* TODO
             //void fo(Hidden);
             //void fo(Hidden*);
-            void fo(Hidden&);
+            //void fo(Hidden&);
             void fo(Hidden[10]);
             void fo(Hidden(*)());
             void fo(void  (*)(Hidden));
@@ -635,7 +637,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(13, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(14, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -695,6 +697,11 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct P { // sizeof=1\n"
                                  "   friend void __cdecl fp(struct (anonymous namespace)::Hidden { // sizeof=1\n"
                                  "                          } *);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Q { // sizeof=1\n"
+                                 "   friend void __cdecl fq(struct (anonymous namespace)::Hidden { // sizeof=1\n"
+                                 "                          } &);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
