@@ -25,11 +25,15 @@ namespace OdrCop3
         RecordTypeSerializer(const ContextItems& contextItems, QualType qt, const RecordType* recordType) : contextItems(contextItems), qt(qt), recordType(recordType) {}
 
         std::string Serialize() const
-        { // currently used for base types only. Will see how this unfolds in the future.
-
+        {
             if (recordType && recordType->getDecl()->isInAnonymousNamespace())
-                return SerializeDecl(contextItems, recordType->getDecl());
-            else
+            {
+                std::string out;
+                if (qt.isConstQualified   ()) out += "const ";
+                if (qt.isVolatileQualified()) out += "volatile ";
+                out += IndentBlock(SerializeDecl(contextItems, recordType->getDecl()), out.size());
+                return out;
+            } else
                 return qt.getAsString(contextItems.printPolicy);
         }
     };

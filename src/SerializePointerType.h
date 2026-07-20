@@ -33,7 +33,9 @@ namespace OdrCop3
                 return out;
 
             // normal case
-            return TrimRightIf(out, ";\n") + " *";
+            out = TrimRightIf(out, "\n");
+            out = TrimRightIf(out, ";");
+            return out + " *";
         }
     };
 }

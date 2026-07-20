@@ -27,7 +27,9 @@ namespace OdrCop3
         std::string Serialize() const
         {
             std::string out = SerializeType(contextItems, qt->getPointeeType());
-            return TrimRightIf(out, ";\n") + " &";
+            out = TrimRightIf(out, "\n");
+            out = TrimRightIf(out, ";");
+            return out + " &";
         }
     };
 }
