@@ -55,7 +55,12 @@ namespace OdrCop3
         std::string Output(QualType qualType) const
         {
             if (IsItAnonymous(qualType))
-                return SerializeType(contextItems, qualType);
+            {
+                std::string out = SerializeType(contextItems, qualType);
+                out = TrimRightIf(out, "\n");
+                out = TrimRightIf(out, ";");
+                return out;
+            }
 
             std::string s;
             llvm::raw_string_ostream os(s);
