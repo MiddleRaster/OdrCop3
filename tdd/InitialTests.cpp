@@ -624,23 +624,14 @@ Test ExploratoryTestsOfClangAST[] =
                                "                                struct R { friend void fr(Hidden[10]); };"
                                "                                struct S { friend void fs(Hidden(*)()); };"
                                "                                struct T { friend void ft(void(*)(Hidden,int)); };"
-                               "                                struct U { friend void fu(void(*)(const Hidden&,int)); };";
-            /* TODO
-            //void fo(Hidden);
-            //void fo(Hidden*);
-            //void fo(Hidden&);
-            //void fo(Hidden[10]);
-            //void fo(Hidden(*)());
-            //void fo(void  (*)(Hidden));
-            //void fo(void  (*)(const Hidden&));
-            void fo(void(Hidden::*)(void));
-            */
+                               "                                struct U { friend void fu(void(*)(const Hidden&,int)); };"
+                               "                                struct V { friend void fv(void(Hidden::*)(int), int); };";
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(18, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(19, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -725,6 +716,11 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct U { // sizeof=1\n"
                                  "   friend void __cdecl fu(void (*)(const struct (anonymous namespace)::Hidden { // sizeof=1\n"
                                  "                                         } &, int));\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct V { // sizeof=1\n"
+                                 "   friend void __cdecl fv(void (struct (anonymous namespace)::Hidden { // sizeof=1\n"
+                                 "                                }::*)(int), int);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }

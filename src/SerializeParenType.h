@@ -27,9 +27,10 @@ namespace OdrCop3
         std::string Serialize() const
         {
             if (const auto* functionProtoType = parenType->getInnerType()->getAs<clang::FunctionProtoType>())
-            { // pointers to function get unusual syntax
+            {   // pointers to functions get unusual syntax
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (*)");
-                return SerializeType(ci2, parenType->getInnerType());
+                // use new ContextItems if aux is not already in use; else use existing one
+                return SerializeType(contextItems.aux == "" ? ci2: contextItems, parenType->getInnerType());
             }
             return "(" + SerializeType(contextItems, parenType->getInnerType()) + ")";
         }
