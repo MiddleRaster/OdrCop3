@@ -283,26 +283,11 @@ namespace OdrCop3
             for (const Attr* attr : fieldDecl->attrs())
                 out += SerializeAttr(contextItems, attr);
 
-            // is the field actually a pointer-to-function or pointer-to-member-functin?
             if (const clang::FunctionProtoType* fnProtoType = get_PointerToFunctionWithAnonymousReturnOrArgs())
-            {
-                int indentation = 0;
-
-                // insert function pointer variable name into function prototype
-                std::string fpStr = get_SuffixAfterUnqualifiedPointeeType();
-                if (fpStr.starts_with(" "))
-                    fpStr = fpStr.substr(1); // skip space
-                fpStr += get_Name() + get_ArraySuffix();
-
-                if (fpStr.find("\n") != std::string::npos)
-                {   // if multiline, do this twice: first to figure out what the indentation needs to be; then again with the right indentation
-                    ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (?????)");
-                    std::string placeHolder = SerializeType(ci2, clang::QualType(fnProtoType, 0));
-                    indentation = static_cast<int>(placeHolder.find("?????"));
-                }
-
-                ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (" + fpStr + ")");
-                out += IndentBlock(SerializeType(ci, clang::QualType(fnProtoType, 0)), indentation);
+            {   // is the field actually a pointer-to-function or pointer-to-member-functi0n?
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, get_Name()); // let appropriate type serializer put in the (*blah) part
+                out += IndentBlock(SerializeType(ci2, fieldDecl->getType()), out.size() - (out.rfind('\n') + 1));
+                out  = TrimRightIf(out, ";");
             }
             else if (IsDefinedInAnonymousNamespace(fieldDecl))
             {

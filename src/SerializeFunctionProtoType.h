@@ -87,13 +87,17 @@ namespace OdrCop3
         }
 
         std::string Serialize() const
-        { // e.g., for "void (*callback2)(Foo*);", QualType::print() returns "void (Foo *)"
+        {   // e.g., for "void (*callback2)(Foo*);", QualType::print() returns "void (Foo *)"
+            // important note:
+            // this Serializer is called for both pointers-to-functions AND pointers-to-member-functions
+            // So the ContextItems.aux field must be properly set up before calling this function.
+
             std::string out;
             out += get_ReturnType();
             out  = TrimRightIf(out, "\n");
             out  = TrimRightIf(out, ";");
 
-            out += contextItems.aux; // I don't particularly like this design... but this is how I insert " (*callback2)"
+            out += contextItems.aux; // I like this design quite a bit:  this is how I insert (*callback2) or (S::*mp)
             out += "(";
             out += IndentBlock(get_Parameters(), out.size() - (out.rfind('\n') + 1));
             out += ")";

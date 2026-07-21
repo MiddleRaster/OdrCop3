@@ -28,9 +28,14 @@ namespace OdrCop3
         {
             if (const auto* functionProtoType = parenType->getInnerType()->getAs<clang::FunctionProtoType>())
             {   // pointers to functions get unusual syntax
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (*)");
-                // use new ContextItems if aux is not already in use; else use existing one
-                return SerializeType(contextItems.aux == "" ? ci2: contextItems, parenType->getInnerType());
+                // Note: you'd think that a better place to do the pointer-to-function syntax would be in the FunctionProtoType serializer,
+                // but that is called for pointers-to-functions AND pointers-to-member-functions. So set up the syntax here.
+                // However, for pointers-to-member functions, the aux field is already correctly set up, so just use it.
+                if (contextItems.aux.find("::*") != std::string::npos)
+                    return SerializeType(contextItems, parenType->getInnerType());
+
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (*" + contextItems.aux + ")");
+                return SerializeType(ci2, parenType->getInnerType());
             }
             return "(" + SerializeType(contextItems, parenType->getInnerType()) + ")";
         }
