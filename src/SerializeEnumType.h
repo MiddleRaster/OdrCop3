@@ -16,21 +16,22 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class LValueReferenceTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class EnumTypeSerializer
     {
-        const ContextItems       & contextItems;
-        const LValueReferenceType* lValueReferenceType;
+        const ContextItems& contextItems;
+        const EnumType    * enumType;
         QualType qt;
     public:
-        LValueReferenceTypeSerializer(const ContextItems& contextItems, QualType qt, const LValueReferenceType* lValueReferenceType) : contextItems(contextItems), qt(qt), lValueReferenceType(lValueReferenceType) {}
+        EnumTypeSerializer(const ContextItems& contextItems, QualType qt, const EnumType* enumType) : contextItems(contextItems), qt(qt), enumType(enumType) {}
 
         std::string Serialize() const
         {
+            std::string out;
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-            std::string out = SerializeType(ci2, qt->getPointeeType());
-            out = TrimRightIf(out, "\n");
-            out = TrimRightIf(out, ";");
-            return out + " &" + contextItems.aux;
+            out += SerializeDecl(ci2, enumType->getDecl());
+            out  = TrimRightIf(out, ";\n");
+            out += " " + contextItems.aux;
+            return out;
         }
     };
 }

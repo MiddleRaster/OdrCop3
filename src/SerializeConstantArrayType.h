@@ -26,9 +26,10 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-            std::string out = IndentBlock(SerializeType(contextItems, constantArrayType->getElementType()), 0);
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
+            std::string out = IndentBlock(SerializeType(ci2, constantArrayType->getElementType()), 0);
             out  = TrimRightIf(out, ";");
-            out += "[" + std::to_string(constantArrayType->getSize().getZExtValue()) + "]";
+            out += (contextItems.aux.size() > 0 ? " " : "") + contextItems.aux + "[" + std::to_string(constantArrayType->getSize().getZExtValue()) + "]";
             return out;
         }
     };

@@ -291,14 +291,9 @@ namespace OdrCop3
             }
             else if (IsDefinedInAnonymousNamespace(fieldDecl))
             {
-                out += get_PrefixBeforeUnqualifiedPointeeType();
-
-                out += IndentBlock(SerializeDecl(contextItems, StripPointersAndReferences(fieldDecl)), out.size() - (out.rfind('\n')+1));
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, get_Name()); // let appropriate type serializer put in the (*blah) part
+                out += IndentBlock(SerializeType(ci2, fieldDecl->getType()), out.size() - (out.rfind('\n') + 1));
                 out  = TrimRightIf(out, ";");
-
-                out += get_SuffixAfterUnqualifiedPointeeType();
-                out += get_Name();
-                out += get_ArraySuffix();
             }
             else if (IsTemplateParamType())
             {

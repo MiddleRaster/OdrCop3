@@ -56,7 +56,8 @@ namespace OdrCop3
         {
             if (IsItAnonymous(qualType))
             {
-                std::string out = SerializeType(contextItems, qualType);
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls); // strip off any aux (not for return value or args)
+                std::string out = SerializeType(ci2, qualType);
                 out = TrimRightIf(out, "\n");
                 out = TrimRightIf(out, ";");
                 return out;
@@ -92,6 +93,9 @@ namespace OdrCop3
             // this Serializer is called for both pointers-to-functions AND pointers-to-member-functions
             // So the ContextItems.aux field must be properly set up before calling this function.
 
+//          std::string aux  = contextItems.aux;
+//          this->contextItems.aux = std::string("");
+
             std::string out;
             out += get_ReturnType();
             out  = TrimRightIf(out, "\n");
@@ -101,6 +105,8 @@ namespace OdrCop3
             out += "(";
             out += IndentBlock(get_Parameters(), out.size() - (out.rfind('\n') + 1));
             out += ")";
+
+//          contextItems.aux = aux;
             return out;
         }
     };

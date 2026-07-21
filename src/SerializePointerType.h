@@ -26,16 +26,21 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-            std::string out = SerializeType(contextItems, qt->getPointeeType());
-
-            // pointers-to-functions have unusual syntax:  the "*" is not appended (in fact, it's already handled)
+            // pointers-to-functions have atypical syntax
             if (qt->getPointeeType()->isFunctionProtoType())
-                return out;
+            {
+                std::string out = SerializeType(contextItems, qt->getPointeeType());
+                return out; // the "*" is not appended(in fact, it's already handled)
+            }
 
             // normal case
-            out = TrimRightIf(out, "\n");
-            out = TrimRightIf(out, ";");
-            return out + " *";
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
+            std::string out;
+            out += SerializeType(ci2, qt->getPointeeType());
+            out  = TrimRightIf(out, "\n");
+            out  = TrimRightIf(out, ";");
+            out += " *" + contextItems.aux;
+            return out;
         }
     };
 }
