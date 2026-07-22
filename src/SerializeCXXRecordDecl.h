@@ -77,6 +77,45 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
+#ifdef KEEP_THIS_INTERESTING_IDEA
+            {   // the idea is to user the AST's printing facility if we can, if there are no "anonymous namespace" types.
+                // Unfortuantely, to see through typedefs/using aliases means we must set PrintAsCanonical,
+                // and that messes up template parameter types ("type-parameter-0-0", rather than "T").
+
+                clang::PrintingPolicy policy = contextItems.printPolicy;
+                policy.FullyQualifiedName = true;
+                policy.PrintAsCanonical   = true;
+
+                std::string str;
+                llvm::raw_string_ostream os(str);
+                cxxRecordDecl->print(os, policy);
+                os.flush();
+
+                if (str.find("(anonymous namespace)") == std::string::npos)
+                {   // do 3 minor fixups:  
+                    
+                    // add sizeof comment
+                    std::size_t pos = str.find('\n');
+                    if (pos != std::string::npos)
+                        str.insert(pos, TrimRightIf(get_SizeComment(), "\n"));
+
+                    // change 4 spaces to 3.
+                    std::string from = "\n    ";
+                    std::string to   = "\n   ";
+                    while ((pos = str.find(from, pos)) != std::string::npos)
+                    {
+                        str.replace(pos, from.size(), to);
+                        pos += to.size();
+                    }
+
+                    // append ";\n"
+                    str += ";\n";
+
+                    return str;
+                }
+            }
+#endif
+
             std::string out;
 
             if (cxxRecordDecl->isInjectedClassName())
