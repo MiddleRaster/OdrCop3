@@ -373,7 +373,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   S member;\n"
                                  "   S member2;\n"
                                  "   Color color;\n"
-                                 "   Color color2;\n"
+                                 "   enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 } color2;\n"
                                  "   enum (anonymous namespace)::Color3 { Red=0, Green=1, Blue=2 } color3;\n"
                                  "   Color4 color4;\n"
                                  "   int (*tdpfn1)(double, const char *);\n"

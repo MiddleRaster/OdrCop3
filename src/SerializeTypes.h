@@ -27,6 +27,7 @@
 #include "SerializeParenType.h"
 #include "SerializeMemberPointerType.h"
 #include "SerializeEnumType.h"
+#include "SerializeTypedefType.h"
 
 namespace OdrCop3
 {
@@ -47,6 +48,7 @@ namespace OdrCop3
             static std::string SerializeEnumType               (const ContextItems& contextItems, QualType qt, const                EnumType*                enumType) { return                EnumTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,                enumType).Serialize(); }
             static std::string SerializeConstantArrayType      (const ContextItems& contextItems, QualType qt, const       ConstantArrayType*       constantArrayType) { return       ConstantArrayTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,       constantArrayType).Serialize(); }
             static std::string SerializeDependentSizedArrayType(const ContextItems& contextItems, QualType qt, const DependentSizedArrayType* dependentSizedArrayType) { return DependentSizedArrayTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt, dependentSizedArrayType).Serialize(); }
+            static std::string SerializeTypedefType            (const ContextItems& contextItems, QualType qt, const             TypedefType*             typedefType) { return             TypedefTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,             typedefType).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeAttr>
@@ -67,7 +69,7 @@ namespace OdrCop3
             case clang::Type::TypeClass::Enum:                if (const                EnumType*                enumType = dyn_cast<               EnumType>(qualType.getTypePtr())) return TypeSerializer::SerializeEnumType               (contextItems, qualType,                enumType); break;
             case clang::Type::TypeClass::ConstantArray:       if (const       ConstantArrayType*       constantArrayType = dyn_cast<      ConstantArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeConstantArrayType      (contextItems, qualType,       constantArrayType); break;
             case clang::Type::TypeClass::DependentSizedArray: if (const DependentSizedArrayType* dependentSizedArrayType = dyn_cast<DependentSizedArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentSizedArrayType(contextItems, qualType, dependentSizedArrayType); break;
-         // case clang::Type::TypeClass::Typedef:
+            case clang::Type::TypeClass::Typedef:             if (const             TypedefType*             typedefType = dyn_cast<            TypedefType>(qualType.getTypePtr())) return TypeSerializer::SerializeTypedefType            (contextItems, qualType,             typedefType); break;
          // case clang::Type::TypeClass::TemplateSpecialization:
          // case clang::Type::TypeClass::InjectedClassName:
          // case clang::Type::TypeClass::PackExpansion:
