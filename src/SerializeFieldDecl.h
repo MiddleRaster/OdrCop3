@@ -29,8 +29,6 @@ namespace OdrCop3
     private:
         const clang::FunctionProtoType* get_PointerToFunctionWithAnonymousReturnOrArgs() const
         {
-            std::string diagnostic = fieldDecl->getType()->getTypeClassName();
-
             QualType qualType = fieldDecl->getType();
             if (const clang::FunctionProtoType* fnProtoType = GetInnerFunctionProtoType(qualType))
                 if (true == ContainsAnonymousType(qualType))
@@ -297,7 +295,9 @@ namespace OdrCop3
             }
             else if (IsTemplateParamType())
             {
-                out += GetTemplateParamTypeString(); // all things template-y; includes name of the field in the right place
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, get_Name()); // let appropriate type serializer put in the (*blah) part
+                out += IndentBlock(SerializeType(ci2, fieldDecl->getType()), out.size() - (out.rfind('\n') + 1));
+                out  = TrimRightIf(out, ";");
             }
             else
             {   // field must be done this way to handle array fields as well.

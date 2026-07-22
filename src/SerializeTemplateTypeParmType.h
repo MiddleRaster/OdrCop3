@@ -26,6 +26,8 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
+            if (contextItems.aux.size() > 0)
+                return templateTypeParmType->getDecl()->getNameAsString() + " " + contextItems.aux;
             return templateTypeParmType->getDecl()->getNameAsString();
         }
     };
