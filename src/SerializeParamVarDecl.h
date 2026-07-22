@@ -41,7 +41,7 @@ namespace OdrCop3
             }
 
             // type
-            if (true == ContainsAnonymousType(parmVarDecl->getType()))
+            if (NeedsManualSerialization(contextItems, parmVarDecl->getType()))
             {
                 out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), out.size() - (out.rfind('\n')+1));
                 out  = TrimRightIf(out, ";");

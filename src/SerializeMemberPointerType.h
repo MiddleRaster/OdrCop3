@@ -30,14 +30,15 @@ namespace OdrCop3
             if (const clang::Type* type = qualifier.getAsType())
             {
                 clang::QualType qt(type, 0);
-                qt = qt.getCanonicalType();
-                if (const auto* recordType = qt->getAs<clang::RecordType>())
+
+                if (NeedsManualSerialization(contextItems, qt))
                 {
-                    const clang::RecordDecl* recordDecl = recordType->getDecl();
-                    if (IsDefinedInAnonymousNamespace(static_cast<const Decl*>(recordDecl)))
+                    qt = qt.getCanonicalType();
+                    if (const auto* recordType = qt->getAs<clang::RecordType>())
                     {
+                        const clang::RecordDecl* recordDecl = recordType->getDecl();
                         out += IndentBlock(SerializeDecl(contextItems, memberPointerType->getQualifier().getAsRecordDecl()), out.size());
-                        out = TrimRightIf(out, ";");
+                        out  = TrimRightIf(out, ";");
                     }
                 }
             }

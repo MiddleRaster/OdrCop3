@@ -22,19 +22,7 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         const FieldDecl   * fieldDecl;
-
-        bool NeedManualSerialization() const
-        {
-            clang::PrintingPolicy policy = contextItems.printPolicy;
-            policy.FullyQualifiedName = true;
-
-            std::string str;
-            llvm::raw_string_ostream os(str);
-            fieldDecl->print(os, policy);
-            os.flush();
-
-            return str.find("(anonymous namespace)") != std::string::npos;
-        }
+        
         bool IsTemplateParamType() const
         {
             const clang::Type* ty = fieldDecl->getType().getTypePtr();
@@ -64,7 +52,7 @@ namespace OdrCop3
             for (const Attr* attr : fieldDecl->attrs())
                 out += SerializeAttr(contextItems, attr);
 
-            if (NeedManualSerialization() || IsTemplateParamType())
+            if (NeedsManualSerialization(contextItems, fieldDecl->getType()) || IsTemplateParamType())
             {
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, get_Name()); // let appropriate type serializer put in the (*blah) part
                 out += IndentBlock(SerializeType(ci2, fieldDecl->getType()), out.size() - (out.rfind('\n') + 1));

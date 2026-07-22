@@ -92,97 +92,16 @@ namespace OdrCop3
         return input;
     }
 
-    inline const clang::Decl* StripPointersAndReferences(const clang::Decl* decl)
+    inline bool NeedsManualSerialization(const ContextItems& contextItems, QualType qt)
     {
-        clang::QualType qualType;
-             if (const auto* vd = llvm::dyn_cast<clang::ValueDecl>(decl)) qualType = vd->getType();
-        else if (const auto* td = llvm::dyn_cast<clang::TypeDecl >(decl)) qualType = td->getTypeForDecl()->getCanonicalTypeInternal();
-        else
-            return nullptr; // no associated type → cannot be "defined" in anon ns via type
-        qualType = qualType.getCanonicalType();
+        clang::PrintingPolicy policy = contextItems.printPolicy;
+        policy.FullyQualifiedName = true;
 
-        for (;;)
-        {
-            if (qualType->isPointerType()         || 
-                qualType->isReferenceType()       ||
-                qualType->isMemberPointerType()   ||
-                qualType->isFunctionPointerType() || 
-                qualType->isFunctionReferenceType())
-            {
-                qualType = qualType->getPointeeType();
-                continue;
-            }
-            if (qualType->isArrayType())
-            {
-                qualType = clang::QualType(qualType->getArrayElementTypeNoTypeQual(), 0);
-                continue;
-            }
-            break;
-        }
+        std::string str;
+        llvm::raw_string_ostream os(str);
+        qt.print(os, policy);
+        os.flush();
 
-        const clang::Decl* typeDecl = nullptr;
-             if (const auto* rt  = qualType->getAs<clang::RecordType >())              typeDecl = rt->getDecl();
-        else if (const auto* et  = qualType->getAs<clang::EnumType   >())              typeDecl = et->getDecl();
-        else if (const auto* tt  = qualType->getAs<clang::TypedefType>())              typeDecl = tt->getDecl();
-        else if (const auto* tst = qualType->getAs<clang::TemplateSpecializationType>())
-             if (clang::TemplateDecl* td = tst->getTemplateName().getAsTemplateDecl()) typeDecl = td;
-
-        return typeDecl;
+        return str.find("(anonymous namespace)") != std::string::npos;
     }
-    inline bool IsDefinedInAnonymousNamespace(const clang::DeclContext* declContext)
-    {
-        while (declContext != nullptr)
-        {
-            if (const auto* ns = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
-                if (ns->isAnonymousNamespace())
-                    return true;
-
-            declContext = declContext->getParent();
-        }
-        return false;
-    }
-    inline bool IsDefinedInAnonymousNamespace(const clang::Decl* decl)
-    {
-        if (true == IsDefinedInAnonymousNamespace(decl->getDeclContext()))
-            return true;
-        if (const clang::Decl* typeDecl = StripPointersAndReferences(decl))
-            return IsDefinedInAnonymousNamespace(typeDecl->getDeclContext());
-        return false; // builtin/dependent/no defining Decl => not in anonymous namespace
-    }
-    
-    inline bool ContainsAnonymousType(clang::QualType qualType)
-    {
-        qualType = qualType.getCanonicalType();
-
-        if (const auto* recordType = qualType->getAs<clang::RecordType>())
-            return IsDefinedInAnonymousNamespace(static_cast<const Decl*>(recordType->getDecl()));
-
-        if (const auto* enumType = qualType->getAs<clang::EnumType>())
-            return IsDefinedInAnonymousNamespace(static_cast<const Decl*>(enumType->getDecl()));
-
-        if (qualType->isPointerType() || qualType->isReferenceType())
-            return ContainsAnonymousType(qualType->getPointeeType());
-
-        if (const auto* memberPointerType = qualType->getAs<clang::MemberPointerType>())
-        {
-            if (const clang::CXXRecordDecl* classDecl = memberPointerType->getMostRecentCXXRecordDecl())
-                if (true == IsDefinedInAnonymousNamespace(static_cast<const Decl*>(classDecl)))
-                    return true;
-            return ContainsAnonymousType(memberPointerType->getPointeeType());
-        }
-
-        if (qualType->isArrayType())
-            return ContainsAnonymousType(clang::QualType(qualType->getArrayElementTypeNoTypeQual(), 0));
-
-        if (const auto* fnProtoType = qualType->getAs<clang::FunctionProtoType>())
-        {
-            if (true == ContainsAnonymousType(fnProtoType->getReturnType()))
-                return true;
-            for (clang::QualType paramType : fnProtoType->getParamTypes())
-                if (true == ContainsAnonymousType(paramType))
-                    return true;
-        }
-        return false;
-    }
-
 }
