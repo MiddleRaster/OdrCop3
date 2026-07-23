@@ -79,28 +79,57 @@ namespace OdrCop3
 
         bool shouldVisitTemplateInstantiations() const { return true; }
         bool shouldVisitImplicitCode          () const { return true; }
-        bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl)
+        bool VisitClassTemplateDecl(clang::ClassTemplateDecl* classTemplateDecl)
         {
-            if (context->getSourceManager().isInSystemHeader(recordDecl->getLocation()))
+            if (context->getSourceManager().isInSystemHeader(classTemplateDecl->getLocation()))
                 return true; // skip anything not in the main file or a user header
 
-            if (recordDecl->isInAnonymousNamespace())
+            if (classTemplateDecl->isInAnonymousNamespace())
                 return true; // if the class/struc/union has internal-linkage, skip it
 
-            if (recordDecl->isLambda())
+            if (classTemplateDecl->isThisDeclarationADefinition())
+            {
+                std::string key = classTemplateDecl->getQualifiedNameAsString();
+                if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(classTemplateDecl))
+                    key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
+                else
+                    key += "<>";
+
+                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, classTemplateDecl)});
+            }
+            return true;
+        }
+        bool VisitCXXRecordDecl(CXXRecordDecl* cxxRecordDecl)
+        {
+            if (context->getSourceManager().isInSystemHeader(cxxRecordDecl->getLocation()))
+                return true; // skip anything not in the main file or a user header
+
+            if (cxxRecordDecl->isInAnonymousNamespace())
+                return true; // if the class/struc/union has internal-linkage, skip it
+
+            if (cxxRecordDecl->isLambda())
                 return true; // skip lambdas
 
-            if (auto* classTemplateSpec = dyn_cast<ClassTemplateSpecializationDecl>(recordDecl))
+            if (cxxRecordDecl->getDescribedClassTemplate())
+                return true; // has its own handler
+
+            if (auto* classTemplateSpec = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
                 if (classTemplateSpec->getSpecializationKind() == TSK_ImplicitInstantiation) // not actually a specialization
                     return true;
 
-            if (recordDecl->isThisDeclarationADefinition())
+            if (cxxRecordDecl->isThisDeclarationADefinition())
             {
-                std::string key = recordDecl->getQualifiedNameAsString();
-                     if (recordDecl->getDescribedClassTemplate())                            key += "<>";
-                else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(recordDecl)) key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
+                std::string key = cxxRecordDecl->getQualifiedNameAsString();
+                if      (cxxRecordDecl->getDescribedClassTemplate())                            key += "<>";
+                else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl)) key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
 
-                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, recordDecl) });
+                // class template specialization and partial specializations are subclasses of CXXRecordDecl
+                if      (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(cxxRecordDecl))
+                    maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, ctpsd)});
+                else if (const ClassTemplateSpecializationDecl       *  ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(cxxRecordDecl))
+                    maps.udtMap[key].push_back({ TU,SerializeDecls(contextItems, ctsd) });
+                else
+                    maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, cxxRecordDecl) });
             }
             return true;
         }
@@ -143,13 +172,25 @@ namespace OdrCop3
             maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, typedefDecl)});
             return true;
         }
-        bool VisitTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* tatDecl)
+        bool VisitTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* typeAliasTemplateDecl)
         {
-            if (context->getSourceManager().isInSystemHeader(tatDecl->getLocation()))
+            if (context->getSourceManager().isInSystemHeader(typeAliasTemplateDecl->getLocation()))
                 return true;
 
-            std::string     aliasName = tatDecl->getQualifiedNameAsString();
-            maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, tatDecl)});
+            if (typeAliasTemplateDecl->isInAnonymousNamespace())
+                return true;
+
+            if (typeAliasTemplateDecl->getDeclContext()->isRecord())
+            {
+                const auto* cxxRecordDecl = cast<CXXRecordDecl>(typeAliasTemplateDecl->getDeclContext());
+                if (cxxRecordDecl->getDescribedClassTemplate())
+                    return true; // outer class has the alias; no need to put it in again
+                if (isa<ClassTemplateSpecializationDecl>(cxxRecordDecl))
+                    return true;
+            }
+
+            std::string     aliasName = typeAliasTemplateDecl->getQualifiedNameAsString();
+            maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, typeAliasTemplateDecl)});
             return true;
         }
 

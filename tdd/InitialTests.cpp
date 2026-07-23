@@ -389,23 +389,22 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   int recursivelyDefinedField;\n"
                                  "   int S::* pointertodatamember;\n"
                                  "};\n"
-                               , (*it++).second[0].fullyQualified);
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct Inner {\n"
-                                 "   using Inner::type = T; // typedef T Inner::type;\n"
-                                 "};\n"
-                               , (*it++).second[0].fullyQualified);
+                                 "                        using Inner::type = T; // typedef T Inner::type;\n"
+                                 "                     };\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<template<typename> class Inner, typename U> struct Outer {\n"
-                                 "   using Outer::type = Inner<U>::type; // typedef Inner<U>::type Outer::type;\n"
-                                 "};\n"
-                               , (*it++).second[0].fullyQualified);
+                                 "                                                        using Outer::type = typename Inner<U>::type; // typedef typename Inner<U>::type Outer::type;\n"
+                                 "                                                     };\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct S { // sizeof=1\n"
                                  "};\n"
-                               , (*it++).second[0].fullyQualified);
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename X> struct Wrap {\n"
-                                 "   using Wrap::type = X; // typedef X Wrap::type;\n"
-                                 "};\n"
-                               , (*it++).second[0].fullyQualified);
-
+                                 "                        using Wrap::type = X; // typedef X Wrap::type;\n"
+                                 "                     };\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 Assert::AreEqual(2, maps.enumMap.size(), "wrong number of enums in map");
@@ -454,51 +453,51 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T, unsigned int N> struct Array {\n"
-                                 "   T data[N];\n"
-                                 "   T __cdecl get(unsigned int i) const { return data[i]; }\n"
-                                 "   void __cdecl set(unsigned int i, const T & value) { data[i] = value; }\n"
-                                 "};\n"
+                                 "                                        T data[N];\n"
+                                 "                                        T __cdecl get(unsigned int i) const { return data[i]; }\n"
+                                 "                                        void __cdecl set(unsigned int i, const T & value) { data[i] = value; }\n"
+                                 "                                     };\n"
                               , (*it++).second[0].fullyQualified);
 
                 Assert::AreEqual("template<> struct Array<bool, 8> { // sizeof=1\n"
-                                 "   unsigned char data;\n"
-                                 "   bool __cdecl get(unsigned int i) const { return (data >> i) & 1U; }\n"
-                                 "   void __cdecl set(unsigned int i, bool value) {\n"
-                                 "       unsigned char mask = static_cast<unsigned char>(1U << i);\n"
-                                 "       if (value)\n"
-                                 "           data |= mask;\n"
-                                 "       else\n"
-                                 "           data &= static_cast<unsigned char>(~mask);\n"
-                                 "   }\n"
-                                 "};\n"
+                                 "              unsigned char data;\n"
+                                 "              bool __cdecl get(unsigned int i) const { return (data >> i) & 1U; }\n"
+                                 "              void __cdecl set(unsigned int i, bool value) {\n"
+                                 "                  unsigned char mask = static_cast<unsigned char>(1U << i);\n"
+                                 "                  if (value)\n"
+                                 "                      data |= mask;\n"
+                                 "                  else\n"
+                                 "                      data &= static_cast<unsigned char>(~mask);\n"
+                                 "              }\n"
+                                 "           };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <unsigned int N> struct Array<bool, N> {\n"
-                                 "   unsigned char data[(N + 7) / 8];\n"
-                                 "   bool __cdecl get(unsigned int i) const { return (data[i / 8] >> (i % 8)) & 1U; }\n"
-                                 "   void __cdecl set(unsigned int i, bool value) {\n"
-                                 "       unsigned char mask = static_cast<unsigned char>(1U << (i % 8));\n"
-                                 "       if (value)\n"
-                                 "           data[i / 8] |= mask;\n"
-                                 "       else\n"
-                                 "           data[i / 8] &= static_cast<unsigned char>(~mask);\n"
-                                 "   }\n"
-                                 "};\n"
+                                 "                             unsigned char data[(N + 7) / 8];\n"
+                                 "                             bool __cdecl get(unsigned int i) const { return (data[i / 8] >> (i % 8)) & 1U; }\n"
+                                 "                             void __cdecl set(unsigned int i, bool value) {\n"
+                                 "                                 unsigned char mask = static_cast<unsigned char>(1U << (i % 8));\n"
+                                 "                                 if (value)\n"
+                                 "                                     data[i / 8] |= mask;\n"
+                                 "                                 else\n"
+                                 "                                     data[i / 8] &= static_cast<unsigned char>(~mask);\n"
+                                 "                             }\n"
+                                 "                          };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> struct Array<double, 8> { // sizeof=64\n"
-                                 "   double data[8];\n"
-                                 "   double __cdecl get(unsigned int i) const;\n"
-                                 "   void __cdecl set(unsigned int i, const double & value);\n"
-                                 "};\n"
+                                 "              double data[8];\n"
+                                 "              double __cdecl get(unsigned int i) const;\n"
+                                 "              void __cdecl set(unsigned int i, const double & value);\n"
+                                 "           };\n"
                               , (*it++).second[0].fullyQualified);
 
                 Assert::AreEqual("template<> struct Array<int, 4> { // sizeof=16\n"
-                                 "   int data[4];\n"
-                                 "   int __cdecl get(unsigned int i) const { return data[i]; }\n"
-                                 "   void __cdecl set(unsigned int i, const int & value) { data[i] = value; }\n"
-                                 "};\n"
+                                 "              int data[4];\n"
+                                 "              int __cdecl get(unsigned int i) const { return data[i]; }\n"
+                                 "              void __cdecl set(unsigned int i, const int & value) { data[i] = value; }\n"
+                                 "           };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct Box {\n"
-                                 "};\n"
+                                 "                     };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct S { // sizeof=1\n"
                                  "};\n"
@@ -508,13 +507,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct Wrapper {\n"
-                                 "   T value;\n"
-                                 "};\n"                    
+                                 "                        T value;\n"
+                                 "                     };\n"                    
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> struct Wrapper<int> { // sizeof=8\n"
-                                 "   int value;\n"
-                                 "   int extra;\n"
-                                 "};\n"
+                                 "              int value;\n"
+                                 "              int extra;\n"
+                                 "           };\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
@@ -660,8 +659,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct H {\n"
-                                 "   template<typename U> friend void __cdecl f(U);\n"
-                                 "};\n"
+                                 "                        template<typename U> friend void __cdecl f(U);\n"
+                                 "                     };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct I { // sizeof=1\n"
                                  "   friend void __cdecl fi<int>(int);\n"
@@ -672,16 +671,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct L {\n"
-                                 "   friend T;\n"
-                                 "};\n"
+                                 "                        friend T;\n"
+                                 "                     };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct M {\n"
-                                 "   friend void __cdecl fm(M<T>);\n"
-                                 "};\n"
+                                 "                        friend void __cdecl fm(M<T>);\n"
+                                 "                     };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct N {\n"
-                                 "   friend typename T::type;\n"
-                                 "};\n"
+                                 "                        friend typename T::type;\n"
+                                 "                     };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct O { // sizeof=1\n"
                                  "   friend void __cdecl fo(struct (anonymous namespace)::Hidden { // sizeof=1\n"
@@ -728,6 +727,59 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual(       "void __cdecl f(B &) {}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("friend void __cdecl f(C &) {}\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
+    {"anonymous namespace typedef/alias", []
+        {
+            std::string code = "namespace { struct AnonType {}; } using AT = AnonType;\n"
+                               "namespace { template<typename T> struct Invisible { using type = T*; }; } template<typename T> using Alias = Invisible<T>;\n" // Alias<int> p;\n"
+                               "namespace { template<typename T> using Ptr = T*; }"
+                               "template<typename T> struct S { template<typename U> using Ptr = U*; };"
+                               "template<typename T> struct Outer { template<typename U> using Alias = U*; };"
+                               "template<> struct Outer<int> { template<typename U> using Alias = U&; };"
+                               "template<typename T> struct Outer<T*> { template<typename U> using Alias = U&; };"
+                               ;
+
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(2, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("template<typename T> struct Outer {\n"
+                                 "                        template<typename U> using Outer::Alias = U *; // no typedef equivalent\n"
+                                 "                     };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct Outer<T*> {\n"
+                                 "                         template<typename U> using Outer<type-parameter-0-0 *>::Alias = U &; // no typedef equivalent\n"
+                                 "                      };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> struct Outer<int> { // sizeof=1\n"
+                                 "              template<typename U> using Outer<int>::Alias = U &; // no typedef equivalent\n"
+                                 "           };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct S {\n"
+                                 "                        template<typename U> using S::Ptr = U *; // no typedef equivalent\n"
+                                 "                     };\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("using AT = struct (anonymous namespace)::AnonType { // sizeof=1\n"
+                                 "           }; // typedef (anonymous namespace)::AnonType AT;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> using Alias = template<typename T> struct (anonymous namespace)::Invisible {\n"
+                                 "                                                           using (anonymous namespace)::Invisible::type = T *; // typedef T * (anonymous namespace)::Invisible::type;\n"
+                                 "                                                        }; // no typedef equivalent\n"
+                              , (*it++).second[0].fullyQualified);
             }
         }
     },

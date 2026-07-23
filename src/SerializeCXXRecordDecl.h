@@ -123,12 +123,6 @@ namespace OdrCop3
             if (cxxRecordDecl->isLambda())
                 return out;
 
-            // template
-            if (const clang::ClassTemplateDecl* ctd = cxxRecordDecl->getDescribedClassTemplate())
-                out += ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ctd->getTemplateParameters());
-         // else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
-         //     out += "template<> "; // handled outside
-
             out += get_Friend();
             out += get_Kind(); // struct/class/union keyword
 

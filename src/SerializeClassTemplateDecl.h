@@ -24,7 +24,9 @@ namespace OdrCop3
         ClassTemplateDeclSerializer(const ContextItems& contextItems, const ClassTemplateDecl* classTemplateDecl) : contextItems(contextItems), classTemplateDecl(classTemplateDecl) {}
         std::string Serialize() const
         {
-            return SerializeDecl(contextItems, classTemplateDecl->getTemplatedDecl());
+            std::string out = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, classTemplateDecl->getTemplateParameters());
+            out += IndentBlock(SerializeDecl(contextItems, classTemplateDecl->getTemplatedDecl()), out.size());
+            return out + "\n";
         }
     };
 }

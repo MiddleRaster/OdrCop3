@@ -20,50 +20,53 @@ namespace OdrCop3
     {
         const ContextItems         & contextItems;
         const TypeAliasTemplateDecl* typeAliasTemplateDecl;
+
+        void PrintParam(const NamedDecl* param, std::string& out) const
+        {
+            if (auto* TTPP = llvm::dyn_cast<TemplateTemplateParmDecl>(param)) {
+                out += "template <";
+
+                bool innerFirst = true;
+                for (auto* inner : *TTPP->getTemplateParameters()) {
+                    if (!innerFirst)
+                        out += ", ";
+                    innerFirst = false;
+                    PrintParam(inner, out); // recursion for nested template-template parameters
+                }
+
+                out += "> class";
+                if (TTPP->isParameterPack())
+                    out += "...";
+                out += " ";
+                out += TTPP->getNameAsString();
+                return;
+            }
+
+            if (auto* TTP = llvm::dyn_cast<TemplateTypeParmDecl>(param)) {
+                out += "typename";
+                if (TTP->isParameterPack())
+                    out += "...";
+                out += " ";
+                out += TTP->getNameAsString();
+                return;
+            }
+
+            if (auto* NTTP = llvm::dyn_cast<NonTypeTemplateParmDecl>(param)) {
+                out += NTTP->getType().getAsString();
+                if (NTTP->isParameterPack())
+                    out += "...";
+                out += " ";
+                out += NTTP->getNameAsString();
+                return;
+            }
+        };
+
     public:
         TypeAliasTemplateDeclSerializer(const ContextItems& contextItems, const TypeAliasTemplateDecl* typeAliasTemplateDecl) : contextItems(contextItems), typeAliasTemplateDecl(typeAliasTemplateDecl) {}
 
         std::string Serialize() const
         {
-            auto printParam = [&](auto&& self, const NamedDecl* param, std::string& out) -> void
-            {
-                if (auto* TTPP = llvm::dyn_cast<TemplateTemplateParmDecl>(param)) {
-                    out += "template <";
-
-                    bool innerFirst = true;
-                    for (auto* inner : *TTPP->getTemplateParameters()) {
-                        if (!innerFirst)
-                            out += ", ";
-                        innerFirst = false;
-                        self(self, inner, out); // recursion for nested template-template parameters
-                    }
-
-                    out += "> class";
-                    if (TTPP->isParameterPack())
-                        out += "...";
-                    out += " ";
-                    out += TTPP->getNameAsString();
-                    return;
-                }
-
-                if (auto* TTP = llvm::dyn_cast<TemplateTypeParmDecl>(param)) {
-                    out += "typename";
-                    if (TTP->isParameterPack())
-                        out += "...";
-                    out += " ";
-                    out += TTP->getNameAsString();
-                    return;
-                }
-
-                if (auto* NTTP = llvm::dyn_cast<NonTypeTemplateParmDecl>(param)) {
-                    out += NTTP->getType().getAsString();
-                    if (NTTP->isParameterPack())
-                        out += "...";
-                    out += " ";
-                    out += NTTP->getNameAsString();
-                    return;
-                }
-            };
+        //  typeAliasTemplateDecl->dump();
 
             std::string params;
             bool first = true;
@@ -71,22 +74,18 @@ namespace OdrCop3
             {
                 if (first)
                     first = false;
-                else 
+                else
                     params += ", ";
-
-                printParam(printParam, param, params);
+                PrintParam(param, params);
             }
 
             TypeAliasDecl* aliasDecl = typeAliasTemplateDecl->getTemplatedDecl();
             std::string    aliasName = typeAliasTemplateDecl->getQualifiedNameAsString();
             std::string         fqtd = "template<" + params + "> using " + aliasName + " = ";
-
-            QualType            underlying = aliasDecl->getUnderlyingType();
-            const RecordType  * recordType = underlying.getCanonicalType()->getAs<RecordType>();
-            const NamespaceDecl* nsDeclCtx = recordType != nullptr ? dyn_cast<NamespaceDecl>(recordType->getDecl()->getDeclContext()) : nullptr;
-            if (recordType != nullptr && (recordType->getDecl()->isAnonymousStructOrUnion() || (nsDeclCtx != nullptr && nsDeclCtx->isAnonymousNamespace())))
+            QualType      underlying = aliasDecl->getUnderlyingType();
+            if (NeedsManualSerialization(contextItems, underlying))
             {
-                fqtd += IndentBlock(SerializeDecl(contextItems, dyn_cast<CXXRecordDecl>(recordType->getDecl())), fqtd.size());
+                fqtd += IndentBlock(SerializeType(contextItems, underlying), fqtd.size());
                 fqtd  = TrimRightIf(fqtd, ";");
             } else
                 fqtd += underlying.getAsString(contextItems.printPolicy);
