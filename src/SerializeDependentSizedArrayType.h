@@ -29,7 +29,7 @@ namespace OdrCop3
             std::string out;
 
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-            out += SerializeType(ci2, dependentSizedArrayType->getElementType());
+            out += IndentBlock(SerializeType(ci2, dependentSizedArrayType->getElementType()), 0);
             out += " " + contextItems.aux;
             out += "[";
             {

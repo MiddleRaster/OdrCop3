@@ -26,11 +26,10 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-            // pointers-to-functions have atypical syntax
             if (qt->getPointeeType()->isFunctionProtoType())
-            {
+            {   // pointers-to-functions have atypical syntax
                 std::string out = SerializeType(contextItems, qt->getPointeeType());
-                return out; // the "*" is not appended(in fact, it's already handled)
+                return out; // the "*" is not appended (in fact, it's already handled)
             }
 
             // normal case

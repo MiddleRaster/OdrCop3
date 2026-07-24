@@ -26,7 +26,7 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-            if (recordType && recordType->getDecl()->isInAnonymousNamespace())
+            if (recordType->getDecl()->isInAnonymousNamespace())
             {
                 std::string out;
                 if (qt.isConstQualified   ()) out += "const ";

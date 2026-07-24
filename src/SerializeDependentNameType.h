@@ -28,13 +28,8 @@ namespace OdrCop3
         {
             std::string result;
             llvm::raw_string_ostream os(result);
-
-            os << "typename ";
-            if (dependentNameType->getQualifier())
-                dependentNameType->getQualifier().print(os, contextItems.printPolicy);
-            os << dependentNameType->getIdentifier()->getName();
+            qt.print(os, contextItems.printPolicy);
             os.flush();
-
             return result;
         }
     };

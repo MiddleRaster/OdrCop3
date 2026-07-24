@@ -27,8 +27,7 @@ namespace OdrCop3
         std::string Serialize() const
         {
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-            std::string out = SerializeType(ci2, qt->getPointeeType());
-            out = TrimRightIf(out, "\n");
+            std::string out = IndentBlock(SerializeType(ci2, qt->getPointeeType()), 0);
             out = TrimRightIf(out, ";");
             return out + " &" + contextItems.aux;
         }
