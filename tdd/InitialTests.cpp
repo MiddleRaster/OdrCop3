@@ -166,17 +166,19 @@ Test ExploratoryTestsOfClangAST[] =
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(4, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found an enum entry");
+
+            Assert::AreEqual(2, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(1, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.enumMap.begin();
                 Assert::AreEqual("E",        it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("enum E { A=1, B=2, C=3 };\n"
-                               , (*it++).second[0].fullyQualified, "should have gotten the enum");
-                Assert::AreEqual("enum N::(anonymous type at input.cc:3:12) { D=0, E=1, F=2 };\n"
-                               , (*it++).second[0].fullyQualified, "should have gotten the enum");
+                Assert::AreEqual("enum E { A=1, B, C };\n"                                     , (*it++).second[0].fullyQualified, "should have gotten the enum");
             }
             {
                 auto it = maps.udtMap.begin();
@@ -184,7 +186,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
                 Assert::AreEqual("struct N { // sizeof=4\n"
-                                 "   enum N::(anonymous type at input.cc:3:12) { D=0, E=1, F=2 };\n"
+                                 "   enum N::(anonymous type at input.cc:3:12) { D=0, E, F };\n"
                                  "   enum N::(anonymous type at input.cc:3:12) eVal=E;\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the struct");
@@ -211,7 +213,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("Color",    it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:9) { Red=0, Green=1, Blue=2 }; // typedef enum (anonymous type at input.cc:2:9) { Red=0, Green=1, Blue=2 } Color;\n"
+                Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:9) { Red, Green, Blue }; // typedef enum (anonymous type at input.cc:2:9) { Red, Green, Blue } Color;\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the typedef");
                 Assert::AreEqual("using MyInt = int; // typedef int MyInt;\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the typedef");
@@ -338,7 +340,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using (anonymous namespace)::AnonNamespaceUsingAliasToFunctionPointer = int (*)(int, double); // typedef int (*)(int, double) (anonymous namespace)::AnonNamespaceUsingAliasToFunctionPointer;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using (anonymous namespace)::Color2 = enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 }; // typedef enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 } (anonymous namespace)::Color2;\n"
+                Assert::AreEqual("using (anonymous namespace)::Color2 = enum (anonymous type at input.cc:2:13) { Red, Green, Blue }; // typedef enum (anonymous type at input.cc:2:13) { Red, Green, Blue } (anonymous namespace)::Color2;\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using Alias = S; // typedef S Alias;\n"
                               , (*it++).second[0].fullyQualified);
@@ -346,7 +348,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<auto F, auto... Fs> using AllTrue = decltype((F() && ... && Fs())); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 }; // typedef enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 } Color;\n"
+                Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:13) { Red, Green, Blue }; // typedef enum (anonymous type at input.cc:2:13) { Red, Green, Blue } Color;\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename C, typename R, typename... Args> using MemberFuncPtr = R (C::*)(Args...); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
@@ -373,8 +375,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   S member;\n"
                                  "   S member2;\n"
                                  "   Color color;\n"
-                                 "   enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 } color2;\n"
-                                 "   enum (anonymous namespace)::Color3 { Red=0, Green=1, Blue=2 } color3;\n"
+                                 "   enum (anonymous type at input.cc:2:13) { Red, Green, Blue } color2;\n"
+                                 "   enum (anonymous namespace)::Color3 { Red, Green, Blue } color3;\n"
                                  "   Color4 color4;\n"
                                  "   int (*tdpfn1)(double, const char *);\n"
                                  "   int (*tdpfn2)(double, const char *);\n"
@@ -410,9 +412,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual(2, maps.enumMap.size(), "wrong number of enums in map");
                 auto it = maps.enumMap.begin();
 
-                Assert::AreEqual("enum (anonymous type at input.cc:2:13) { Red=0, Green=1, Blue=2 };\n"
+                Assert::AreEqual("enum (anonymous type at input.cc:2:13) { Red, Green, Blue };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("enum Color4 { Red=0, Green=1, Blue=2 };\n"
+                Assert::AreEqual("enum Color4 { Red, Green, Blue };\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
@@ -731,7 +733,7 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
-    {"anonymous namespace typedef/alias", []
+    {"Anonymous namespace typedef/alias", []
         {
             std::string code = "namespace { struct AnonType {}; } using AT = AnonType;\n"
                                "namespace { template<typename T> struct Invisible { using type = T*; }; } template<typename T> using Alias = Invisible<T>;\n" // Alias<int> p;\n"
@@ -784,6 +786,62 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+    {"Enums defined in an anonymous namespace or with no name", []
+        {
+            std::string code = "namespace { enum AnonColor { R=0, G, B }; }\n"  // in anonymous namespace
+                               "enum {     R,   G=1+0, B };\n"                  // no name
+                               "enum RGB { R=0, G,     B };\n"                  // simple case: uses print facility
+                               "AnonColor ac;\n"                                // use anonymous namespace enum in a var
+                               "typedef enum { R, G, B=3 } CStyleColor;\n"      // special C-like syntax handling
+                               "template<typename T> struct A { enum { X=42 }; }; int x = A<int>::X;\n"
+                               "namespace L { namespace M { namespace N { struct LNM { void f() { enum LMN1 { X = 42 }; } enum { X = 42 }; }; }}}\n"
+                               ;
+
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(2, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(3, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(1, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(1, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("template<typename T> struct A {\n"
+                                 "                        enum A::(anonymous type at input.cc:6:33) { X=42 };\n"
+                                 "                     };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct L::M::N::LNM { // sizeof=1\n"
+                                 "   void __cdecl f() { enum LMN1 { X = 42 }; }\n"
+                                 "   enum L::M::N::LNM::(anonymous type at input.cc:7:91) { X=42 };\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum (anonymous type at input.cc:2:1) { R, G=1, B };\n"      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous type at input.cc:5:9) { R, G, B=3 };\n"      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum RGB { R=0, G, B };\n"                                   , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("enum (anonymous namespace)::AnonColor { R=0, G, B } ac;\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int x=A<int>::X;\n"                                          , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("using CStyleColor = enum (anonymous type at input.cc:5:9) { R, G, B=3 }; // typedef enum (anonymous type at input.cc:5:9) { R, G, B=3 } CStyleColor;\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("void __cdecl f() { enum LMN1 { X = 42 }; }\n"                , (*it++).second[0].fullyQualified);
+            }
+
+        }
+    },
 };
 /* 
  2. Friend declarations (especially inside templates)

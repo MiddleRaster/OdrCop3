@@ -43,6 +43,12 @@ namespace OdrCop3
             if (varDecl->isStaticDataMember())
                 out += "static ";
 
+            if (NeedsManualSerialization(contextItems, varDecl->getType()))
+            {
+                out += IndentBlock(SerializeType(contextItems, varDecl->getType()), out.size());
+                out += varDecl->getNameAsString();
+            }
+            else
             {
                 std::string fieldStr;
                 llvm::raw_string_ostream os(fieldStr);
@@ -53,9 +59,7 @@ namespace OdrCop3
 
             // if it's a VarTemplateSpecializationDecl, add <whatever> after the name
             if (const auto* varTemplateSpecializationDecl = llvm::dyn_cast<clang::VarTemplateSpecializationDecl>(varDecl))
-            {
                 out += TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, varTemplateSpecializationDecl->getTemplateArgs(), varTemplateSpecializationDecl->getSpecializedTemplate()->getTemplateParameters());
-            }
 
             if (varDecl->hasInit())
             {

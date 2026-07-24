@@ -144,8 +144,13 @@ namespace OdrCop3
             if (!enumDecl->isThisDeclarationADefinition())
                 return true;
 
-            std::string  prettyName = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey(enumDecl) : enumDecl->getQualifiedNameAsString();
-            maps.enumMap[prettyName].push_back({TU, SerializeDecls(contextItems, enumDecl)});
+            if (enumDecl->getDeclContext()->isFunctionOrMethod())
+                return true; // enums local to function are covered by the body; no need to duplicate it here
+            if (llvm::isa<clang::RecordDecl>(enumDecl->getDeclContext()))
+                return true; // enums local to UDTs     are covered by the  UDT; no need to duplicate it here
+
+            std::string  key = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, enumDecl) : enumDecl->getQualifiedNameAsString();
+            maps.enumMap[key].push_back({TU, SerializeDecls(contextItems, enumDecl)});
             return true;
         }
         bool VisitTypedefNameDecl(clang::TypedefNameDecl* typedefDecl)

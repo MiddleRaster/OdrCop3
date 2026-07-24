@@ -16,9 +16,8 @@
 
 namespace OdrCop3
 {
-    inline std::string MakeUnnamedEnumKey(const clang::EnumDecl* enumDecl)
+    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> inline std::string BuildFullyQualifiedParentChain(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
     {
-        // 1. Build the fully qualified parent chain
         std::string parent;
         const clang::DeclContext* declContext = enumDecl->getDeclContext();
         while (declContext && !declContext->isTranslationUnit())
@@ -26,79 +25,139 @@ namespace OdrCop3
             if (const auto* recordDecl = llvm::dyn_cast<clang::RecordDecl>(declContext))
             {
                 std::string name;
-                //  if (const auto* ctsd = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(recordDecl))
-                //     name = ctsd->getNameAsString() + TemplateArgsToString(ctsd); // include template instantiations
-                //  else
-                name = recordDecl->getNameAsString();
+                if (const ClassTemplateSpecializationDecl * ctsd = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(recordDecl))
+                    name = ctsd->getNameAsString() + TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ctsd, false); // include template instantiations
+                else
+                    name = recordDecl->getNameAsString();
                 parent = name + "::" + parent;
             }
             else if (const auto* namespaceDecl = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
             {
-                if (!namespaceDecl->isAnonymousNamespace())
-                    parent = namespaceDecl->getNameAsString() + "::" + parent;
+                parent = namespaceDecl->getNameAsString() + "::" + parent;
             }
             declContext = declContext->getParent();
         }
+        return parent;
+    }
+    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> inline std::string BuildNameForNameless(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
+    {
+        std::string namelessName;
 
-        // 2. Extract the first enumerator name
+        // is it the C-like syntax case?
+        if (const TypedefNameDecl* typedefNameDecl = enumDecl->getTypedefNameForAnonDecl())
+        {
+            clang::SourceManager& sourceManager = enumDecl->getASTContext().getSourceManager();
+            clang::PresumedLoc      presumedLoc = sourceManager.getPresumedLoc(enumDecl->getLocation());
+            namelessName = std::string("(anonymous type at ") + presumedLoc.getFilename() + ":" + std::to_string(presumedLoc.getLine()) + ":" + std::to_string(presumedLoc.getColumn()) + ")";
+        }
+        else
+        {
+            std::string enumStr;
+            llvm::raw_string_ostream os(enumStr);
+            QualType enumQT = enumDecl->getASTContext().getTagType(ElaboratedTypeKeyword::None, /*Qualifier=*/std::nullopt, enumDecl, /*OwnsTag=*/false);
+            enumQT.print(os, contextItems.printPolicy, enumDecl->getNameAsString());
+            os.flush();
+            namelessName = OdrCop3::MakeUnnamedAndAnonymousConsistent(enumStr);
+        }
+
+        // add scoping if any
+        std::string anonymous = "(anonymous type at ";
+        auto pos = namelessName.find(anonymous);
+        if (pos != std::string::npos)
+            namelessName.insert(pos, BuildFullyQualifiedParentChain<SerializeDecl, SerializeType, SerializeAttr>(contextItems, enumDecl));
+
+        return namelessName;
+    }
+
+    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> inline std::string MakeUnnamedEnumKey(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
+    {
+        std::string name = BuildNameForNameless<SerializeDecl, SerializeType, SerializeAttr>(contextItems, enumDecl);
+        name = TrimRightIf(name, ")");
+
         std::string firstEnumName;
         if (!enumDecl->enumerators().empty())
             firstEnumName = enumDecl->enumerators().begin()->getName().str();
         else
             firstEnumName = "<empty>";
 
-        // 3. Construct the final key
-        return parent + "(unnamed enum: " + firstEnumName + ")";
+        name += " " + firstEnumName + ")";
+        return name;
     };
 
     template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class EnumDeclSerializer
     {
         const ContextItems & contextItems;
         const EnumDecl     * enumDecl;
+
+        std::string Print() const
+        {
+            std::string str;
+        
+            clang::PrintingPolicy policy = contextItems.printPolicy;
+            policy.FullyQualifiedName    = true;
+            llvm::raw_string_ostream os(str);
+            enumDecl->print(os, policy);
+            os.flush();
+
+            // modify str to look more like my output:
+
+            // change 4 spaces to 3.
+            std::size_t pos  = 0;
+            std::string from = "\n    ";
+            std::string to   = " ";
+            while ((pos = str.find(from, pos)) != std::string::npos)
+                str.replace(pos, from.size(), to);
+
+            // remove spaces around =
+            pos  = 0;
+            from = " = ";
+            to   = "=";
+            while ((pos = str.find(from, pos)) != std::string::npos)
+                str.replace(pos, from.size(), to);
+
+            // remove all "\n"
+            pos = 0;
+            while ((pos = str.find('\n', pos)) != std::string::npos)
+                str.erase(pos, 1);
+
+            str  = TrimRightIf(str, "}");
+            str += " };\n";
+            return str;
+        }
     public:
         EnumDeclSerializer(const ContextItems& contextItems, const EnumDecl* enumDecl) : contextItems(contextItems), enumDecl(enumDecl) {}
 
         std::string Serialize() const
         {
-            std::string underlyingType = enumDecl->getIntegerType().getCanonicalType().getAsString();
-            bool              isScoped = enumDecl->isScoped();   // enum class vs enum
-            bool               isFixed = enumDecl->isFixed();
-            std::string       enumName = enumDecl->getNameAsString();
-            std::string     prettyEnum;
-            if (enumName == "")
-            {
-                if (const TypedefNameDecl* typedefNameDecl = enumDecl->getTypedefNameForAnonDecl())
-                {
-                    clang::SourceManager& sourceManager = enumDecl->getASTContext().getSourceManager();
-                    clang::PresumedLoc    presumedLoc   = sourceManager.getPresumedLoc(enumDecl->getLocation());
-                    prettyEnum = std::string("(anonymous type at ") + presumedLoc.getFilename() + ":" + std::to_string(presumedLoc.getLine()) + ":" + std::to_string(presumedLoc.getColumn()) + ")";
-                }
-                else
-                {
-                    std::string enumStr;
-                    llvm::raw_string_ostream os(enumStr);
-                    QualType enumQT = enumDecl->getASTContext().getTagType(ElaboratedTypeKeyword::None, /*Qualifier=*/std::nullopt, enumDecl, /*OwnsTag=*/false);
-                    enumQT.print(os, contextItems.printPolicy, enumDecl->getNameAsString());
-                    os.flush();
-                    prettyEnum = OdrCop3::MakeUnnamedAndAnonymousConsistent(enumStr);
-                }
+            std::string enumName = enumDecl->getNameAsString();
+            if ((enumName != "") && !enumDecl->isInAnonymousNamespace())
+                return Print(); // not anonymous type nor defined in anonymous namespace: do shortcut.
 
-                std::string anonymous = "(anonymous type at ";
-                auto pos = prettyEnum.find(anonymous);
-                if (pos != std::string::npos)
-                    if (auto* parentDecl = llvm::dyn_cast<clang::NamedDecl>(enumDecl->getDeclContext()))
-                        prettyEnum.insert(pos, parentDecl->getQualifiedNameAsString() + "::");
-            } else
-                prettyEnum = enumDecl->getQualifiedNameAsString();
+            if (enumName == "")
+                enumName = BuildNameForNameless<SerializeDecl, SerializeType, SerializeAttr>(contextItems, enumDecl);
+            else
+                enumName = enumDecl->getQualifiedNameAsString();
             
-            std::string fqe = (isScoped ? "enum class " : "enum ") + prettyEnum + (isFixed ? " : " + underlyingType : "") + " { ";
-            for (const clang::EnumConstantDecl* enumeratorDecl : enumDecl->enumerators())
+            std::string fqe = (enumDecl->isScoped() ? "enum class " : "enum ") + enumName + (enumDecl->isFixed() ? " : " + enumDecl->getIntegerType().getCanonicalType().getAsString() : "") + " { ";
+            bool first = true;
+            for (const EnumConstantDecl* enumeratorDecl : enumDecl->enumerators())
             {
-                std::string enumeratorName = enumeratorDecl->getName().str();
-                std::string val = llvm::toString(enumeratorDecl->getInitVal(), 10);
-                fqe += enumeratorName + "=" + val + ", ";
+                if (first)
+                    first = false;
+                else
+                    fqe += ", ";
+                
+                fqe += enumeratorDecl->getName();
+                if (const Expr* Init = enumeratorDecl->getInitExpr())
+                {
+                    llvm::APSInt value = enumeratorDecl->getInitVal();
+                    Expr::EvalResult Result;
+                    if (Init->EvaluateAsInt(Result, contextItems.context) && (value == Result.Val.getInt()))
+                        fqe += "=" + llvm::toString(value, 10); // Clang's semantic value is valid.
+                    else
+                        fqe += "=" + Lexer::getSourceText(CharSourceRange::getTokenRange(Init->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts()).str(); // go with what the user typed
+                }
             }
-            fqe = TrimRightIf(fqe, ", ");
             return fqe + " };\n";
         }
     };
