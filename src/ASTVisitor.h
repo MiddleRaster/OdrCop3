@@ -87,16 +87,16 @@ namespace OdrCop3
             if (classTemplateDecl->isInAnonymousNamespace())
                 return true; // if the class/struc/union has internal-linkage, skip it
 
-            if (classTemplateDecl->isThisDeclarationADefinition())
-            {
-                std::string key = classTemplateDecl->getQualifiedNameAsString();
-                if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(classTemplateDecl))
-                    key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
-                else
-                    key += "<>";
+            if (!classTemplateDecl->isThisDeclarationADefinition())
+                return true;
 
-                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, classTemplateDecl)});
-            }
+            std::string key = classTemplateDecl->getQualifiedNameAsString();
+            if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(classTemplateDecl))
+                key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
+            else
+                key += "<>";
+
+            maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, classTemplateDecl)});
             return true;
         }
         bool VisitCXXRecordDecl(CXXRecordDecl* cxxRecordDecl)
@@ -117,20 +117,20 @@ namespace OdrCop3
                 if (classTemplateSpec->getSpecializationKind() == TSK_ImplicitInstantiation) // not actually a specialization
                     return true;
 
-            if (cxxRecordDecl->isThisDeclarationADefinition())
-            {
-                std::string key = cxxRecordDecl->getQualifiedNameAsString();
-                if      (cxxRecordDecl->getDescribedClassTemplate())                            key += "<>";
-                else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl)) key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
+            if (!cxxRecordDecl->isThisDeclarationADefinition())
+                return true;
 
-                // class template specialization and partial specializations are subclasses of CXXRecordDecl
-                if      (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(cxxRecordDecl))
-                    maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, ctpsd)});
-                else if (const ClassTemplateSpecializationDecl       *  ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(cxxRecordDecl))
-                    maps.udtMap[key].push_back({ TU,SerializeDecls(contextItems, ctsd) });
-                else
-                    maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, cxxRecordDecl) });
-            }
+            std::string key = cxxRecordDecl->getQualifiedNameAsString();
+            if      (cxxRecordDecl->getDescribedClassTemplate())                            key += "<>";
+            else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl)) key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
+
+            // class template specialization and partial specializations are subclasses of CXXRecordDecl
+            if      (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(cxxRecordDecl))
+                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, ctpsd)});
+            else if (const ClassTemplateSpecializationDecl       *  ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(cxxRecordDecl))
+                maps.udtMap[key].push_back({ TU,SerializeDecls(contextItems, ctsd) });
+            else
+                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, cxxRecordDecl) });
             return true;
         }
         bool VisitEnumDecl(clang::EnumDecl* enumDecl)
@@ -141,11 +141,11 @@ namespace OdrCop3
             if (enumDecl->isInAnonymousNamespace())
                 return true; // TU-local, not an ODR candidate
 
-            if (enumDecl->isThisDeclarationADefinition())
-            {
-                std::string  prettyName = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey(enumDecl) : enumDecl->getQualifiedNameAsString();
-                maps.enumMap[prettyName].push_back({TU, SerializeDecls(contextItems, enumDecl)});
-            }
+            if (!enumDecl->isThisDeclarationADefinition())
+                return true;
+
+            std::string  prettyName = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey(enumDecl) : enumDecl->getQualifiedNameAsString();
+            maps.enumMap[prettyName].push_back({TU, SerializeDecls(contextItems, enumDecl)});
             return true;
         }
         bool VisitTypedefNameDecl(clang::TypedefNameDecl* typedefDecl)
