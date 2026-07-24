@@ -29,6 +29,9 @@
 #include "SerializeEnumType.h"
 #include "SerializeTypedefType.h"
 #include "SerializeTemplateSpecializationType.h"
+#include "SerializeBuiltinType.h"
+#include "SerializeAutoType.h"
+#include "SerializeSubstTemplateTypeParmType.h"
 
 namespace OdrCop3
 {
@@ -51,6 +54,9 @@ namespace OdrCop3
             static std::string SerializeDependentSizedArrayType   (const ContextItems& contextItems, QualType qt, const    DependentSizedArrayType*    dependentSizedArrayType) { return    DependentSizedArrayTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,    dependentSizedArrayType).Serialize(); }
             static std::string SerializeTypedefType               (const ContextItems& contextItems, QualType qt, const                TypedefType*                typedefType) { return                TypedefTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,                typedefType).Serialize(); }
             static std::string SerializeTemplateSpecializationType(const ContextItems& contextItems, QualType qt, const TemplateSpecializationType* templateSpecializationType) { return TemplateSpecializationTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt, templateSpecializationType).Serialize(); }
+            static std::string SerializeBuiltinType               (const ContextItems& contextItems, QualType qt, const                BuiltinType*                builtinType) { return                BuiltinTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,                builtinType).Serialize(); }
+            static std::string SerializeAutoType                  (const ContextItems& contextItems, QualType qt, const                   AutoType*                   autoType) { return                   AutoTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,                   autoType).Serialize(); }
+            static std::string SerializeSubstTemplateTypeParmType (const ContextItems& contextItems, QualType qt, const  SubstTemplateTypeParmType*  substTemplateTypeParmType) { return  SubstTemplateTypeParmTypeSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, qt,  substTemplateTypeParmType).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeAttr>
@@ -73,9 +79,11 @@ namespace OdrCop3
             case clang::Type::TypeClass::DependentSizedArray:    if (const    DependentSizedArrayType*    dependentSizedArrayType = dyn_cast<   DependentSizedArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentSizedArrayType   (contextItems, qualType,    dependentSizedArrayType); break;
             case clang::Type::TypeClass::Typedef:                if (const                TypedefType*                typedefType = dyn_cast<               TypedefType>(qualType.getTypePtr())) return TypeSerializer::SerializeTypedefType               (contextItems, qualType,                typedefType); break;
             case clang::Type::TypeClass::TemplateSpecialization: if (const TemplateSpecializationType* templateSpecializationType = dyn_cast<TemplateSpecializationType>(qualType.getTypePtr())) return TypeSerializer::SerializeTemplateSpecializationType(contextItems, qualType, templateSpecializationType); break;
+            case clang::Type::TypeClass::Builtin:                if (const                BuiltinType*                builtinType = dyn_cast<               BuiltinType>(qualType.getTypePtr())) return TypeSerializer::SerializeBuiltinType               (contextItems, qualType,                builtinType); break;
+            case clang::Type::TypeClass::Auto:                   if (const                   AutoType*                   autoType = dyn_cast<                  AutoType>(qualType.getTypePtr())) return TypeSerializer::SerializeAutoType                  (contextItems, qualType,                   autoType); break;
+            case clang::Type::TypeClass::SubstTemplateTypeParm:  if (const SubstTemplateTypeParmType *  substTemplateTypeParmType = dyn_cast< SubstTemplateTypeParmType>(qualType.getTypePtr())) return TypeSerializer::SerializeSubstTemplateTypeParmType (contextItems, qualType,  substTemplateTypeParmType); break;
          // case clang::Type::TypeClass::InjectedClassName:
          // case clang::Type::TypeClass::PackExpansion:
-         // case clang::Type::TypeClass::Builtin:
             default:
                 break;
             };

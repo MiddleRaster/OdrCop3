@@ -20,67 +20,31 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         const FunctionDecl* funcDecl;
-    public:
+
         class CXXMethodDeclSerializer
         {
             const ContextItems& contextItems;
             const CXXMethodDecl* methodDecl;
         public:
             CXXMethodDeclSerializer(const ContextItems& contextItems, const CXXMethodDecl* method) : contextItems(contextItems), methodDecl(method) {}
-
-            std::string get_Const() const
-            {
-                if (methodDecl)
-                if (methodDecl->isConst())
-                    return "const ";
-                return "";
-            }
-            std::string get_Volatile() const
-            {
-                if (methodDecl)
-                if (methodDecl->isVolatile())
-                    return "volatile ";
-                return "";
-            }
             std::string get_RefQualifier() const
             {
-                if (methodDecl)
+                if     (methodDecl)
+                switch (methodDecl->getRefQualifier())
                 {
-                    switch (methodDecl->getRefQualifier())
-                    {
-                    default:
-                    case RQ_None:   break;
-                    case RQ_LValue: return "& ";
-                    case RQ_RValue: return "&& ";
-                    }
+                default:
+                case RQ_None:   break;
+                case RQ_LValue: return "& ";
+                case RQ_RValue: return "&& ";
                 }
                 return "";
             }
-
-            std::string get_Override() const
-            {
-                if (methodDecl)
-                if (methodDecl->hasAttr<OverrideAttr>())
-                    return "override ";
-                return "";
-            }
-            std::string get_Final() const
-            {
-                if (methodDecl)
-                if (methodDecl->hasAttr<FinalAttr>())
-                    return "final ";
-                return "";
-            }
-            std::string get_PureVirtual() const
-            {
-                if (methodDecl)
-                if (methodDecl->isPureVirtual())
-                    return "=0 ";
-                return "";
-            }
+            std::string get_Const      () const { return methodDecl && methodDecl->isConst              () ? "const "    : ""; }
+            std::string get_Volatile   () const { return methodDecl && methodDecl->isVolatile           () ? "volatile " : ""; }
+            std::string get_Override   () const { return methodDecl && methodDecl->hasAttr<OverrideAttr>() ? "override " : ""; }
+            std::string get_Final      () const { return methodDecl && methodDecl->hasAttr<   FinalAttr>() ? "final "    : ""; }
+            std::string get_PureVirtual() const { return methodDecl && methodDecl->isPureVirtual        () ? "=0 "       : ""; }
         };
-
-        FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}
 
         std::string get_TemplateHeader() const
         {
@@ -95,59 +59,21 @@ namespace OdrCop3
                 std::string::size_type pos = templatePrefix.find("template <");
                 if (pos != std::string::npos)
                     templatePrefix.replace(pos, 10, "template<");
-
                 return templatePrefix;
             }
-
             if (const auto* info = funcDecl->getTemplateSpecializationInfo())
             {
                 switch (info->getTemplateSpecializationKind())
                 {
                 case clang::TSK_ExplicitInstantiationDeclaration:
-                case clang::TSK_ExplicitInstantiationDefinition:
-                    return "template ";
-
-                case clang::TSK_ExplicitSpecialization:
-                    return "template<> ";
-
-                default:
-                    break;
+                case clang::TSK_ExplicitInstantiationDefinition : return "template ";
+                case clang::TSK_ExplicitSpecialization          : return "template<> ";
+                default: break;
                 }
             }
-
             return "";
         }
-
-        std::string get_ReturnType() const
-        {
-            const auto* parentRecord = clang::dyn_cast<clang::CXXRecordDecl>(funcDecl->getParent());
-            bool   isTemplateContext = funcDecl->getDescribedFunctionTemplate() != nullptr || (parentRecord && parentRecord->getDescribedClassTemplate() != nullptr);
-            if (isTemplateContext)
-                return funcDecl->getReturnType().getAsString(contextItems.printPolicy) + " ";
-            //else if (const Type* ty = funcDecl->getReturnType().getTypePtr(); ty->isEnumeralType())
-            //    fqn += ConstructEnumName(ty->getAs<EnumType>()->getDecl(), nullptr);
-
-            if (funcDecl->getReturnType()->getAsCXXRecordDecl() &&
-                funcDecl->getReturnType()->getAsCXXRecordDecl()->isLambda())
-                return "auto "; // in case of returning a lambda
-
-            //IndirectionCvStripper ics(funcDecl->getReturnType().getCanonicalType());
-            //const QualType qualType = ics.GetBaseType();
-            //const auto* recordType = dyn_cast<clang::RecordType>(qualType.getTypePtr());
-            //if (recordType && recordType->getDecl()->isInAnonymousNamespace())
-            //{
-            //    fqn += IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recordType->getDecl())),
-            //        fqn.size() + ics.ConstructPrefix().size(),
-            //        ics.ConstructPrefix());
-            //    fqn = fqn.substr(0, fqn.size() - 2); // remove "; "
-            //    fqn += ics.ConstructPointersAndReferences();
-            //}
-            //else
-            //    fqn += qualType.getAsString(contextItems.printPolicy);
-
-            return funcDecl->getReturnType().getAsString(contextItems.printPolicy) + " "; // for now
-        }
-
+        std::string get_ReturnType()      const { return SerializeType(contextItems, funcDecl->getReturnType()) + " "; }
         std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval " : ""; }
         std::string get_Constexpr()       const { return funcDecl->isConstexpr()                           ? "constexpr " : ""; }
         std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "    : ""; }
@@ -204,15 +130,10 @@ namespace OdrCop3
             }
             return "";
         }
-
         std::string get_Explicit() const
         {
-            if (const auto* ctor = dyn_cast<CXXConstructorDecl>(funcDecl))
-                if (ctor->isExplicit())
-                    return "explicit ";
-            if (const auto* conv = dyn_cast<CXXConversionDecl>(funcDecl))
-                if (conv->isExplicit())
-                    return "explicit ";
+            if (const auto* ctor = dyn_cast<CXXConstructorDecl>(funcDecl); ctor && ctor->isExplicit())  return "explicit ";
+            if (const auto* conv = dyn_cast< CXXConversionDecl>(funcDecl); conv && conv->isExplicit())  return "explicit ";
             return "";
         }
         std::string get_LeadingAttributes() const
@@ -239,7 +160,6 @@ namespace OdrCop3
             }
             return out;
         }
-
         std::string get_TrailingRequiresClause() const
         {
             const  AssociatedConstraint  & associatedContraint = funcDecl->getTrailingRequiresClause();
@@ -253,7 +173,6 @@ namespace OdrCop3
             }
             return "";
         }
-
         std::string get_CallingConvention() const
         {
             switch (funcDecl->getType()->castAs<FunctionType>()->getCallConv())
@@ -277,9 +196,8 @@ namespace OdrCop3
                 conv->getConversionType().print(os, contextItems.printPolicy);
                 return "operator " + typeName;
             }
-
             std::string name = funcDecl->getNameAsString();
-            if (auto* args = funcDecl->getTemplateSpecializationArgs())
+            if (auto *  args = funcDecl->getTemplateSpecializationArgs())
             {   // explicit specialization
                 std::string out;
                 llvm::raw_string_ostream os(out);
@@ -295,9 +213,7 @@ namespace OdrCop3
                 name += out;
             }
             return name;
-        
         }
-
         std::string get_ConstructorInitializers() const
         {
             std::string out;
@@ -337,7 +253,6 @@ namespace OdrCop3
             }
             return out;
         }
-
         std::string get_Body() const
         {
             std::string body;
@@ -390,6 +305,8 @@ namespace OdrCop3
             body = TrimRightIf(body, "\n");
             return body;
         }
+    public:
+        FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}
 
         std::string Serialize() const
         {
@@ -409,7 +326,7 @@ namespace OdrCop3
             fqn += get_InlineSpecified();
             fqn += get_Constexpr();
             fqn += get_ConstEval();
-            fqn += get_ReturnType();
+            fqn += IndentBlock(get_ReturnType(), LengthOfLastLine(fqn)); // returning an anonymous namespace type is multi-line
             fqn += get_CallingConvention();
             fqn += get_FunctionName();
 
