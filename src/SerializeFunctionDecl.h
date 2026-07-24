@@ -416,7 +416,7 @@ namespace OdrCop3
             fqn += '(';
             for (const ParmVarDecl* param : funcDecl->parameters())
             {
-                fqn += IndentBlock(SerializeDecl(contextItems, param), fqn.size() - (fqn.rfind('\n')+1));
+                fqn += IndentBlock(SerializeDecl(contextItems, param), LengthOfLastLine(fqn));
                 fqn += ", ";
             }
             fqn  = TrimRightIf(fqn, ", ");

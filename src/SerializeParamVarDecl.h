@@ -43,7 +43,7 @@ namespace OdrCop3
             // type
             if (NeedsManualSerialization(contextItems, parmVarDecl->getType()))
             {
-                out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), out.size() - (out.rfind('\n')+1));
+                out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
             } else
                 out += parmVarDecl->getType().getAsString(contextItems.printPolicy);

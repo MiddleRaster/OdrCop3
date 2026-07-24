@@ -72,7 +72,7 @@ namespace OdrCop3
 
             out += contextItems.aux; // I like this design quite a bit:  this is how I insert (*callback2) or (S::*mp)
             out += "(";
-            out += IndentBlock(get_Parameters(), out.size() - (out.rfind('\n') + 1));
+            out += IndentBlock(get_Parameters(), LengthOfLastLine(out));
             out += ")";
 
             return out;

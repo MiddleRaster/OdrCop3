@@ -45,7 +45,7 @@ namespace OdrCop3
 
             if (NeedsManualSerialization(contextItems, varDecl->getType()))
             {
-                out += IndentBlock(SerializeType(contextItems, varDecl->getType()), out.size());
+                out += IndentBlock(SerializeType(contextItems, varDecl->getType()), LengthOfLastLine(out));
                 out += varDecl->getNameAsString();
             }
             else

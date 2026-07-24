@@ -51,6 +51,10 @@ namespace OdrCop3
             out = out.substr(0, out.size()-what.size());
         return out;
     }
+    inline size_t LengthOfLastLine(const std::string& out)
+    {
+        return out.size() - (out.rfind('\n')+1);
+    }
 
     inline std::string IndentBlock(const std::string& block, size_t indentWidth, const std::string& firstLinePrefix = "")
     {

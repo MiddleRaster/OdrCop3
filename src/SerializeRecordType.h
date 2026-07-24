@@ -31,7 +31,7 @@ namespace OdrCop3
                 std::string out;
                 if (qt.isConstQualified   ()) out += "const ";
                 if (qt.isVolatileQualified()) out += "volatile ";
-                out += IndentBlock(SerializeDecl(contextItems, recordType->getDecl()), out.size());
+                out += IndentBlock(SerializeDecl(contextItems, recordType->getDecl()), LengthOfLastLine(out));
                 return out;
             } else
                 return qt.getAsString(contextItems.printPolicy);

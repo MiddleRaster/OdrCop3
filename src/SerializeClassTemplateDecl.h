@@ -25,7 +25,7 @@ namespace OdrCop3
         std::string Serialize() const
         {
             std::string out = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, classTemplateDecl->getTemplateParameters());
-            out += IndentBlock(SerializeDecl(contextItems, classTemplateDecl->getTemplatedDecl()), out.size());
+            out += IndentBlock(SerializeDecl(contextItems, classTemplateDecl->getTemplatedDecl()), LengthOfLastLine(out));
             return out + "\n";
         }
     };

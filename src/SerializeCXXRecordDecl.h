@@ -65,7 +65,7 @@ namespace OdrCop3
                 if (base.isVirtual())
                     out += "virtual ";
 
-                out += IndentBlock(SerializeType(contextItems, base.getType()), out.size() - (out.rfind('\n')+1));
+                out += IndentBlock(SerializeType(contextItems, base.getType()), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
             }
             if (firstBase == false)
@@ -128,7 +128,7 @@ namespace OdrCop3
 
             bool hasFinal = false; // final is treated as an attribute, but it's really a keyword
             out += get_Attributes(&hasFinal);
-            out += get_Name() + contextItems.aux; // for any <args>. NOTE: no " " until after template stuff
+            out += get_Name() + contextItems.aux; // aux contains <args>
 
             if (!cxxRecordDecl->isThisDeclarationADefinition())
                 return out + ";\n"; // if it's a declaration, go no farther
@@ -137,15 +137,13 @@ namespace OdrCop3
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";
 
-            out += IndentBlock(get_Bases(), out.size() - (out.rfind('\n')+1));
+            out += IndentBlock(get_Bases(), LengthOfLastLine(out));
             out += get_SizeComment();
 
-            // data-members, methods, nested decls, etc.
-            for (const clang::Decl* decl : cxxRecordDecl->decls())
+            for (const clang::Decl* decl : cxxRecordDecl->decls()) // data-members, methods, nested decls, etc.
             {
                 if (decl->isImplicit())
                     continue;
-
                 if (decl->getKind() == clang::Decl::Kind::AccessSpec)
                     out += SerializeDecl(contextItems, decl); // "public:", for instance, does not get indented
                 else

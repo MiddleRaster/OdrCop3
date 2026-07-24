@@ -55,7 +55,7 @@ namespace OdrCop3
             if (NeedsManualSerialization(contextItems, fieldDecl->getType()) || IsTemplateParamType())
             {
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, get_Name()); // let appropriate type serializer put in the (*blah) part
-                out += IndentBlock(SerializeType(ci2, fieldDecl->getType()), out.size() - (out.rfind('\n') + 1));
+                out += IndentBlock(SerializeType(ci2, fieldDecl->getType()), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
             }
             else
@@ -86,23 +86,13 @@ namespace OdrCop3
 
             if (fieldDecl->hasInClassInitializer())
             {
-                const Expr* expr = fieldDecl->getInClassInitializer();
-                //const auto* declRef   = llvm::dyn_cast<clang::DeclRefExpr>(expr->IgnoreParenImpCasts());
-                //const auto* enumConst = declRef ? llvm::dyn_cast<clang::EnumConstantDecl>(declRef->getDecl()) : nullptr;
-                //if (enumConst)
-                //{
-                //    const auto* enumDecl = llvm::dyn_cast<clang::EnumDecl>(enumConst->getDeclContext());
-                //    out += "=" + ConstructEnumName(enumDecl, enumConst);
-                //}
-                //else
-                {
-                    llvm::StringRef text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
-                    std::string     init = text.str();
-                    if ((init.starts_with("{")) || init.starts_with("("))
-                        out += init;
-                    else
-                        out += "=" + init;
-                }
+                const Expr *    expr = fieldDecl->getInClassInitializer();
+                llvm::StringRef text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
+                std::string     init = text.str();
+                if ((init.starts_with("{")) || init.starts_with("("))
+                    out += init;
+                else
+                    out += "=" + init;
             }
 
             out += ";\n";

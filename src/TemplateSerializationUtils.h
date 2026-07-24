@@ -46,34 +46,20 @@ namespace OdrCop3
             {
                 if (prependAddressOf == true)
                     out += "&";
-
-                const ValueDecl* vd   = arg.getAsDecl();
-                // IndirectionCvStripper ics(vd->getType().getCanonicalType());
-                // QualType baseQT       = ics.GetBaseType();
-                // const Type* baseTy    = baseQT.getTypePtr();
-                // if (const auto* recTy = dyn_cast<RecordType>(baseTy))
-                {
-                //     const auto* recDecl = recTy->getDecl();
-                //     if (recDecl->isInAnonymousNamespace())
-                    {
-                //         out += ics.ConstructPrefix();
-                //         out += IndentBlock(ConstructRecordSignature(dyn_cast<CXXRecordDecl>(recDecl)), out.size() - (out.rfind('\n')+1));
-                //         out  = out.substr(0, out.size()-2); // strip ";\n"
-                //         out += ics.ConstructPointersAndReferences();
-
-                        // Clang has a weird way of specifying when it's a reference
-                        QualType argType     = arg.getAsDecl()->getType();
-                        bool isPointer       = argType->isPointerType();
-                        bool isMemberPointer = argType->isMemberPointerType(); // already encoded in the type
-                        bool isReference     = !isPointer && !isMemberPointer;
-                        out += " ";
-                        if (isPointer)
-                            out += "* ";
-                        else if (isReference)
-                            out += "& ";
-                    }
-                } 
-                out += vd->getQualifiedNameAsString();
+                
+                // Clang has a weird way of specifying when it's a reference
+                QualType argType     = arg.getAsDecl()->getType();
+                bool isPointer       = argType->isPointerType();
+                bool isMemberPointer = argType->isMemberPointerType(); // already encoded in the type
+                bool isReference     = !isPointer && !isMemberPointer;
+                out += " ";
+                if (isPointer)
+                    out += "* ";
+                else if (isReference)
+                    out += "& ";
+                 
+                const  ValueDecl* valueDecl = arg.getAsDecl();
+                out += valueDecl->getQualifiedNameAsString();
                 break;
             }
             case clang::TemplateArgument::NullPtr:           out += "nullptr";                                                                                    break;
@@ -85,7 +71,7 @@ namespace OdrCop3
                 const auto* rd = arg.getAsType()->getAsCXXRecordDecl();
                 if (rd && rd->isInAnonymousNamespace())
                 {
-                    std::string line = IndentBlock(SerializeDecl(contextItems, dyn_cast<CXXRecordDecl>(rd)), out.size());
+                    std::string line = IndentBlock(SerializeDecl(contextItems, dyn_cast<CXXRecordDecl>(rd)), LengthOfLastLine(out));
                     if (wantAnonymousNamespaceWithTU)
                     {
                         const std::string from = "anonymous namespace";
@@ -226,59 +212,14 @@ namespace OdrCop3
             }
             if (const auto* nttp = clang::dyn_cast<clang::NonTypeTemplateParmDecl>(param))
             {
-                bool handled = false;
-
-                const auto* enumTy = dyn_cast<clang::EnumType>(nttp->getType().getTypePtr());
-                if (enumTy && enumTy->getDecl()->isInAnonymousNamespace()) {
-                    out += SerializeDecl(contextItems, enumTy->getDecl());
-                    if (!nttp->getName().empty())
-                        out += " " + nttp->getName().str();
-                    handled = true;
+                // NTTP where type is a struct (new to C++20)
+                QualType nttpQT = nttp->getType().getCanonicalType();
+                if (NeedsManualSerialization(contextItems, nttpQT))
+                {
+                    out += IndentBlock(SerializeType(contextItems, nttpQT), LengthOfLastLine(out));
+                    out  = TrimRightIf(out, " ");
                 }
-
-                if (handled == false)
-                {   // NTTP where type is a struct (new to C++20)
-
-                    QualType nttpQT = nttp->getType().getCanonicalType();
-
-                 // IndirectionCvStripper ics(nttpQT);
-                 // QualType    baseQT = ics.GetBaseType();
-                 // const Type* baseTy = baseQT.getTypePtr();
-
-                    // Anonymous-namespace UDT NTTP
-                 // if (const auto* recTy = llvm::dyn_cast<clang::RecordType>(baseTy))
-                    {
-                 //     const auto* recDecl = recTy->getDecl();
-                 //     if (recDecl->isInAnonymousNamespace())
-                 //     {
-                 //         out += ics.ConstructPrefix();
-                 //         out += IndentBlock(ConstructRecordSignature(llvm::dyn_cast<CXXRecordDecl>(recDecl)), out.size() - (out.rfind('\n') + 1));
-                 //         out = out.substr(0, out.size() - 2); // strip ";\n"
-                 //         out += ics.ConstructPointersAndReferences();
-
-                 //         if (!nttp->getName().empty())
-                 //             out += " " + nttp->getName().str();
-
-                 //         handled = true;
-                 //     }
-                 //     else
-                        //if (const auto* spec = llvm::dyn_cast<ClassTemplateSpecializationDecl>(recDecl))
-                        //{
-                        // // out += ics.ConstructPrefix();
-                        //    out += spec->getQualifiedNameAsString();
-                        //    out += IndentBlock(TemplateArgsToString(spec, false), out.size() - (out.rfind('\n') + 1));
-                        //    out = out.substr(0, out.size() - 2); // strip ";\n"
-                        //    out += ">" /*+ ics.ConstructPointersAndReferences()*/;
-
-                        //    if (!nttp->getName().empty())
-                        //        out += " " + nttp->getName().str();
-
-                        //    handled = true;
-                        //}
-                    }
-                }
-
-                if (handled == false) // still unhandled? Use fallback
+                else
                 {
                     std::string declStr;
                     llvm::raw_string_ostream declStream(declStr);

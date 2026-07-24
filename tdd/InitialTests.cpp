@@ -795,13 +795,14 @@ Test ExploratoryTestsOfClangAST[] =
                                "typedef enum { R, G, B=3 } CStyleColor;\n"      // special C-like syntax handling
                                "template<typename T> struct A { enum { X=42 }; }; int x = A<int>::X;\n"
                                "namespace L { namespace M { namespace N { struct LNM { void f() { enum LMN1 { X = 42 }; } enum { X = 42 }; }; }}}\n"
+                               "namespace { enum class Mode { A, B }; } template<Mode M> struct EnumHolder {};\n"
                                ;
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(2, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(3, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(3, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(1, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -812,6 +813,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<typename T> struct A {\n"
                                  "                        enum A::(anonymous type at input.cc:6:33) { X=42 };\n"
                                  "                     };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<enum class (anonymous namespace)::Mode : int { A, B }> struct EnumHolder {\n"
+                                 "                                                                };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct L::M::N::LNM { // sizeof=1\n"
                                  "   void __cdecl f() { enum LMN1 { X = 42 }; }\n"

@@ -37,7 +37,7 @@ namespace OdrCop3
                     if (const auto* recordType = qt->getAs<clang::RecordType>())
                     {
                         ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls); // don't use aux yet (e.g., mp2 test)
-                        out += IndentBlock(SerializeDecl(ci2, memberPointerType->getQualifier().getAsRecordDecl()), out.size());
+                        out += IndentBlock(SerializeDecl(ci2, memberPointerType->getQualifier().getAsRecordDecl()), LengthOfLastLine(out));
                         out  = TrimRightIf(out, ";");
                     }
                 }
