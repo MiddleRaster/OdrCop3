@@ -128,17 +128,12 @@ namespace OdrCop3
 
             bool hasFinal = false; // final is treated as an attribute, but it's really a keyword
             out += get_Attributes(&hasFinal);
-            out += get_Name(); // NOTE: no " " until after template stuff
-
-            // if it's a template instantiation, add <arg> 
-            if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
-                out += IndentBlock(TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, CTSD), out.size());
+            out += get_Name() + contextItems.aux; // for any <args>. NOTE: no " " until after template stuff
 
             if (!cxxRecordDecl->isThisDeclarationADefinition())
                 return out + ";\n"; // if it's a declaration, go no farther
 
             out += " ";
-
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";
 

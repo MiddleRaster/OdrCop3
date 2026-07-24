@@ -24,10 +24,10 @@ namespace OdrCop3
         ClassTemplatePartialSpecializationDeclSerializer(const ContextItems& contextItems, const ClassTemplatePartialSpecializationDecl* classTemplatePartialSpecializationDecl) : contextItems(contextItems), classTemplatePartialSpecializationDecl(classTemplatePartialSpecializationDecl) {}
         std::string Serialize() const
         {
-            // classTemplatePartialSpecializationDecl->dump();
+            std::string args = TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, classTemplatePartialSpecializationDecl);
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, args);
 
             std::string out;
-
             { // the "unspecialized" template parameters
                 llvm::raw_string_ostream os(out);
                 classTemplatePartialSpecializationDecl->getTemplateParameters()->print(os, contextItems.context, contextItems.printPolicy);
@@ -36,7 +36,7 @@ namespace OdrCop3
 
             // a classTemplatePartialSpecializationDecl* "is a" CXXRecordDecl, so I can't call SerializeDecl, as the RecursionPreventor will kick in. 
             // So, call the right serializer directly.
-            out += IndentBlock(CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, static_cast<const clang::CXXRecordDecl*>(classTemplatePartialSpecializationDecl)).Serialize(), out.size()) + "\n";
+            out += IndentBlock(CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(ci2, static_cast<const clang::CXXRecordDecl*>(classTemplatePartialSpecializationDecl)).Serialize(), out.size()) + "\n";
             return out;
         }
     };
