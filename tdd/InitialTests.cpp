@@ -755,19 +755,19 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("template<typename T> struct Outer {\n"
-                                 "                        template<typename U> using Outer::Alias = U *; // no typedef equivalent\n"
+                                 "                        template<typename U> using Alias = U *; // no typedef equivalent\n"
                                  "                     };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct Outer<T*> {\n"
-                                 "                         template<typename U> using Outer<type-parameter-0-0 *>::Alias = U &; // no typedef equivalent\n"
+                                 "                         template<typename U> using Alias = U &; // no typedef equivalent\n"
                                  "                      };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> struct Outer<int> { // sizeof=1\n"
-                                 "              template<typename U> using Outer<int>::Alias = U &; // no typedef equivalent\n"
+                                 "              template<typename U> using Alias = U &; // no typedef equivalent\n"
                                  "           };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct S {\n"
-                                 "                        template<typename U> using S::Ptr = U *; // no typedef equivalent\n"
+                                 "                        template<typename U> using Ptr = U *; // no typedef equivalent\n"
                                  "                     };\n"
                               , (*it++).second[0].fullyQualified);
             }
