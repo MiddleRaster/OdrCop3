@@ -21,26 +21,14 @@ namespace OdrCop3
         const ContextItems& contextItems;
         const TypedefDecl * typedefDecl;
 
-        bool NeedsInlining(const TagDecl* tagDecl) const
+        bool NeedsInlining(QualType underlying) const
         {
+            const TagDecl* tagDecl = underlying->getAsTagDecl();
             if (tagDecl != nullptr)
-            {
                 if (tagDecl->getName().empty())
                     return true;
 
-                const clang::DeclContext* declContext = tagDecl->getDeclContext();
-                while (declContext && !declContext->isTranslationUnit())
-                {
-                    if (const auto* namespaceDecl = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
-                        if (namespaceDecl->isAnonymousNamespace())
-                            return true;
-                    if (const auto* recordDecl = llvm::dyn_cast<clang::RecordDecl>(declContext))
-                        if (recordDecl->isInAnonymousNamespace())
-                            return true;
-                    declContext = declContext->getParent();
-                }
-            }
-            return false;
+            return OdrCop3::NeedsManualSerialization(contextItems, underlying);
         }
 
     public:
@@ -52,8 +40,7 @@ namespace OdrCop3
             std::string aliasName    = typedefDecl->getQualifiedNameAsString();
             std::string resolvedType = underlying.getAsString(contextItems.printPolicy);
 
-            const TagDecl* tagDecl = underlying->getAsTagDecl();
-            if (NeedsInlining(tagDecl))
+            if (NeedsInlining(underlying))
             {
                 std::string fqtd    = "using " + aliasName + " = ";
                 std::string inlined = SerializeType(contextItems, underlying);
@@ -61,7 +48,7 @@ namespace OdrCop3
                 inlined             = TrimRightIf(inlined, ";"); // for UDTs
                 fqtd += inlined;
                 if (inlined.find('\n') == std::string::npos)
-                    fqtd += "; // typedef " + inlined      + " " + aliasName + ";\n"; // not multi-line
+                    fqtd += "; // typedef " + inlined      + " " + aliasName + ";\n"; // not multi-line: use serialized result
                 else
                     fqtd += "; // typedef " + resolvedType + " " + aliasName + ";\n"; // multi-line: just use the print result
                 return fqtd;
