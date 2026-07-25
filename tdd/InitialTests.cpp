@@ -396,9 +396,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                        using Inner::type = T; // typedef T Inner::type;\n"
                                  "                     };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<template<typename> class Inner, typename U> struct Outer {\n"
-                                 "                                                        using Outer::type = typename Inner<U>::type; // typedef typename Inner<U>::type Outer::type;\n"
-                                 "                                                     };\n"
+                Assert::AreEqual("template<template <typename> class Inner, typename U> struct Outer {\n"
+                                 "                                                         using Outer::type = typename Inner<U>::type; // typedef typename Inner<U>::type Outer::type;\n"
+                                 "                                                      };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct S { // sizeof=1\n"
                                  "};\n"

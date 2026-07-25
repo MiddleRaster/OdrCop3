@@ -20,65 +20,16 @@ namespace OdrCop3
     {
         const ContextItems         & contextItems;
         const TypeAliasTemplateDecl* typeAliasTemplateDecl;
-
-        std::string PrintParam(const NamedDecl* param) const
-        {
-            std::string out;
-            if (auto* TTPP = llvm::dyn_cast<TemplateTemplateParmDecl>(param)) {
-                out += "template <";
-
-                bool innerFirst = true;
-                for (auto* inner : *TTPP->getTemplateParameters()) {
-                    if (!innerFirst)
-                        out += ", ";
-                    innerFirst = false;
-                    out += PrintParam(inner); // recursion for nested template-template parameters
-                }
-                out += "> class";
-                if (TTPP->isParameterPack())
-                    out += "...";
-                out += " ";
-                out += TTPP->getNameAsString();
-                return out;
-            }
-            if (auto* TTP = llvm::dyn_cast<TemplateTypeParmDecl>(param)) {
-                out += "typename";
-                if (TTP->isParameterPack())
-                    out += "...";
-                out += " ";
-                out += TTP->getNameAsString();
-                return out;
-            }
-            if (auto* NTTP = llvm::dyn_cast<NonTypeTemplateParmDecl>(param)) {
-                out += NTTP->getType().getAsString();
-                if (NTTP->isParameterPack())
-                    out += "...";
-                out += " ";
-                out += NTTP->getNameAsString(); // fall through
-            }
-            return out;
-        };
-
     public:
         TypeAliasTemplateDeclSerializer(const ContextItems& contextItems, const TypeAliasTemplateDecl* typeAliasTemplateDecl) : contextItems(contextItems), typeAliasTemplateDecl(typeAliasTemplateDecl) {}
 
         std::string Serialize() const
         {
-            std::string params;
-            bool first = true;
-            for (const NamedDecl* param : *typeAliasTemplateDecl->getTemplateParameters())
-            {
-                if (first)
-                    first = false;
-                else
-                    params += ", ";
-                params += PrintParam(param);
-            }
+            std::string templateParameterList = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, typeAliasTemplateDecl->getTemplateParameters());
 
             TypeAliasDecl* aliasDecl = typeAliasTemplateDecl->getTemplatedDecl();
-            std::string    aliasName = typeAliasTemplateDecl->getNameAsString();
-            std::string         fqtd = "template<" + params + "> using " + aliasName + " = ";
             QualType      underlying = aliasDecl->getUnderlyingType();
+            std::string         fqtd = templateParameterList + "using " + typeAliasTemplateDecl->getNameAsString() + " = ";
             if (NeedsManualSerialization(contextItems, underlying))
             {
                 fqtd += IndentBlock(SerializeType(contextItems, underlying), fqtd.size());

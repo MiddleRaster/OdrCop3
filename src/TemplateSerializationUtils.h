@@ -199,6 +199,8 @@ namespace OdrCop3
             if (const auto* ttp = clang::dyn_cast<clang::TemplateTypeParmDecl>(param))
             {
                 out += ttp->wasDeclaredWithTypename() ? "typename" : "class";
+                if (ttp->isParameterPack())
+                    out += "...";
                 if (!ttp->getName().empty())
                     out += " " + ttp->getName().str();
 
@@ -223,8 +225,12 @@ namespace OdrCop3
                 {
                     std::string declStr;
                     llvm::raw_string_ostream declStream(declStr);
-                    nttp->getType().print(declStream, contextItems.printPolicy, nttp->getName());
+                    nttp->getType().print(declStream, contextItems.printPolicy);
                     out += declStr;
+
+                    if (nttp->isParameterPack())
+                        out += "...";
+                    out += " " + nttp->getName().str();
                 }
 
                 if (nttp->hasDefaultArgument())
@@ -238,25 +244,11 @@ namespace OdrCop3
             }
             if (const auto* ttp2 = clang::dyn_cast<clang::TemplateTemplateParmDecl>(param))
             {
-                out += "template<";
-                const clang::TemplateParameterList* innerParams = ttp2->getTemplateParameters();
-                bool first2 = true;
-                for (const clang::NamedDecl* innerParam : *innerParams)
-                {
-                    if (!first2)
-                        out += ", ";
-                    first2 = false;
-
-                    if (const auto* innerTtp = clang::dyn_cast<clang::TemplateTypeParmDecl>(innerParam))
-                        out += innerTtp->wasDeclaredWithTypename() ? "typename" : "class";
-                    else if (const auto* innerNttp = clang::dyn_cast<clang::NonTypeTemplateParmDecl>(innerParam))
-                    {
-                        out += innerNttp->getType().getAsString(contextItems.printPolicy);
-                        if (!innerNttp->getName().empty())
-                            out += " " + innerNttp->getName().str();
-                    }
-                }
-                out += "> class";
+                std::string nested = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ttp2->getTemplateParameters());
+                out += "template " + nested.substr(std::string("template").size()); // tweak the spacing a tiny bit
+                out += "class";
+                if (ttp2->isParameterPack())
+                    out += "...";
                 if (!ttp2->getName().empty())
                     out += " " + ttp2->getName().str();
 
