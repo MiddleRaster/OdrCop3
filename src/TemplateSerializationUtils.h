@@ -186,6 +186,23 @@ namespace OdrCop3
     template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
     inline std::string ConstructTemplateParameterList(const ContextItems& contextItems, const clang::TemplateParameterList* params)
     {
+        auto AddParameterPackAndNameAndDefaultArgument = [](const ContextItems& contextItems, const auto* tp) -> std::string
+                                                         {
+                                                             std::string out;
+                                                             if (tp->isParameterPack())
+                                                                 out += "...";
+                                                             if (!tp->getName().empty())
+                                                                 out += " " + tp->getName().str();
+                                                             if (tp->hasDefaultArgument())
+                                                             {
+                                                                 std::string defaultStr;
+                                                                 llvm::raw_string_ostream defaultStream(defaultStr);
+                                                                 tp->getDefaultArgument().getArgument().getAsExpr()->printPretty(defaultStream, nullptr, contextItems.printPolicy);
+                                                                 out += "=" + defaultStr;
+                                                             }
+                                                             return out;
+                                                         };
+
         std::string out = "template<";
 
         bool first = true;
@@ -199,22 +216,11 @@ namespace OdrCop3
             if (const auto* ttp = clang::dyn_cast<clang::TemplateTypeParmDecl>(param))
             {
                 out += ttp->wasDeclaredWithTypename() ? "typename" : "class";
-                if (ttp->isParameterPack())
-                    out += "...";
-                if (!ttp->getName().empty())
-                    out += " " + ttp->getName().str();
-
-                if (ttp->hasDefaultArgument())
-                {
-                    clang::QualType defaultType = ttp->getDefaultArgument().getArgument().getAsType();
-                    out += "=";
-                    out += defaultType.getAsString(contextItems.printPolicy);
-                }
+                out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp);
                 continue;
             }
             if (const auto* nttp = clang::dyn_cast<clang::NonTypeTemplateParmDecl>(param))
-            {
-                // NTTP where type is a struct (new to C++20)
+            {   // NTTP where type is a struct (new to C++20)
                 QualType nttpQT = nttp->getType().getCanonicalType();
                 if (NeedsManualSerialization(contextItems, nttpQT))
                 {
@@ -228,17 +234,7 @@ namespace OdrCop3
                     nttp->getType().print(declStream, contextItems.printPolicy);
                     out += declStr;
                 }
-                if (nttp->isParameterPack())
-                    out += "...";
-                out += " " + nttp->getName().str();
-
-                if (nttp->hasDefaultArgument())
-                {
-                    std::string defaultStr;
-                    llvm::raw_string_ostream defaultStream(defaultStr);
-                    nttp->getDefaultArgument().getArgument().getAsExpr()->printPretty(defaultStream, nullptr, contextItems.printPolicy);
-                    out += "=" + defaultStr;
-                }
+                out += AddParameterPackAndNameAndDefaultArgument(contextItems, nttp);
                 continue;
             }
             if (const auto* ttp2 = clang::dyn_cast<clang::TemplateTemplateParmDecl>(param))
@@ -246,18 +242,7 @@ namespace OdrCop3
                 std::string nested = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ttp2->getTemplateParameters());
                 out += "template " + nested.substr(std::string("template").size()); // tweak the spacing a tiny bit
                 out += "class";
-                if (ttp2->isParameterPack())
-                    out += "...";
-                if (!ttp2->getName().empty())
-                    out += " " + ttp2->getName().str();
-
-                if (ttp2->hasDefaultArgument())
-                {
-                    std::string defaultStr;
-                    llvm::raw_string_ostream defaultStream(defaultStr);
-                    ttp2->getDefaultArgument().getArgument().getAsTemplate().print(defaultStream, contextItems.printPolicy);
-                    out += "=" + defaultStr;
-                }
+                out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp2);
                 continue;
             }
         }
