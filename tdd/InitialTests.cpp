@@ -766,7 +766,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                        template<typename U> using Alias = U *; // no typedef equivalent\n"
                                  "                     };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> struct Outer<T*> {\n"
+                Assert::AreEqual("template <typename T> struct Outer<T *> {\n"
                                  "                         template<typename U> using Alias = U &; // no typedef equivalent\n"
                                  "                      };\n"
                               , (*it++).second[0].fullyQualified);

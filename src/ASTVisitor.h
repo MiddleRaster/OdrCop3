@@ -92,7 +92,7 @@ namespace OdrCop3
 
             std::string key = classTemplateDecl->getQualifiedNameAsString();
             if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(classTemplateDecl))
-                key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
+                key += TemplateArgsToString(contextItems, CTSD);
             else
                 key += "<>";
 
@@ -121,16 +121,17 @@ namespace OdrCop3
                 return true;
 
             std::string key = cxxRecordDecl->getQualifiedNameAsString();
-            if      (cxxRecordDecl->getDescribedClassTemplate())                            key += "<>";
-            else if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl)) key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, CTSD, true);
+            if      (cxxRecordDecl->getDescribedClassTemplate())                                    key += "<>";
+            else if (auto* CTPSD = dyn_cast<ClassTemplatePartialSpecializationDecl>(cxxRecordDecl)) key += TemplateArgsToString(contextItems, CTPSD);
+            else if (auto* CTSD  = dyn_cast<ClassTemplateSpecializationDecl>       (cxxRecordDecl)) key += TemplateArgsToString(contextItems, CTSD);
 
             // class template specialization and partial specializations are subclasses of CXXRecordDecl
             if      (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(cxxRecordDecl))
                 maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, ctpsd)});
             else if (const ClassTemplateSpecializationDecl       *  ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(cxxRecordDecl))
-                maps.udtMap[key].push_back({ TU,SerializeDecls(contextItems, ctsd) });
+                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, ctsd)});
             else
-                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, cxxRecordDecl) });
+                maps.udtMap[key].push_back({TU,SerializeDecls(contextItems, cxxRecordDecl)});
             return true;
         }
         bool VisitEnumDecl(clang::EnumDecl* enumDecl)

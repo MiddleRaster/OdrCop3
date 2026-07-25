@@ -24,7 +24,7 @@ namespace OdrCop3
         ClassTemplateSpecializationDeclSerializer(const ContextItems& contextItems, const ClassTemplateSpecializationDecl* classTemplateSpecializationDecl) : contextItems(contextItems), classTemplateSpecializationDecl(classTemplateSpecializationDecl) {}
         std::string Serialize() const
         {   
-            std::string args = TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, classTemplateSpecializationDecl);
+            std::string args = TemplateArgsToString(contextItems, classTemplateSpecializationDecl);
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, args);
             
             // a classTemplateSpecializationDecl* "is a" CXXRecordDecl, so I can't call SerializeDecl, as the RecursionPreventor will kick in. 

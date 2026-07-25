@@ -29,7 +29,7 @@ namespace OdrCop3
             if (const auto* recordDecl = llvm::dyn_cast<clang::RecordDecl>(declContext))
             {
                 if (const ClassTemplateSpecializationDecl * ctsd = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(recordDecl))
-                    name = ctsd->getNameAsString() + TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ctsd, false); // include template instantiations
+                    name = ctsd->getNameAsString() + TemplateArgsToString(contextItems, ctsd); // include template instantiations
                 else
                     name = recordDecl->getNameAsString();
             }

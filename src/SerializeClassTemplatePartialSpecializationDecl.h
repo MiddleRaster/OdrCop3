@@ -24,7 +24,7 @@ namespace OdrCop3
         ClassTemplatePartialSpecializationDeclSerializer(const ContextItems& contextItems, const ClassTemplatePartialSpecializationDecl* classTemplatePartialSpecializationDecl) : contextItems(contextItems), classTemplatePartialSpecializationDecl(classTemplatePartialSpecializationDecl) {}
         std::string Serialize() const
         {
-            std::string args = TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, classTemplatePartialSpecializationDecl);
+            std::string args = TemplateArgsToString(contextItems, classTemplatePartialSpecializationDecl);
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, args);
 
             std::string out;

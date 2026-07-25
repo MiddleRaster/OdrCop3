@@ -175,12 +175,18 @@ namespace OdrCop3
         return out;
     }
 
-    template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
-    inline std::string TemplateArgsToString(const ContextItems& contextItems, const clang::ClassTemplateSpecializationDecl* ctsd, bool wantAnonymousNamespaceWithTU=false)
+    template<typename T> requires std::is_same_v<T,ClassTemplateSpecializationDecl> || std::is_same_v<T,ClassTemplatePartialSpecializationDecl>
+    inline std::string TemplateArgsToString(const ContextItems& contextItems, const T* ctd)
     {
-        const clang::TemplateArgumentList & args   = ctsd->getTemplateArgs();
-        const clang::TemplateParameterList* params = ctsd->getSpecializedTemplate()->getTemplateParameters();
-        return TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, args, params);
+        const ASTTemplateArgumentListInfo * ArgsAsWritten = ctd->getTemplateArgsAsWritten();
+        llvm::ArrayRef<TemplateArgumentLoc> ArgsRef(ArgsAsWritten->getTemplateArgs(), ArgsAsWritten->NumTemplateArgs);
+
+        std::string              out;
+        llvm::raw_string_ostream os(out);
+        clang::printTemplateArgumentList(os, ArgsRef, contextItems.printPolicy, nullptr);
+        os.flush();
+
+        return out;
     }
 
     template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
