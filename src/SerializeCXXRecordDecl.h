@@ -81,28 +81,21 @@ namespace OdrCop3
 
     public:
         CXXRecordDeclSerializer(const ContextItems& contextItems, const CXXRecordDecl* cxxRecordDecl) : contextItems(contextItems), cxxRecordDecl(cxxRecordDecl) {}
-
         std::string Serialize() const
         {
             std::string out;
-
             out += get_Friend();
             out += get_Kind(); // struct/class/union keyword
-
             bool hasFinal = false; // final is treated as an attribute, but it's really a keyword
             out += get_Attributes(&hasFinal);
             out += get_Name() + contextItems.aux; // aux contains <args>
-
             if (!cxxRecordDecl->isThisDeclarationADefinition())
                 return out + ";\n"; // if it's a declaration, go no farther
-
             out += " ";
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";
-
             out += IndentBlock(get_Bases(), LengthOfLastLine(out));
             out += get_SizeComment();
-
             for (const clang::Decl* decl : cxxRecordDecl->decls())
             {   // data-members, methods, nested decls, etc.
                 if (decl->isImplicit())

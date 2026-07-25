@@ -47,10 +47,7 @@ namespace OdrCop3
                 const llvm::StringRef msg = deprecated->getMessage();
                 return msg.empty() ? "[[deprecated]] " : ("[[deprecated(\"" + msg.str() + "\")]] ");
             }
-            static std::string Serialize(const ContextItems& /*contextItems*/, const clang::FinalAttr* /*Final*/)
-            {
-                return "final ";
-            }
+            static std::string Serialize(const ContextItems& /*contextItems*/, const clang::FinalAttr* /*Final*/) { return "final "; }
             static std::string Serialize(const ContextItems& contextItems, const clang::Attr* attr)
             {
                 std::string raw;

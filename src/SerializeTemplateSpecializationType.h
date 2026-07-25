@@ -23,10 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         TemplateSpecializationTypeSerializer(const ContextItems& contextItems, QualType qt, const TemplateSpecializationType* templateSpecializationType) : contextItems(contextItems), qt(qt), templateSpecializationType(templateSpecializationType) {}
-
-        std::string Serialize() const
-        {
-            return IndentBlock(SerializeDecl(contextItems, templateSpecializationType->getTemplateName().getAsTemplateDecl()), 0);
-        }
+        std::string Serialize() const { return IndentBlock(SerializeDecl(contextItems, templateSpecializationType->getTemplateName().getAsTemplateDecl()), 0); }
     };
 }

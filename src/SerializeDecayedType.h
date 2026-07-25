@@ -23,10 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         DecayedTypeSerializer(const ContextItems& contextItems, QualType qt, const DecayedType* decayedType) : contextItems(contextItems), qt(qt), decayedType(decayedType) {}
-
-        std::string Serialize() const
-        {
-            return SerializeType(contextItems, decayedType->getOriginalType());
-        }
+        std::string Serialize() const { return SerializeType(contextItems, decayedType->getOriginalType()); }
     };
 }

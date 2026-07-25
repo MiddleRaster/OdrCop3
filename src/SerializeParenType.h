@@ -23,7 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         ParenTypeSerializer(const ContextItems& contextItems, QualType qt, const ParenType* parenType) : contextItems(contextItems), qt(qt), parenType(parenType) {}
-
         std::string Serialize() const
         {
             if (const auto* functionProtoType = parenType->getInnerType()->getAs<clang::FunctionProtoType>())
@@ -33,7 +32,6 @@ namespace OdrCop3
                 // However, for pointers-to-member functions, the aux field is already correctly set up, so just use it.
                 if (contextItems.aux.find("::*") != std::string::npos)
                     return SerializeType(contextItems, parenType->getInnerType());
-
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (*" + contextItems.aux + ")");
                 return SerializeType(ci2, parenType->getInnerType());
             }

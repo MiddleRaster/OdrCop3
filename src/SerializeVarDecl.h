@@ -16,7 +16,6 @@
 
 namespace OdrCop3
 {
-
     template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class VarDeclSerializer
     {
         const ContextItems& contextItems;
@@ -49,10 +48,9 @@ namespace OdrCop3
             return out;
         }
         std::string get_Static() const { return varDecl->isStaticDataMember() ? "static " : ""; }
-        std::string get_Init() const
+        std::string get_Init  () const
         {
             if (!varDecl->hasInit()) return "";
-
             const Expr* expr = varDecl->getInit();
             llvm::StringRef  text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
             std::string      init = text.str();
@@ -61,10 +59,8 @@ namespace OdrCop3
             else
                 return "=" + init;
         }
-
     public:
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
-
         std::string Serialize() const
         {
             std::string out;
@@ -72,7 +68,6 @@ namespace OdrCop3
             out += get_Attributes();
             out += get_ConstexprAndInline();
             out += get_Static();
-
             std::string name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
             if (NeedsManualSerialization(contextItems, varDecl->getType())) {
                 out += IndentBlock(SerializeType(contextItems, varDecl->getType()), LengthOfLastLine(out));

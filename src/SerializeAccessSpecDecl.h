@@ -22,11 +22,9 @@ namespace OdrCop3
         const AccessSpecDecl* accessSpecDecl;
     public:
         AccessSpecDeclSerializer(const ContextItems& contextItems, const AccessSpecDecl* accessSpecDecl) : contextItems(contextItems), accessSpecDecl(accessSpecDecl) {}
-
         std::string Serialize() const
         {
-            switch (accessSpecDecl->getAccess())
-            {
+            switch (accessSpecDecl->getAccess()) {
             case AS_public:    return "public:\n";
             case AS_protected: return "protected\n:";
             case AS_private:   return "private:\n";

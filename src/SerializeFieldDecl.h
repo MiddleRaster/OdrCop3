@@ -37,14 +37,11 @@ namespace OdrCop3
             return llvm::isa<clang::TemplateTypeParmType>(ty);
         }
         std::string get_Name() const { return fieldDecl->getNameAsString(); }
-
     public:
         FieldDeclSerializer(const ContextItems& contextItems, const FieldDecl* fieldDecl) : contextItems(contextItems), fieldDecl(fieldDecl) {}
-
         std::string Serialize() const
         {
             std::string out;
-
             for (const Attr* attr : fieldDecl->attrs())   // attributes on data-members
                 out += SerializeAttr(contextItems, attr);
 
@@ -62,12 +59,9 @@ namespace OdrCop3
                 qt.print(os, contextItems.printPolicy, (qt->isMemberDataPointerType() ? " " : "") + get_Name()); // adding a space before the field in the pointer-to-member-data case only
                 os.flush();
 
-                // is it an anonymous struct/class/union/enum? If so...
-                if (auto* tagDecl = fieldDecl->getType()->getAsTagDecl();
-                          tagDecl && (tagDecl->getIdentifier() == nullptr) && (tagDecl->getTypedefNameForAnonDecl() == nullptr))
-                {   //     ... add "struct"/"class"/"union"   and        ... normalize text
-                    fieldStr = tagDecl->getKindName().str() + " " + MakeUnnamedAndAnonymousConsistent(fieldStr);
-                }
+                // is it an unnamed struct/class/union/enum? If so...
+                if (const auto* tagDecl = fieldDecl->getType()->getAsTagDecl(); tagDecl && (tagDecl->getIdentifier() == nullptr) && (tagDecl->getTypedefNameForAnonDecl() == nullptr))
+                    fieldStr =  tagDecl->getKindName().str() + " " + MakeUnnamedAndAnonymousConsistent(fieldStr); // ... add "struct"/"class"/"union" and normalize text
                 out += fieldStr;
             }
 
@@ -79,7 +73,6 @@ namespace OdrCop3
                 os.flush();
                 out += ":" + bitWidth;
             }
-
             if (fieldDecl->hasInClassInitializer())
             {
                 const Expr *    expr = fieldDecl->getInClassInitializer();
@@ -90,7 +83,6 @@ namespace OdrCop3
                 else
                     out += "=" + init;
             }
-
             out += ";\n";
             return out;
         }

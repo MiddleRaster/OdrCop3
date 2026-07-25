@@ -20,32 +20,26 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         const TypedefDecl * typedefDecl;
-
         bool NeedsInlining(QualType underlying) const
         {
-            const TagDecl* tagDecl = underlying->getAsTagDecl();
-            if (tagDecl != nullptr)
+            if (const TagDecl* tagDecl = underlying->getAsTagDecl(); tagDecl != nullptr)
                 if (tagDecl->getName().empty())
                     return true;
-
             return OdrCop3::NeedsManualSerialization(contextItems, underlying);
         }
-
     public:
         TypedefDeclSerializer(const ContextItems& contextItems, const TypedefDecl* typedefDecl) : contextItems(contextItems), typedefDecl(typedefDecl) {}
-
         std::string Serialize() const
         {
             QualType    underlying   = typedefDecl->getUnderlyingType().getCanonicalType();
             std::string aliasName    = typedefDecl->getQualifiedNameAsString();
             std::string resolvedType = underlying.getAsString(contextItems.printPolicy);
 
-            if (NeedsInlining(underlying))
-            {
-                std::string fqtd    = "using " + aliasName + " = ";
-                std::string inlined = SerializeType(contextItems, underlying);
-                inlined             = TrimRightIf(inlined, " "); // for enums
-                inlined             = TrimRightIf(inlined, ";"); // for UDTs
+            if (NeedsInlining(underlying)) {
+                std::string fqtd     = "using " + aliasName + " = ";
+                std::string inlined  = SerializeType(contextItems, underlying);
+                inlined              = TrimRightIf(inlined, " "); // for enums
+                inlined              = TrimRightIf(inlined, ";"); // for UDTs
                 fqtd += inlined;
                 if (inlined.find('\n') == std::string::npos)
                     fqtd += "; // typedef " + inlined      + " " + aliasName + ";\n"; // not multi-line: use serialized result

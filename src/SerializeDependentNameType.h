@@ -23,7 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         DependentNameTypeSerializer(const ContextItems& contextItems, QualType qt, const DependentNameType* dependentNameType) : contextItems(contextItems), qt(qt), dependentNameType(dependentNameType) {}
-
         std::string Serialize() const
         {
             std::string result;

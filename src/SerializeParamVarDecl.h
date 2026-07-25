@@ -26,54 +26,38 @@ namespace OdrCop3
         std::string Serialize() const
         {
             std::string out;
-
+            if (TypeSourceInfo* typeSourceInfo = parmVarDecl->getTypeSourceInfo())
             {   // leading attributes
-                if (TypeSourceInfo* typeSourceInfo = parmVarDecl->getTypeSourceInfo())
-                {
-                    SourceLocation typeLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
-                    for (const Attr* attr : parmVarDecl->attrs())
-                    {
-                        if (attr->getLocation() > typeLoc)
-                            continue; // this is a trailing attribute
+                SourceLocation typeLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
+                for (const Attr* attr : parmVarDecl->attrs())
+                    if (attr->getLocation() <= typeLoc)
                         out += SerializeAttr(contextItems, attr);
-                    }
-                }
             }
 
-            // type
-            if (NeedsManualSerialization(contextItems, parmVarDecl->getType()))
+            if (NeedsManualSerialization(contextItems, parmVarDecl->getType())) // type
             {
                 out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
             } else
                 out += parmVarDecl->getType().getAsString(contextItems.printPolicy);
 
-            // name if any
-            if (parmVarDecl->getIdentifier())
-                out += " " + parmVarDecl->getName().str(); // name
+            if (parmVarDecl->getIdentifier()) // name if any
+                out += " " + parmVarDecl->getName().str();
 
-            // default value if any
-            if (parmVarDecl->hasDefaultArg())
-            {   // Default argument, if any
+            if (parmVarDecl->hasDefaultArg()) // default argument, if any
+            {
                 std::string s;
                 llvm::raw_string_ostream os(s);
                 parmVarDecl->getDefaultArg()->printPretty(os, nullptr, contextItems.printPolicy);
                 os.flush();
                 out += " = " + s;
             }
-
+            if (TypeSourceInfo* typeSourceInfo = parmVarDecl->getTypeSourceInfo())
             {   // trailing attributes
-                if (TypeSourceInfo* typeSourceInfo = parmVarDecl->getTypeSourceInfo())
-                {
-                    SourceLocation typeLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
-                    for (const Attr* attr : parmVarDecl->attrs())
-                    {
-                        if (attr->getLocation() < typeLoc)
-                            continue; // leading attribute
-                        out += " " + SerializeAttr(contextItems, attr);
-                        out  = TrimRightIf(out, " ");
-                    }
-                }
+                SourceLocation typeLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
+                for (const Attr* attr : parmVarDecl->attrs())
+                    if (attr->getLocation() >= typeLoc)
+                        out += " " + TrimRightIf(SerializeAttr(contextItems, attr), " ");
             }
             return out;
         }

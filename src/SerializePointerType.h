@@ -23,7 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         PointerTypeSerializer(const ContextItems& contextItems, QualType qt, const PointerType* pointerType) : contextItems(contextItems), qt(qt), pointerType(pointerType) {}
-
         std::string Serialize() const
         {
             if (qt->getPointeeType()->isFunctionProtoType())
@@ -31,8 +30,7 @@ namespace OdrCop3
                 std::string out = SerializeType(contextItems, qt->getPointeeType());
                 return out; // the "*" is not appended (in fact, it's already handled)
             }
-
-            // normal case
+            // all other cases
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
             std::string out;
             out += SerializeType(ci2, qt->getPointeeType());

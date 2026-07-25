@@ -23,7 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         RecordTypeSerializer(const ContextItems& contextItems, QualType qt, const RecordType* recordType) : contextItems(contextItems), qt(qt), recordType(recordType) {}
-
         std::string Serialize() const
         {
             if (recordType->getDecl()->isInAnonymousNamespace())
@@ -31,8 +30,7 @@ namespace OdrCop3
                 std::string out;
                 if (qt.isConstQualified   ()) out += "const ";
                 if (qt.isVolatileQualified()) out += "volatile ";
-                out += IndentBlock(SerializeDecl(contextItems, recordType->getDecl()), LengthOfLastLine(out));
-                return out;
+                return out + IndentBlock(SerializeDecl(contextItems, recordType->getDecl()), LengthOfLastLine(out));
             } else
                 return qt.getAsString(contextItems.printPolicy);
         }

@@ -23,7 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         ConstantArrayTypeSerializer(const ContextItems& contextItems, QualType qt, const ConstantArrayType* constantArrayType) : contextItems(contextItems), qt(qt), constantArrayType(constantArrayType) {}
-
         std::string Serialize() const
         {
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);

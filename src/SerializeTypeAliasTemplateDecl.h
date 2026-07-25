@@ -22,21 +22,19 @@ namespace OdrCop3
         const TypeAliasTemplateDecl* typeAliasTemplateDecl;
     public:
         TypeAliasTemplateDeclSerializer(const ContextItems& contextItems, const TypeAliasTemplateDecl* typeAliasTemplateDecl) : contextItems(contextItems), typeAliasTemplateDecl(typeAliasTemplateDecl) {}
-
         std::string Serialize() const
         {
-            std::string templateParameterList = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, typeAliasTemplateDecl->getTemplateParameters());
-
             TypeAliasDecl* aliasDecl = typeAliasTemplateDecl->getTemplatedDecl();
             QualType      underlying = aliasDecl->getUnderlyingType();
-            std::string         fqtd = templateParameterList + "using " + typeAliasTemplateDecl->getNameAsString() + " = ";
+            std::string fqtd;
+            fqtd  = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, typeAliasTemplateDecl->getTemplateParameters());
+            fqtd += "using " + typeAliasTemplateDecl->getNameAsString() + " = ";
             if (NeedsManualSerialization(contextItems, underlying))
             {
                 fqtd += IndentBlock(SerializeType(contextItems, underlying), fqtd.size());
                 fqtd  = TrimRightIf(fqtd, ";");
             } else
                 fqtd += underlying.getAsString(contextItems.printPolicy);
-
             fqtd += "; // no typedef equivalent\n";
             return fqtd;
         }

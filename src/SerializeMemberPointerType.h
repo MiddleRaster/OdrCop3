@@ -25,12 +25,10 @@ namespace OdrCop3
         std::string GetQualifierIfAnonymousNamespace() const
         {
             std::string out;
-
             const clang::NestedNameSpecifier& qualifier = memberPointerType->getQualifier();
             if (const clang::Type* type = qualifier.getAsType())
             {
                 clang::QualType qt(type, 0);
-
                 if (NeedsManualSerialization(contextItems, qt))
                 {
                     qt = qt.getCanonicalType();
@@ -48,15 +46,14 @@ namespace OdrCop3
         MemberPointerTypeSerializer(const ContextItems& contextItems, QualType qt, const MemberPointerType* memberPointerType) : contextItems(contextItems), qt(qt), memberPointerType(memberPointerType) {}
         std::string Serialize() const
         {
-            std::string qualifierName;
             int indentation = 0;
-
+            std::string qualifierName;
             std::string anonQualifier = GetQualifierIfAnonymousNamespace();
             if (anonQualifier.find("\n") != std::string::npos)
             {   // if multiline, do this twice: first to figure out what the indentation needs to be; then again with the right indentation
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (::*?????)");
                 std::string placeHolder = SerializeType(ci2, memberPointerType->getPointeeType());
-                indentation = static_cast<int>(placeHolder.find("::*?????"));
+                indentation   = static_cast<int>(placeHolder.find("::*?????"));
                 qualifierName = anonQualifier;
             }
             else
@@ -67,10 +64,8 @@ namespace OdrCop3
                 os.flush();
                 qualifierName = TrimRightIf(s, "::");
             }
-
             ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (" + qualifierName + "::*" + contextItems.aux + ")");
-            std::string out = IndentBlock(SerializeType(ci, memberPointerType->getPointeeType()), indentation);
-            return out;
+            return IndentBlock(SerializeType(ci, memberPointerType->getPointeeType()), indentation);
         }
     };
 }

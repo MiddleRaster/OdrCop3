@@ -85,7 +85,6 @@ namespace OdrCop3
         std::string get_Defaulted()       const { return funcDecl->isDefaulted()                           ? "=default "  : ""; }
         std::string get_Deleted()         const { return funcDecl->isDeleted()                             ? "=delete "   : ""; }
         std::string get_Export()          const { return funcDecl->isInExportDeclContext()                 ? "export "    : ""; }
-
         std::string get_ExceptionSpecifier() const
         {
             const auto* proto = funcDecl->getType()->getAs<FunctionProtoType>();
@@ -97,7 +96,6 @@ namespace OdrCop3
                     if (funcDecl->getExceptionSpecSourceRange().isValid()) // only if the user actually wrote this (i.e., not "inferred" by the compiler)
                         return "noexcept ";
                     break;
-
                 case EST_DependentNoexcept:
                 {
                     std::string exprStr;
@@ -141,11 +139,8 @@ namespace OdrCop3
             std::string out;
             SourceLocation nameEnd = funcDecl->getNameInfo().getEndLoc();
             for (const Attr * attr : funcDecl->attrs())
-            {
-                if (attr->getLocation() > nameEnd)
-                    continue; // this is a trailing attribute: int f() [[attr]];
-                out += SerializeAttr(contextItems, attr);
-            }
+                if (attr->getLocation() <= nameEnd)
+                    out += SerializeAttr(contextItems, attr);
             return out;
         }
         std::string get_TrailingAttributes() const
@@ -153,11 +148,8 @@ namespace OdrCop3
             std::string out;
             SourceLocation nameEnd = funcDecl->getNameInfo().getEndLoc();
             for (const Attr * attr : funcDecl->attrs())
-            {
-                if (attr->getLocation() < nameEnd)
-                    continue; // this is a leading attribute: [[attr]] int f();
-                out += SerializeAttr(contextItems, attr);
-            }
+                if (attr->getLocation() >= nameEnd)
+                    out += SerializeAttr(contextItems, attr);
             return out;
         }
         std::string get_TrailingRequiresClause() const
@@ -313,7 +305,6 @@ namespace OdrCop3
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
 
             std::string fqn;
-
             fqn += get_TemplateHeader();
             fqn += get_LeadingAttributes();
             fqn += get_Friend();
@@ -329,7 +320,6 @@ namespace OdrCop3
             fqn += IndentBlock(get_ReturnType(), LengthOfLastLine(fqn)); // returning an anonymous namespace type is multi-line
             fqn += get_CallingConvention();
             fqn += get_FunctionName();
-
             fqn += '(';
             for (const ParmVarDecl* param : funcDecl->parameters())
             {
@@ -338,16 +328,12 @@ namespace OdrCop3
             }
             fqn  = TrimRightIf(fqn, ", ");
             fqn += ") ";
-
             fqn += get_TrailingRequiresClause();
-
             fqn += method.get_Const();
             fqn += method.get_Volatile();
             fqn += method.get_RefQualifier();
             fqn += get_ExceptionSpecifier();
             fqn += get_TrailingAttributes();
-        //  fqn += method.get_Override(); // these two are actually attributes, which are handled on the line above
-        //  fqn += method.get_Final();    // these two are actually attributes, which are handled on the line above
             fqn += method.get_PureVirtual();
             fqn += get_Defaulted();
             fqn += get_Deleted();
@@ -357,7 +343,6 @@ namespace OdrCop3
                 fqn  = TrimRightIf(fqn, " ") +  ";"; // no body:  end prototype with ';'
             else
                 fqn += get_Body();
-
             return fqn + "\n";
         }
     };

@@ -67,7 +67,6 @@ namespace OdrCop3
 
         return namelessName;
     }
-
     template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> inline std::string MakeUnnamedEnumKey(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
     {
         std::string name = BuildNameForNameless<SerializeDecl, SerializeType, SerializeAttr>(contextItems, enumDecl);
@@ -125,7 +124,6 @@ namespace OdrCop3
         }
     public:
         EnumDeclSerializer(const ContextItems& contextItems, const EnumDecl* enumDecl) : contextItems(contextItems), enumDecl(enumDecl) {}
-
         std::string Serialize() const
         {
             std::string enumName = enumDecl->getNameAsString();

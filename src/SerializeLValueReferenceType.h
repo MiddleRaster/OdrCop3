@@ -23,12 +23,10 @@ namespace OdrCop3
         QualType qt;
     public:
         LValueReferenceTypeSerializer(const ContextItems& contextItems, QualType qt, const LValueReferenceType* lValueReferenceType) : contextItems(contextItems), qt(qt), lValueReferenceType(lValueReferenceType) {}
-
         std::string Serialize() const
         {
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-            std::string out = IndentBlock(SerializeType(ci2, qt->getPointeeType()), 0);
-            out = TrimRightIf(out, ";");
+            std::string out = TrimRightIf(IndentBlock(SerializeType(ci2, qt->getPointeeType()), 0), ";");
             return out + " &" + contextItems.aux;
         }
     };

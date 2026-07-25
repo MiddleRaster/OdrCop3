@@ -23,10 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         SubstTemplateTypeParmTypeSerializer(const ContextItems& contextItems, QualType qt, const SubstTemplateTypeParmType* substTemplateTypeParmType) : contextItems(contextItems), qt(qt), substTemplateTypeParmType(substTemplateTypeParmType) {}
-
-        std::string Serialize() const
-        {
-            return SerializeType(contextItems, substTemplateTypeParmType->getReplacementType());
-        }
+        std::string Serialize() const { return SerializeType(contextItems, substTemplateTypeParmType->getReplacementType()); }
     };
 }

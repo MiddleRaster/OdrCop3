@@ -32,7 +32,6 @@ namespace OdrCop3
                 out = TrimRightIf(out, ";");
                 return out;
             }
-
             std::string s;
             llvm::raw_string_ostream os(s);
             qualType.print(os, contextItems.printPolicy);
@@ -43,7 +42,6 @@ namespace OdrCop3
         std::string get_Parameters() const
         {
             std::string out;
-
             bool first = true;
             for (clang::QualType qualType : functionProtoType->param_types())
             {
@@ -51,30 +49,25 @@ namespace OdrCop3
                     first = false;
                 else
                     out += ", ";
-
                 out += Output(qualType);
             }
             return out;
         }
     public:
         FunctionProtoTypeSerializer(const ContextItems& contextItems, QualType qt, const FunctionProtoType* functionProtoType) : contextItems(contextItems), qt(qt), functionProtoType(functionProtoType) {}
-
         std::string Serialize() const
         {   // e.g., for "void (*callback2)(Foo*);", QualType::print() returns "void (Foo *)"
             // important note:
             // this Serializer is called for both pointers-to-functions AND pointers-to-member-functions
             // So the ContextItems.aux field must be properly set up before calling this function.
-
             std::string out;
             out += get_ReturnType();
             out  = TrimRightIf(out, "\n");
             out  = TrimRightIf(out, ";");
-
             out += contextItems.aux; // I like this design quite a bit:  this is how I insert (*callback2) or (S::*mp)
             out += "(";
             out += IndentBlock(get_Parameters(), LengthOfLastLine(out));
             out += ")";
-
             return out;
         }
     };

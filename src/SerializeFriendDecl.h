@@ -28,19 +28,16 @@ namespace OdrCop3
             {
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
 
-                if (const FunctionTemplateDecl* functionTemplateDecl = dyn_cast<FunctionTemplateDecl>(namedDecl))
-                {
-                    if (const FunctionDecl* functionDecl = functionTemplateDecl->getTemplatedDecl())
-                        ci2.wantFunctionBody = functionDecl->doesThisDeclarationHaveABody();
-                    return SerializeDecl(ci2, functionTemplateDecl);
+                if (const FunctionTemplateDecl* functionTemplateDecl = dyn_cast<FunctionTemplateDecl>(namedDecl)) {
+                    if (const FunctionDecl    * functionDecl = functionTemplateDecl->getTemplatedDecl())
+                        ci2.wantFunctionBody  = functionDecl->doesThisDeclarationHaveABody();
+                    return SerializeDecl(ci2,   functionTemplateDecl);
                 }
-                if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(namedDecl))
-                {
-                    ci2.wantFunctionBody = functionDecl->doesThisDeclarationHaveABody();
-                    return SerializeDecl(ci2, functionDecl);
+                if (const FunctionDecl        * functionDecl = dyn_cast<FunctionDecl>(namedDecl)) {
+                    ci2.wantFunctionBody      = functionDecl->doesThisDeclarationHaveABody();
+                    return SerializeDecl(ci2,   functionDecl);
                 }
-                if (const ClassTemplateDecl* classTemplateDecl = dyn_cast<ClassTemplateDecl>(namedDecl))
-                {
+                if (const ClassTemplateDecl   * classTemplateDecl = dyn_cast<ClassTemplateDecl>(namedDecl)) {
                     ci2.needsFriend = true;
                     return SerializeDecl(ci2, classTemplateDecl);
                 }
@@ -49,7 +46,6 @@ namespace OdrCop3
             }
             if (const TypeSourceInfo* typeSourceInfo = friendDecl->getFriendType())
                 return "friend " + SerializeType(contextItems, friendDecl->getFriendType()->getType()) + ";";
-
             return "";
         }
     };

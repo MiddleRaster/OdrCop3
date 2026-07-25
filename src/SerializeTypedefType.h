@@ -23,10 +23,7 @@ namespace OdrCop3
         QualType qt;
     public:
         TypedefTypeSerializer(const ContextItems& contextItems, QualType qt, const TypedefType* typedefType) : contextItems(contextItems), qt(qt), typedefType(typedefType) {}
-
-        std::string Serialize() const
-        {   // for an ODR violations detector, we never want any typedefs or using aliases. Just keep desugaring.
-            return SerializeType(contextItems, typedefType->desugar());
-        }
+        // for an ODR violations detector, we never want any typedefs or using aliases. Just keep desugaring.
+        std::string Serialize() const { return SerializeType(contextItems, typedefType->desugar()); }
     };
 }

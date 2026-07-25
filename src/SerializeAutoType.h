@@ -23,10 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         AutoTypeSerializer(const ContextItems& contextItems, QualType qt, const AutoType* autoType) : contextItems(contextItems), qt(qt), autoType(autoType) {}
-
-        std::string Serialize() const
-        {
-            return "auto";
-        }
+        std::string Serialize() const { return "auto"; }
     };
 }

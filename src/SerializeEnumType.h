@@ -23,7 +23,6 @@ namespace OdrCop3
         QualType qt;
     public:
         EnumTypeSerializer(const ContextItems& contextItems, QualType qt, const EnumType* enumType) : contextItems(contextItems), qt(qt), enumType(enumType) {}
-
         std::string Serialize() const
         {
             std::string out;

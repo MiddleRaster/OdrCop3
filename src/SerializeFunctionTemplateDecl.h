@@ -22,9 +22,6 @@ namespace OdrCop3
         const FunctionTemplateDecl* functionTemplateDecl;
     public:
         FunctionTemplateDeclSerializer(const ContextItems& contextItems, const FunctionTemplateDecl* functionTemplateDecl) : contextItems(contextItems), functionTemplateDecl(functionTemplateDecl) {}
-        std::string Serialize() const
-        {
-            return SerializeDecl(contextItems, functionTemplateDecl->getTemplatedDecl());
-        }
+        std::string Serialize() const { return SerializeDecl(contextItems, functionTemplateDecl->getTemplatedDecl()); }
     };
 }

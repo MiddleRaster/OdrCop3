@@ -51,11 +51,7 @@ namespace OdrCop3
             out = out.substr(0, out.size()-what.size());
         return out;
     }
-    inline size_t LengthOfLastLine(const std::string& out)
-    {
-        return out.size() - (out.rfind('\n')+1);
-    }
-
+    inline size_t LengthOfLastLine(const std::string& out) { return out.size() - (out.rfind('\n')+1); }
     inline std::string IndentBlock(const std::string& block, size_t indentWidth, const std::string& firstLinePrefix = "")
     {
         std::istringstream iss(block);
@@ -75,37 +71,25 @@ namespace OdrCop3
 
     inline std::string MakeUnnamedAndAnonymousConsistent(std::string input)
     {
-        struct Replace
-        {
-            static std::string With(std::string str, const std::string& bad, const std::string& good)
-            {
-                auto pos = str.find(bad);
-                if (pos != std::string::npos)
-                    str.replace(pos, bad.size(), good);
-                return str;
-            }
-        };
-
-        input = Replace::With(input, "(unnamed at"         , "(anonymous type at");
-        input = Replace::With(input, "(unnamed enum at"    , "(anonymous type at");
-        input = Replace::With(input, "(unnamed union at"   , "(anonymous type at");
-        input = Replace::With(input, "(anonymous struct at", "(anonymous type at");
-        input = Replace::With(input, "(anonymous class at" , "(anonymous type at");
-        input = Replace::With(input, "(anonymous union at" , "(anonymous type at");
-
+        auto Replace = [](std::string& str, std::string_view bad, std::string_view good) { if (auto pos = str.find(bad); pos != std::string::npos) str.replace(pos, bad.size(), good); };
+        Replace(input, "(unnamed at",          "(anonymous type at");
+        Replace(input, "(unnamed enum at",     "(anonymous type at");
+        Replace(input, "(unnamed union at",    "(anonymous type at");
+        Replace(input, "(anonymous struct at", "(anonymous type at");
+        Replace(input, "(anonymous class at",  "(anonymous type at");
+        Replace(input, "(anonymous union at",  "(anonymous type at");
         return input;
     }
 
     inline bool NeedsManualSerialization(const ContextItems& contextItems, QualType qt)
     {
         clang::PrintingPolicy policy = contextItems.printPolicy;
-        policy.FullyQualifiedName = true;
+        policy.FullyQualifiedName    = true;
 
         std::string str;
         llvm::raw_string_ostream os(str);
         qt.print(os, policy);
         os.flush();
-
         return str.find("(anonymous namespace)") != std::string::npos;
     }
 }
