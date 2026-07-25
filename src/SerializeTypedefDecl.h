@@ -56,7 +56,9 @@ namespace OdrCop3
             if (NeedsInlining(tagDecl))
             {
                 std::string fqtd    = "using " + aliasName + " = ";
-                std::string inlined = TrimRightIf(SerializeDecl(contextItems, tagDecl), ";\n");
+                std::string inlined = SerializeType(contextItems, underlying);
+                inlined             = TrimRightIf(inlined, " "); // for enums
+                inlined             = TrimRightIf(inlined, ";"); // for UDTs
                 fqtd += inlined;
                 if (inlined.find('\n') == std::string::npos)
                     fqtd += "; // typedef " + inlined      + " " + aliasName + ";\n"; // not multi-line
