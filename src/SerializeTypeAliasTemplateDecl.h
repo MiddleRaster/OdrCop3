@@ -21,8 +21,9 @@ namespace OdrCop3
         const ContextItems         & contextItems;
         const TypeAliasTemplateDecl* typeAliasTemplateDecl;
 
-        void PrintParam(const NamedDecl* param, std::string& out) const
+        std::string PrintParam(const NamedDecl* param) const
         {
+            std::string out;
             if (auto* TTPP = llvm::dyn_cast<TemplateTemplateParmDecl>(param)) {
                 out += "template <";
 
@@ -31,34 +32,31 @@ namespace OdrCop3
                     if (!innerFirst)
                         out += ", ";
                     innerFirst = false;
-                    PrintParam(inner, out); // recursion for nested template-template parameters
+                    out += PrintParam(inner); // recursion for nested template-template parameters
                 }
-
                 out += "> class";
                 if (TTPP->isParameterPack())
                     out += "...";
                 out += " ";
                 out += TTPP->getNameAsString();
-                return;
+                return out;
             }
-
             if (auto* TTP = llvm::dyn_cast<TemplateTypeParmDecl>(param)) {
                 out += "typename";
                 if (TTP->isParameterPack())
                     out += "...";
                 out += " ";
                 out += TTP->getNameAsString();
-                return;
+                return out;
             }
-
             if (auto* NTTP = llvm::dyn_cast<NonTypeTemplateParmDecl>(param)) {
                 out += NTTP->getType().getAsString();
                 if (NTTP->isParameterPack())
                     out += "...";
                 out += " ";
-                out += NTTP->getNameAsString();
-                return;
+                out += NTTP->getNameAsString(); // fall through
             }
+            return out;
         };
 
     public:
@@ -66,8 +64,6 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-        //  typeAliasTemplateDecl->dump();
-
             std::string params;
             bool first = true;
             for (const NamedDecl* param : *typeAliasTemplateDecl->getTemplateParameters())
@@ -76,7 +72,7 @@ namespace OdrCop3
                     first = false;
                 else
                     params += ", ";
-                PrintParam(param, params);
+                params += PrintParam(param);
             }
 
             TypeAliasDecl* aliasDecl = typeAliasTemplateDecl->getTemplatedDecl();

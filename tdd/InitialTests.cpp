@@ -576,14 +576,16 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<>        char GlobalValue<char> = 42;\n"
                                "            int    a = GlobalValue<int>;\n"
                                "            double b = GlobalValue<double>;\n"
-                               "              char c = GlobalValue<char>;\n";
+                               "              char c = GlobalValue<char>;\n"
+                               "template<typename T> constexpr bool IsPointerLike = false; template<typename T> constexpr bool IsPointerLike<T*> = true;\n"
+                               ;
  
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
             Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(12, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(14, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
@@ -595,6 +597,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<> constexpr const int DefaultValue<int, 0>=42;\n"              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> T GlobalValue{};\n"                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> char GlobalValue<char>=42;\n"                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike=false;\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike<T*>=true;\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<int N> constexpr const int Square=N*N;\n"                      , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int a=GlobalValue<int>;\n"                                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("double b=GlobalValue<double>;\n"                                        , (*it++).second[0].fullyQualified);

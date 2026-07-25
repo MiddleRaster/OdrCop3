@@ -21,56 +21,69 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         const VarDecl     * varDecl;
+
+        std::string get_TemplateHeader() const
+        {   // this serializer may be called for varDecls that are actually varTemplateDecl; in that case, add template header
+            const auto* varTemplateDecl = varDecl->getDescribedVarTemplate();
+            return (varTemplateDecl == nullptr) ? "" : ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, varTemplateDecl->getTemplateParameters());
+        }
+        std::string get_TemplateFooter() const
+        {   // if it's a VarTemplateSpecializationDecl, add <whatever> after the name
+            const auto* varTemplateSpecializationDecl = llvm::dyn_cast<clang::VarTemplateSpecializationDecl>(varDecl);
+            return varTemplateSpecializationDecl == nullptr ? "" : TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, varTemplateSpecializationDecl->getTemplateArgs(), varTemplateSpecializationDecl->getSpecializedTemplate()->getTemplateParameters());
+        }
+        std::string get_Attributes() const
+        {
+            std::string out;
+            for (const auto* attr : varDecl->attrs())
+                out += SerializeAttr(contextItems, attr);
+            return out;
+        }
+        std::string get_ConstexprAndInline() const
+        {
+            std::string out;
+            if (varDecl->isConstexpr())
+                out += "constexpr ";
+            else if (varDecl->isInline()) // constexpr is inline; don't print both
+                out += "inline ";
+            return out;
+        }
+        std::string get_Static() const { return varDecl->isStaticDataMember() ? "static " : ""; }
+        std::string get_Init() const
+        {
+            if (!varDecl->hasInit()) return "";
+
+            const Expr* expr = varDecl->getInit();
+            llvm::StringRef  text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
+            std::string      init = text.str();
+            if ((init.starts_with("{")) || init.starts_with("("))
+                return init;
+            else
+                return "=" + init;
+        }
+
     public:
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
 
         std::string Serialize() const
         {
             std::string out;
-
-            // first thing:  this serializer may be called for varDecls that are actually varTemplateDecl; in that case, add template header
-            if (const auto* varTemplateDecl = varDecl->getDescribedVarTemplate())
-                out = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, varTemplateDecl->getTemplateParameters());
-
-            for (const auto* attr : varDecl->attrs())
-                out += SerializeAttr(contextItems, attr); // attributes on static data-members
-
-            if (varDecl->isConstexpr())
-                out += "constexpr ";
-            else if (varDecl->isInline()) // constexpr is inline; don't print both
-                out += "inline ";
-
-            if (varDecl->isStaticDataMember())
-                out += "static ";
-
-            if (NeedsManualSerialization(contextItems, varDecl->getType()))
-            {
+            out += get_TemplateHeader();
+            out += get_Attributes();
+            out += get_ConstexprAndInline();
+            out += get_Static();
+            if (NeedsManualSerialization(contextItems, varDecl->getType())) {
                 out += IndentBlock(SerializeType(contextItems, varDecl->getType()), LengthOfLastLine(out));
                 out += varDecl->getNameAsString();
-            }
-            else
-            {
-                std::string fieldStr;
-                llvm::raw_string_ostream os(fieldStr);
+            } else {
+                std::string varStr;
+                llvm::raw_string_ostream os(varStr);
                 varDecl->getType().print(os, contextItems.printPolicy, varDecl->getNameAsString());
                 os.flush();
-                out += fieldStr;
+                out += varStr;
             }
-
-            // if it's a VarTemplateSpecializationDecl, add <whatever> after the name
-            if (const auto* varTemplateSpecializationDecl = llvm::dyn_cast<clang::VarTemplateSpecializationDecl>(varDecl))
-                out += TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, varTemplateSpecializationDecl->getTemplateArgs(), varTemplateSpecializationDecl->getSpecializedTemplate()->getTemplateParameters());
-
-            if (varDecl->hasInit())
-            {
-                const Expr* expr = varDecl->getInit();
-                llvm::StringRef  text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
-                std::string      init = text.str();
-                if ((init.starts_with("{")) || init.starts_with("("))
-                    out += init;
-                else
-                    out += "=" + init;
-            }
+            out += get_TemplateFooter();
+            out += get_Init();
             out += ";\n";
             return out;
         }
