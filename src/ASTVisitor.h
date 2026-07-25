@@ -231,7 +231,10 @@ namespace OdrCop3
                 default:
                     break;
                 }
-                key += TemplateArgsToString<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, vtsd->getTemplateArgs(), vtsd->getSpecializedTemplate()->getTemplateParameters(), true);
+                if (auto* vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl>(varDecl))
+                    key += TemplateArgsToString(contextItems, vtpsd);
+                else
+                    key += TemplateArgsToString(contextItems, vtsd);
             }
 
             maps.varMap[key].push_back({TU, SerializeDecls(contextItems, varDecl)});

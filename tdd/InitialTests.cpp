@@ -593,12 +593,12 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.varMap.begin();
                 Assert::AreEqual("template<typename T, int Tag=0> constexpr const T DefaultValue=T{};\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> constexpr T *const DefaultValue<T*, 0>=nullptr;\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> constexpr T *const DefaultValue<T *, 0>=nullptr;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> constexpr const int DefaultValue<int, 0>=42;\n"              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> T GlobalValue{};\n"                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> char GlobalValue<char>=42;\n"                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike=false;\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike<T*>=true;\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike<T *>=true;\n"   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<int N> constexpr const int Square=N*N;\n"                      , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int a=GlobalValue<int>;\n"                                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("double b=GlobalValue<double>;\n"                                        , (*it++).second[0].fullyQualified);

@@ -30,7 +30,7 @@ namespace OdrCop3
         std::string get_TemplateFooter() const
         {   // if it's a VarTemplateSpecializationDecl, add <whatever> after the name
             const auto* varTemplateSpecializationDecl = llvm::dyn_cast<clang::VarTemplateSpecializationDecl>(varDecl);
-            return varTemplateSpecializationDecl == nullptr ? "" : TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, varTemplateSpecializationDecl->getTemplateArgs(), varTemplateSpecializationDecl->getSpecializedTemplate()->getTemplateParameters());
+            return varTemplateSpecializationDecl == nullptr ? "" : TemplateArgsToString(contextItems, varTemplateSpecializationDecl);
         }
         std::string get_Attributes() const
         {
