@@ -825,8 +825,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                        enum A::(anonymous type at input.cc:6:33) { X=42 };\n"
                                  "                     };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<enum class (anonymous namespace)::Mode : int { A, B }> struct EnumHolder {\n"
-                                 "                                                                };\n"
+                Assert::AreEqual("template<enum class (anonymous namespace)::Mode : int { A, B } M> struct EnumHolder {\n"
+                                 "                                                                  };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct L::M::N::LNM { // sizeof=1\n"
                                  "   void __cdecl f() { enum LMN1 { X = 42 }; }\n"

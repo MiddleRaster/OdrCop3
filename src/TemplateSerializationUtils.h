@@ -227,11 +227,10 @@ namespace OdrCop3
                     llvm::raw_string_ostream declStream(declStr);
                     nttp->getType().print(declStream, contextItems.printPolicy);
                     out += declStr;
-
-                    if (nttp->isParameterPack())
-                        out += "...";
-                    out += " " + nttp->getName().str();
                 }
+                if (nttp->isParameterPack())
+                    out += "...";
+                out += " " + nttp->getName().str();
 
                 if (nttp->hasDefaultArgument())
                 {
