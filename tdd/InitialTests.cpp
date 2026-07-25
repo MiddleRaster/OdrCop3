@@ -735,13 +735,15 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Anonymous namespace typedef/alias", []
         {
-            std::string code = "namespace { struct AnonType {}; } using AT = AnonType;\n"
+            std::string code = "namespace { struct AnonType {}; } using AT = AnonType; typedef AnonType TDA;\n"
                                "namespace { template<typename T> struct Invisible { using type = T*; }; } template<typename T> using Alias = Invisible<T>;\n" // Alias<int> p;\n"
                                "namespace { template<typename T> using Ptr = T*; }"
                                "template<typename T> struct S { template<typename U> using Ptr = U*; };"
                                "template<typename T> struct Outer { template<typename U> using Alias = U*; };"
                                "template<> struct Outer<int> { template<typename U> using Alias = U&; };"
                                "template<typename T> struct Outer<T*> { template<typename U> using Alias = U&; };"
+                               "namespace { namespace Deeply { namespace Nested { struct Struct { enum Enum { Alpha, Beta }; }; }}}"
+                               "typedef Deeply::Nested::Struct::Enum DeeplyNestedEnum;"
                                ;
 
             OdrCop3::AllMaps maps;
@@ -751,7 +753,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual(2, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(4, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -781,6 +783,11 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<typename T> using Alias = template<typename T> struct (anonymous namespace)::Invisible {\n"
                                  "                                                           using (anonymous namespace)::Invisible::type = T *; // typedef T * (anonymous namespace)::Invisible::type;\n"
                                  "                                                        }; // no typedef equivalent\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeeplyNestedEnum = enum (anonymous namespace)::Deeply::Nested::Struct::Enum { Alpha, Beta }; // typedef enum (anonymous namespace)::Deeply::Nested::Struct::Enum { Alpha, Beta } DeeplyNestedEnum;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using TDA = struct (anonymous namespace)::AnonType { // sizeof=1\n"
+                                 "}; // typedef (anonymous namespace)::AnonType TDA;\n"
                               , (*it++).second[0].fullyQualified);
             }
         }

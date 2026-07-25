@@ -28,10 +28,10 @@ namespace OdrCop3
             const clang::Type* ty = fieldDecl->getType().getTypePtr();
             while (true)
             {
-                     if (auto*   ptr = llvm::dyn_cast<clang::PointerType>(ty))   ty = ptr->getPointeeType().getTypePtr();
+                     if (auto*   ptr = llvm::dyn_cast<clang::PointerType  >(ty)) ty = ptr->getPointeeType().getTypePtr();
                 else if (auto*   ref = llvm::dyn_cast<clang::ReferenceType>(ty)) ty = ref->getPointeeType().getTypePtr();
-                else if (auto*   arr = llvm::dyn_cast<clang::ArrayType>(ty))     ty = arr->getElementType().getTypePtr();
-                else if (auto* paren = llvm::dyn_cast<clang::ParenType>(ty))     ty = paren->getInnerType().getTypePtr();
+                else if (auto*   arr = llvm::dyn_cast<clang::ArrayType    >(ty)) ty = arr->getElementType().getTypePtr();
+                else if (auto* paren = llvm::dyn_cast<clang::ParenType    >(ty)) ty = paren->getInnerType().getTypePtr();
                 else break;
             }
             return llvm::isa<clang::TemplateTypeParmType>(ty);
@@ -43,13 +43,9 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-            if (fieldDecl->isAnonymousStructOrUnion())
-                return ""; // nameless unions/struct never have a variable name
-
             std::string out;
 
-            // attributes on data-members
-            for (const Attr* attr : fieldDecl->attrs())
+            for (const Attr* attr : fieldDecl->attrs())   // attributes on data-members
                 out += SerializeAttr(contextItems, attr);
 
             if (NeedsManualSerialization(contextItems, fieldDecl->getType()) || IsTemplateParamType())

@@ -20,6 +20,29 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         const TypedefDecl * typedefDecl;
+
+        bool NeedsInlining(const TagDecl* tagDecl) const
+        {
+            if (tagDecl != nullptr)
+            {
+                if (tagDecl->getName().empty())
+                    return true;
+
+                const clang::DeclContext* declContext = tagDecl->getDeclContext();
+                while (declContext && !declContext->isTranslationUnit())
+                {
+                    if (const auto* namespaceDecl = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
+                        if (namespaceDecl->isAnonymousNamespace())
+                            return true;
+                    if (const auto* recordDecl = llvm::dyn_cast<clang::RecordDecl>(declContext))
+                        if (recordDecl->isInAnonymousNamespace())
+                            return true;
+                    declContext = declContext->getParent();
+                }
+            }
+            return false;
+        }
+
     public:
         TypedefDeclSerializer(const ContextItems& contextItems, const TypedefDecl* typedefDecl) : contextItems(contextItems), typedefDecl(typedefDecl) {}
 
@@ -29,53 +52,18 @@ namespace OdrCop3
             std::string aliasName    = typedefDecl->getQualifiedNameAsString();
             std::string resolvedType = underlying.getAsString(contextItems.printPolicy);
 
-            // nameless or anonymous UDTs
-            bool needsFullInlining = false;
-            const RecordType* recordType = underlying->getAs<RecordType>();
-            if (recordType != nullptr) {
-                if (recordType->getDecl()->getName().empty())
-                    needsFullInlining = true;
-                else {
-                    const NamespaceDecl* nsDecl = dyn_cast<NamespaceDecl>(recordType->getDecl()->getDeclContext());
-                    if (nsDecl != nullptr)
-                        if (nsDecl->isAnonymousNamespace())
-                            needsFullInlining = true;
-                }
-                if (needsFullInlining)
-                {
-                    std::string fqtd = "using " + aliasName + " = ";
-                    fqtd += IndentBlock(SerializeDecl(contextItems, dyn_cast<CXXRecordDecl>(recordType->getDecl())), fqtd.size());
-                    fqtd  = TrimRightIf(fqtd, ";");
-                    fqtd += "; // typedef " + resolvedType + " " + aliasName + ";\n";
-                    return fqtd;
-                }
-            }
-
-            // nameless or anonymous enums
-            bool isNameless           = false;
-            bool isAnonymousNamespace = false;
-            const EnumType * enumType = underlying->getAs<EnumType>();
-            if (enumType != nullptr)
+            const TagDecl* tagDecl = underlying->getAsTagDecl();
+            if (NeedsInlining(tagDecl))
             {
-                if (enumType->getDecl()->getName().empty())
-                    isNameless = true;
-                const NamespaceDecl* nsDecl = dyn_cast<NamespaceDecl>(enumType->getDecl()->getDeclContext());
-                if (nsDecl != nullptr)
-                    if (nsDecl->isAnonymousNamespace())
-                        isAnonymousNamespace = true;
+                std::string fqtd    = "using " + aliasName + " = ";
+                std::string inlined = TrimRightIf(SerializeDecl(contextItems, tagDecl), ";\n");
+                fqtd += inlined;
+                if (inlined.find('\n') == std::string::npos)
+                    fqtd += "; // typedef " + inlined      + " " + aliasName + ";\n"; // not multi-line
+                else
+                    fqtd += "; // typedef " + resolvedType + " " + aliasName + ";\n"; // multi-line: just use the print result
+                return fqtd;
             }
-            if (isNameless || isAnonymousNamespace)
-            {   // if nameless, enumSig will look like this:  "enum (unnamed enum : Red) { Red = 0, Green = 1, Blue = 2 };"
-                std::string enumSig = SerializeDecl(contextItems, enumType->getDecl());
-                enumSig = TrimRightIf(enumSig, ";\n");
-                if (isAnonymousNamespace && isNameless)
-                {   // if both, need to insert "(anonymous namespace)::" between the "enum " and "(unnamed enum"
-                    enumSig = enumSig.substr(5); // strip off "enum "
-                    enumSig = "enum (anonymous namespace)::" + enumSig;
-                }
-                return "using " + aliasName + " = " + enumSig + "; // typedef " + enumSig + " " + aliasName + ";\n";
-            }
-
             return "using " + aliasName + " = " + resolvedType + "; // typedef " + resolvedType + " " + aliasName + ";\n";
         }
     };

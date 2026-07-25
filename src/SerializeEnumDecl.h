@@ -22,19 +22,18 @@ namespace OdrCop3
         const clang::DeclContext* declContext = enumDecl->getDeclContext();
         while (declContext && !declContext->isTranslationUnit())
         {
+            std::string name;
+            if (const auto* namespaceDecl = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
+                name = namespaceDecl->getNameAsString();
+            else
             if (const auto* recordDecl = llvm::dyn_cast<clang::RecordDecl>(declContext))
             {
-                std::string name;
                 if (const ClassTemplateSpecializationDecl * ctsd = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(recordDecl))
                     name = ctsd->getNameAsString() + TemplateArgsToString<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ctsd, false); // include template instantiations
                 else
                     name = recordDecl->getNameAsString();
-                parent = name + "::" + parent;
             }
-            else if (const auto* namespaceDecl = llvm::dyn_cast<clang::NamespaceDecl>(declContext))
-            {
-                parent = namespaceDecl->getNameAsString() + "::" + parent;
-            }
+            parent = name + "::" + parent;
             declContext = declContext->getParent();
         }
         return parent;
