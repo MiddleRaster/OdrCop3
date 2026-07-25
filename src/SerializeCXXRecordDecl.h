@@ -20,14 +20,11 @@ namespace OdrCop3
     {
         const ContextItems & contextItems;
         const CXXRecordDecl* cxxRecordDecl;
-    public:
-        CXXRecordDeclSerializer(const ContextItems& contextItems, const CXXRecordDecl* cxxRecordDecl) : contextItems(contextItems), cxxRecordDecl(cxxRecordDecl) {}
 
         std::string get_Kind()        const { return cxxRecordDecl->getKindName().str() + " "; }
         std::string get_Name()        const { return MakeUnnamedAndAnonymousConsistent(cxxRecordDecl->getQualifiedNameAsString()); }
         std::string get_SizeComment() const { return cxxRecordDecl->isCompleteDefinition() && !cxxRecordDecl->isDependentType() ? " // sizeof=" + std::to_string(contextItems.context.getASTRecordLayout(cxxRecordDecl).getSize().getQuantity()) + "\n" : "\n"; }
         std::string get_Friend()      const { return contextItems.needsFriend ? "friend " : ""; }
-
         std::string get_Attributes(bool* hasFinal) const
         {
             std::string out;
@@ -37,7 +34,7 @@ namespace OdrCop3
                 if (a == "final ")
                     *hasFinal = true;
                 else
-                    out += SerializeAttr(contextItems, attr);
+                    out += a;
             }
             return out;
         }
@@ -47,7 +44,7 @@ namespace OdrCop3
 
             bool firstBase = true;
             for (const clang::CXXBaseSpecifier& base : cxxRecordDecl->bases())
-            {   // CXXBaseSpecifier is not a Decl or a Type:  must serialize some stuff here
+            {
                 if (firstBase) {
                     firstBase = false;
                     out += ": ";
@@ -55,16 +52,15 @@ namespace OdrCop3
                     out += ", ";
 
                 switch (base.getAccessSpecifier()) {
+                default:
+                case clang::AS_none:                           break;
                 case clang::AS_public:    out += "public ";    break;
                 case clang::AS_protected: out += "protected "; break;
                 case clang::AS_private:   out += "private ";   break;
-                case clang::AS_none:
-                default:                                       break;
                 }
 
                 if (base.isVirtual())
                     out += "virtual ";
-
                 out += IndentBlock(SerializeType(contextItems, base.getType()), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
             }
@@ -74,6 +70,9 @@ namespace OdrCop3
             out += "{";
             return out;
         }
+
+    public:
+        CXXRecordDeclSerializer(const ContextItems& contextItems, const CXXRecordDecl* cxxRecordDecl) : contextItems(contextItems), cxxRecordDecl(cxxRecordDecl) {}
 
         std::string Serialize() const
         {
