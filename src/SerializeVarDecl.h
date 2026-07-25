@@ -72,13 +72,15 @@ namespace OdrCop3
             out += get_Attributes();
             out += get_ConstexprAndInline();
             out += get_Static();
+
+            std::string name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
             if (NeedsManualSerialization(contextItems, varDecl->getType())) {
                 out += IndentBlock(SerializeType(contextItems, varDecl->getType()), LengthOfLastLine(out));
-                out += varDecl->getNameAsString();
+                out += name;
             } else {
                 std::string varStr;
                 llvm::raw_string_ostream os(varStr);
-                varDecl->getType().print(os, contextItems.printPolicy, varDecl->getNameAsString());
+                varDecl->getType().print(os, contextItems.printPolicy, name);
                 os.flush();
                 out += varStr;
             }

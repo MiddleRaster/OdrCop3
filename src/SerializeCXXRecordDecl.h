@@ -22,9 +22,17 @@ namespace OdrCop3
         const CXXRecordDecl* cxxRecordDecl;
 
         std::string get_Kind()        const { return cxxRecordDecl->getKindName().str() + " "; }
-        std::string get_Name()        const { return MakeUnnamedAndAnonymousConsistent(cxxRecordDecl->getQualifiedNameAsString()); }
         std::string get_SizeComment() const { return cxxRecordDecl->isCompleteDefinition() && !cxxRecordDecl->isDependentType() ? " // sizeof=" + std::to_string(contextItems.context.getASTRecordLayout(cxxRecordDecl).getSize().getQuantity()) + "\n" : "\n"; }
         std::string get_Friend()      const { return contextItems.needsFriend ? "friend " : ""; }
+        std::string get_Name()        const
+        {
+            std::string fullyQualifiedName = cxxRecordDecl->getQualifiedNameAsString();
+            if (fullyQualifiedName.find("(anonymous ") != std::string::npos)
+                return MakeUnnamedAndAnonymousConsistent(fullyQualifiedName);
+            if (fullyQualifiedName.find("(unnamed "  ) != std::string::npos)
+                return MakeUnnamedAndAnonymousConsistent(fullyQualifiedName);
+            return cxxRecordDecl->getNameAsString();
+        }
         std::string get_Attributes(bool* hasFinal) const
         {
             std::string out;

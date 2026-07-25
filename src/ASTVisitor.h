@@ -210,7 +210,8 @@ namespace OdrCop3
             if (varDecl->isLocalVarDecl())
                 return true; // local variables can't be ODR violations
             if (isa<CXXRecordDecl>(varDecl->getDeclContext()))
-                return true; // struct/class statics:  already done during CXXRecordDecl parsing
+                if (!varDecl->isOutOfLine()) // an out-of-class initialization
+                    return true; // struct/class statics:  already done during CXXRecordDecl parsing
 
             auto linkage = varDecl->getLinkageAndVisibility().getLinkage();
             if (linkage != clang::Linkage::External &&

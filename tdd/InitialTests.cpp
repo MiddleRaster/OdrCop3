@@ -828,7 +828,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<enum class (anonymous namespace)::Mode : int { A, B } M> struct EnumHolder {\n"
                                  "                                                                  };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct L::M::N::LNM { // sizeof=1\n"
+                Assert::AreEqual("struct LNM { // sizeof=1\n"
                                  "   void __cdecl f() { enum LMN1 { X = 42 }; }\n"
                                  "   enum L::M::N::LNM::(anonymous type at input.cc:7:91) { X=42 };\n"
                                  "};\n"
@@ -854,13 +854,56 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("void __cdecl f() { enum LMN1 { X = 42 }; }\n"                , (*it++).second[0].fullyQualified);
             }
+        }
+    },
 
+    {"Out-of-class static data member definitions", []
+        {
+            std::string code = "struct Soo { static int counter; static const char* name; };\n"
+                               "int         Soo::counter = 0;\n"
+                               "const char* Soo::name = \"soo\";\n"
+                               "namespace { struct Moo { static const int counter; }; } const int Moo::counter = 0;\n"
+                               "struct Outer { struct Inner { static const int counter; }; }; const int Outer::Inner::counter = 0;\n"
+                               ;
+
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(3, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(3, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Outer { // sizeof=1\n"
+                                 "   struct Inner { // sizeof=1\n"
+                                 "      static const int counter;\n"
+                                 "   };\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Inner { // sizeof=1\n"
+                                 "   static const int counter;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Soo { // sizeof=1\n"
+                                 "   static int counter;\n"
+                                 "   static const char *name;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("static const int Outer::Inner::counter=0;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("static int Soo::counter=0;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("static const char *Soo::name=\"soo\";\n"    , (*it++).second[0].fullyQualified);
+            }
         }
     },
 };
 /* 
- 2. Friend declarations (especially inside templates)
- 3. Nested namespaces and qualified names
  4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)
  5. Concept declarations (ConceptDecl)
  6. Out-of-class static data member definitions
