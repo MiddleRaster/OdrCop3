@@ -330,20 +330,6 @@ namespace OdrCop3
         */
 
             std::string key;
-
-            if (const auto* conv = llvm::dyn_cast<clang::CXXConversionDecl>(funcDecl))
-            {
-                std::string typeName, className;
-                {
-                    llvm::raw_string_ostream typeOs(typeName);
-                    conv->getConversionType().print(typeOs, printPolicy);
-
-                    llvm::raw_string_ostream classOs(className);
-                    conv->getParent()->printQualifiedName(classOs);
-                }
-                key += className + "::operator " + typeName;
-            }
-            else
             {
                 std::string out;
                 llvm::raw_string_ostream os(out);
@@ -361,21 +347,17 @@ namespace OdrCop3
                     if (i > 0)
                         key += ",";
                     const NamedDecl* param = params->getParam(i);
-                    if (const TemplateTypeParmDecl* typeParam = dyn_cast<TemplateTypeParmDecl>(param))
-                    {
-                        const bool isConversionTypeParam = llvm::isa<clang::CXXConversionDecl>(funcDecl);
-                        const std::string name = typeParam->getNameAsString();
-                        key += (isConversionTypeParam && !name.empty() ? name : (typeParam->wasDeclaredWithTypename() ? "typename" : "class")) + (typeParam->isParameterPack() ? "..." : "");
-                    }
-                    else if (const NonTypeTemplateParmDecl* nonTypeParam = dyn_cast<NonTypeTemplateParmDecl>(param))
-                        key += nonTypeParam->getType().getCanonicalType().getUnqualifiedType().getAsString(printPolicy) + (nonTypeParam->isParameterPack() ? "..." : "");
-                    else if (const TemplateTemplateParmDecl* templateParam = dyn_cast<TemplateTemplateParmDecl>(param))
-                        key += std::string("template<...> class") + (templateParam->isParameterPack() ? "..." : "");
+
+                    std::string s;
+                    llvm::raw_string_ostream os(s);
+                    param->print(os, contextItems.printPolicy);
+                    os.flush();
+                    key += s;
                 }
                 key += ">";
             }
             else if (const FunctionDecl* primaryTemplate = funcDecl->getPrimaryTemplate() ? funcDecl->getPrimaryTemplate()->getTemplatedDecl() : nullptr)
-            {   // explicit instantiation — serialize the actual template arguments
+            {   // explicit instantiation
                 const TemplateArgumentList* args = funcDecl->getTemplateSpecializationArgs();
                 if (args)
                 {
@@ -391,21 +373,6 @@ namespace OdrCop3
                     key += ">";
                 }
             }
-            else if (funcDecl->getTemplateSpecializationKind() == TSK_ExplicitSpecialization)
-            {
-                if (const TemplateArgumentList* args = funcDecl->getTemplateSpecializationArgs())
-                {
-                    key += "<";
-                    for (unsigned i=0; i<args->size(); ++i)
-                    {
-                        if (i > 0)
-                            key += ",";
-                        llvm::raw_string_ostream os(key);
-                        args->get(i).print(printPolicy, os, /*IncludeType=*/true);
-                    }
-                    key += ">";
-                }
-            }
 
             key += "(";
 
@@ -415,7 +382,17 @@ namespace OdrCop3
                 if (param != *funcDecl->param_begin())
                     key += ",";
 
-                std::string typeStr = param->getType().getCanonicalType().getUnqualifiedType().getAsString(printPolicy);
+                std::string typeStr;
+
+                QualType qt = param->getType();
+                if (qt->isDependentType())
+                    typeStr = qt.getAsString(printPolicy);                                         // Preserve template spelling: T, Args, TT<T>, etc.
+                else if (const auto* templateSpecType = qt->getAs<TemplateSpecializationType>())
+                    typeStr = qt.getAsString(printPolicy);                                         // Preserve template arguments: Wrapper<int>
+                else if (const auto* tagType = qt->getAs<TagType>())
+                    typeStr = tagType->getDecl()->getQualifiedNameAsString();                      // Preserve qualified names, including anonymous namespaces.
+                else
+                    typeStr = qt.getCanonicalType().getUnqualifiedType().getAsString(printPolicy); // Normalize ordinary types.
 
                 const std::string from = "anonymous namespace";
                 if (auto pos = typeStr.find(from); pos != std::string::npos)
@@ -426,15 +403,6 @@ namespace OdrCop3
             if (funcDecl->isVariadic())
                 key += funcDecl->param_empty() ? "..." : ",...";
             key += ")";
-
-            // for methods, cv/&/&& is next
-            if (const CXXMethodDecl* methodDecl = dyn_cast<CXXMethodDecl>(funcDecl))
-            {
-                if (methodDecl->isConst())                      key += " const";
-                if (methodDecl->isVolatile())                   key += " volatile";
-                if (methodDecl->getRefQualifier() == RQ_LValue) key += " &";
-                if (methodDecl->getRefQualifier() == RQ_RValue) key += " &&";
-            }
             return key;
         }
     };

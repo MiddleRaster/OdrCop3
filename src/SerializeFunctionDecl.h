@@ -74,17 +74,18 @@ namespace OdrCop3
             return "";
         }
         std::string get_ReturnType()      const { return TrimRightIf(SerializeType(contextItems, funcDecl->getReturnType()), " ") + " "; }
-        std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval " : ""; }
-        std::string get_Constexpr()       const { return funcDecl->isConstexpr()                           ? "constexpr " : ""; }
-        std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "    : ""; }
-        std::string get_Virtual()         const { return funcDecl->isVirtualAsWritten()                    ? "virtual "   : ""; }
-        std::string get_Extern()          const { return funcDecl->getStorageClass() == SC_Extern          ? "extern "    : ""; }
-        std::string get_Register()        const { return funcDecl->getStorageClass() == SC_Register        ? "extern "    : ""; }
-        std::string get_Static()          const { return funcDecl->isStatic()                              ? "static "    : ""; }
-        std::string get_Friend()          const { return funcDecl->getFriendObjectKind() != Decl::FOK_None ? "friend "    : ""; }
-        std::string get_Defaulted()       const { return funcDecl->isDefaulted()                           ? "=default "  : ""; }
-        std::string get_Deleted()         const { return funcDecl->isDeleted()                             ? "=delete "   : ""; }
-        std::string get_Export()          const { return funcDecl->isInExportDeclContext()                 ? "export "    : ""; }
+        std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval "    : ""; }
+        std::string get_Constexpr()       const { return funcDecl->isConstexpr()                           ? "constexpr "    : ""; }
+        std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "       : ""; }
+        std::string get_Virtual()         const { return funcDecl->isVirtualAsWritten()                    ? "virtual "      : ""; }
+        std::string get_Extern()          const { return funcDecl->getStorageClass() == SC_Extern          ? "extern "       : ""; }
+        std::string get_Register()        const { return funcDecl->getStorageClass() == SC_Register        ? "extern "       : ""; }
+        std::string get_Static()          const { return funcDecl->isStatic()                              ? "static "       : ""; }
+        std::string get_Friend()          const { return funcDecl->getFriendObjectKind() != Decl::FOK_None ? "friend "       : ""; }
+        std::string get_Defaulted()       const { return funcDecl->isDefaulted()                           ? "=default "     : ""; }
+        std::string get_Deleted()         const { return funcDecl->isDeleted()                             ? "=delete "      : ""; }
+        std::string get_Export()          const { return funcDecl->isInExportDeclContext()                 ? "export "       : ""; }
+        std::string get_Variadic()        const { return funcDecl->isVariadic() ? (funcDecl->param_empty() ? "..." : ",...") : ""; }
         std::string get_ExceptionSpecifier() const
         {
             const auto* proto = funcDecl->getType()->getAs<FunctionProtoType>();
@@ -283,6 +284,7 @@ namespace OdrCop3
                 fqn += ", ";
             }
             fqn  = TrimRightIf(fqn, ", ");
+            fqn += get_Variadic();
             fqn += ") ";
             fqn += get_TrailingRequiresClause();
             fqn += method.get_Const();

@@ -79,8 +79,15 @@ namespace OdrCop3
             case clang::attr::Final:            if (const auto*       Final = clang::dyn_cast<clang::FinalAttr           >(attr)) return Attr::Serialize(contextItems, Final);       break;
             case clang::attr::Override:         if (const auto*    override = clang::dyn_cast<clang::OverrideAttr        >(attr)) return Attr::Serialize(contextItems, override);    break;
             case clang::attr::Unused:           if (const auto*      unused = clang::dyn_cast<clang::UnusedAttr          >(attr)) return Attr::Serialize(contextItems, unused);      break;
-            case clang::attr::MSInheritance: /* always skip these */                                                              return "";
-            default:                         // don't dump everything                                                             return Attr::Serialize(contextItems, attr);
+
+
+            // filtering out all of those attributes below here:
+            case clang::attr::Visibility:      // Windows doesn't have this concept
+            case clang::attr::ReturnsNonNull:  // or this one
+            case clang::attr::AllocSize:
+            case clang::attr::MSInheritance:   // always skip these
+                return "";
+            default: // might turn this on later: return Attr::Serialize(contextItems, attr);
                 break;
             };
             throw OdrCop3::UnhandledException(std::string("unhandled attr::getKind: ") + enum_name<clang::attr::Kind,0, 512>(attr->getKind()));

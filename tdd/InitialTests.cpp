@@ -914,30 +914,47 @@ Test ExploratoryTestsOfClangAST[] =
                                "namespace A {  namespace B { enum ETwoDeep { One, Two=2 };     namespace C { enum EThreeDeep { One, Two, Three=3};      namespace { enum EInvisible { Zero }; } } }}\n"
                                "namespace A {  namespace B { typedef A::B::STwoDeep MyTwoDeep; namespace C { using MyThreeDeep = A::B::C::SThreeDeep; } typedef A::B::C::EInvisible MyInvisible;  }}\n"
                                "namespace A {  namespace B { int g_TwoDeep = 42; namespace C { static int s_EThreeDeep = -1; } }}\n"
+                               "void* operator new(size_t size) { return (void*)7; }\n"
+                               "template<typename T, int N, template<typename> class TT, typename... Args > void templateyFunction(T value, TT<T> tt, Args... args) { }\n"
+                               "template<typename T> struct Wrapper {}; template<> void templateyFunction<int, 42, Wrapper, char, double>(int,Wrapper<int>,char,double) {}\n"
+                               "void FooWithAnonArg(A::B::MyInvisible) {}"
+                               "void VariadicFunction(int count, ...) {}"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(2, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(3, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(1, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(2, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(3, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(7, maps.functionMap.size(), "wrong number of functions in map");
             
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("A::B::C::SThreeDeep"                  , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("struct SThreeDeep { // sizeof=1\n};\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::STwoDeep"                       , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("struct STwoDeep { // sizeof=1\n};\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::C::SThreeDeep"                                             , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("struct SThreeDeep { // sizeof=1\n};\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::STwoDeep"                                                  , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("struct STwoDeep { // sizeof=1\n};\n"                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Wrapper<>"                                                       , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("template<typename T> struct Wrapper {\n                     };\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("A::B::C::FThreeDeep()"                   , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("int __cdecl FThreeDeep() { return 0; }\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::FTwoDeep()"                        , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("void __cdecl FTwoDeep() {}\n"            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::C::FThreeDeep()"                                                                                                                           , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("int __cdecl FThreeDeep() { return 0; }\n"                                                                                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::FTwoDeep()"                                                                                                                                , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void __cdecl FTwoDeep() {}\n"                                                                                                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FooWithAnonArg(A::B::C::(anonymous namespace in input.cc)::EInvisible)"                                                                          , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void __cdecl FooWithAnonArg(A::B::MyInvisible) {}\n"                                                                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("VariadicFunction(int,...)"                                                                                                                       , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void __cdecl VariadicFunction(int count,...) {}\n"                                                                                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("operator new(unsigned long long)"                                                                                                                , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void * __cdecl operator new(size_t size) { return (void *)7; }\n"                                                                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("templateyFunction<int,42,Wrapper,<char, double>>(int,Wrapper<int>,char,double)"                                                                  , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("template<> void __cdecl templateyFunction<int, 42, Wrapper, <char, double>>(int, Wrapper<int>, char, double) {}\n"                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("templateyFunction<typename T,int N,template <typename> class TT,typename ...Args>(T,TT<T>,Args...)"                                              , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("template<typename T, int N, template <typename> class TT, typename ...Args> void __cdecl templateyFunction(T value, TT<T> tt, Args... args) {}\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
