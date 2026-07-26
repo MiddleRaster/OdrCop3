@@ -572,7 +572,7 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
-    {"Friend declarations inside UDTs and templates", []
+    {"2. Friend declarations inside UDTs and templates", []
         {
             std::string code = "struct A { friend void f(A&); };"
                                "struct B { friend void f(B&); }; void f(B&) {}"
@@ -861,7 +861,7 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
-    {"Defaulted & deleted functions and lambdas", []
+    {"9. Defaulted & deleted functions and lambdas", []
         {
             std::string code = "struct DD { DD(const DD&) = delete; DD(DD&&) = default; ~DD() {} }; \n"
                                "auto g_lambda = []() {};\n"
@@ -907,13 +907,68 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+    {"3. Nested namespaces and qualified names and keys", []
+        {
+            std::string code = "namespace A {  namespace B { struct STwoDeep {};               namespace C { struct SThreeDeep {};                      namespace { struct SInvisible {};     } } }}\n"
+                               "namespace A {  namespace B { void FTwoDeep() {}                namespace C { int FThreeDeep() { return 0; }                  static void FInvisible() {}        } }}\n"
+                               "namespace A {  namespace B { enum ETwoDeep { One, Two=2 };     namespace C { enum EThreeDeep { One, Two, Three=3};      namespace { enum EInvisible { Zero }; } } }}\n"
+                               "namespace A {  namespace B { typedef A::B::STwoDeep MyTwoDeep; namespace C { using MyThreeDeep = A::B::C::SThreeDeep; } typedef A::B::C::EInvisible MyInvisible;  }}\n"
+                               "namespace A {  namespace B { int g_TwoDeep = 42; namespace C { static int s_EThreeDeep = -1; } }}\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(2, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(1, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(2, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(3, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("A::B::C::SThreeDeep"                  , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("struct SThreeDeep { // sizeof=1\n};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::STwoDeep"                       , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("struct STwoDeep { // sizeof=1\n};\n"  , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("A::B::C::FThreeDeep()"                   , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("int __cdecl FThreeDeep() { return 0; }\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::FTwoDeep()"                        , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void __cdecl FTwoDeep() {}\n"            , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("A::B::C::MyThreeDeep"                                                                                                                                                        , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("using A::B::C::MyThreeDeep = A::B::C::SThreeDeep; // typedef A::B::C::SThreeDeep A::B::C::MyThreeDeep;\n"                                                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::MyInvisible"                                                                                                                                                           , (*it).first, "should have gotten proper key");
+                Assert::AreEqual("using A::B::MyInvisible = enum A::B::C::(anonymous namespace)::EInvisible { Zero }; // typedef enum A::B::C::(anonymous namespace)::EInvisible { Zero } A::B::MyInvisible;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::MyTwoDeep"                                                                                                                                                             , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("using A::B::MyTwoDeep = A::B::STwoDeep; // typedef A::B::STwoDeep A::B::MyTwoDeep;\n"                                                                                        , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("A::B::C::EThreeDeep",                      (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("enum EThreeDeep { One, Two, Three=3 };\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::ETwoDeep",                           (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("enum ETwoDeep { One, Two=2 };\n",          (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("A::B::g_TwoDeep",     (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("int g_TwoDeep=42;\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 };
 /* 
  4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)
  5. Concept declarations (ConceptDecl)
- 7. Class template deduction guides (CXXDeductionGuideDecl) 
+ 6. Out-of-class static data member definitions
+ 7. Class template deduction guides (CXXDeductionGuideDecl)
  8. Explicit instantiations vs explicit specializations across translation units
- 9. Deleted and defaulted functions
 10. Inline variables and inline functions across translation units
 */
