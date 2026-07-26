@@ -919,6 +919,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T> struct Wrapper {}; template<> void templateyFunction<int, 42, Wrapper, char, double>(int,Wrapper<int>,char,double) {}\n"
                                "void FooWithAnonArg(A::B::MyInvisible) {}"
                                "void VariadicFunction(int count, ...) {}"
+                               "extern \"C\" void ExternC(int, char**) {}"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -928,7 +929,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(1, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(2, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(3, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(7, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(8, maps.functionMap.size(), "wrong number of functions in map");
             
             {
                 auto it = maps.udtMap.begin();
@@ -955,6 +956,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<> void __cdecl templateyFunction<int, 42, Wrapper, <char, double>>(int, Wrapper<int>, char, double) {}\n"                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("templateyFunction<typename T,int N,template <typename> class TT,typename ...Args>(T,TT<T>,Args...)"                                              , (*it  ).first, "should have gotten proper key");
                 Assert::AreEqual("template<typename T, int N, template <typename> class TT, typename ...Args> void __cdecl templateyFunction(T value, TT<T> tt, Args... args) {}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void ExternC(int, char **)"                                                                                                                      , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void ExternC(int, char **) {}\n"                                                                                                                 , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
