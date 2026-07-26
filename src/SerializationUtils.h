@@ -17,6 +17,7 @@
 #include <string>
 #include <sstream>
 #include <set>
+#include <algorithm>
 
 namespace OdrCop3
 {
@@ -91,5 +92,45 @@ namespace OdrCop3
         qt.print(os, policy);
         os.flush();
         return str.find("(anonymous namespace)") != std::string::npos;
+    }
+
+    inline std::string PostProcessBody(const std::string& originalBody)
+    {
+        std::string body(originalBody);
+
+        // collapse to "{}" if there's no real content
+        bool allWhitespace = true;
+        for (char c : body) {
+            if ((c == '{') ||
+                (c == '}'))
+                continue;
+            if (!std::isspace(static_cast<unsigned char>(c))) {
+                allWhitespace = false;
+                break;
+            }
+        }
+        if (allWhitespace)
+            return "{}";
+
+        // strip "this->"
+        const std::string target = "this->";
+        size_t pos = 0;
+        while ((pos = body.find(target, pos)) != std::string::npos)
+            body.erase(pos, target.length());
+
+        // if one-liner (by counting semicolons)
+        if (std::count(body.begin(), body.end(), ';') < 2) {
+            size_t pos = 0;
+            while ((pos = body.find("\n", pos)) != std::string::npos)
+                body.replace(pos, 1, " ");
+
+            pos = 0;
+            while ((pos = body.find("  ", pos)) != std::string::npos)
+                body.replace(pos, 2, " ");
+
+            while (body.ends_with(' '))
+                body = body.substr(0, body.size() - 1); // strip off last ' '
+        }
+        return TrimRightIf(body, "\n");
     }
 }

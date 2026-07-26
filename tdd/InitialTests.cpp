@@ -889,27 +889,19 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
 
                 Assert::AreEqual("struct LambdaHolder { // sizeof=1\n"
-                                 "   inline static LambdaHolder::(lambda at input.cc:5:54) LambdaField{[](int, double) {\n"
-                                 "                                                                     }};\n"
+                                 "   inline static LambdaHolder::(lambda at input.cc:5:54) LambdaField{[](int, double){}};\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:4:32) b=[](int x) {\n"
-                                 "                                                       return x + 1;\n"
-                                 "                                                   };\n"
+                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:4:32) b=[](int x){ return x + 1; };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:4:32) c=[](int x) {\n"
-                                 "                                                       return x + 1;\n"
-                                 "                                                   };\n"
+                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:4:32) c=[](int x){ return x + 1; };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(lambda at input.cc:2:17) g_lambda=[]() {\n"
-                                 "                                   };\n"
+                Assert::AreEqual("(lambda at input.cc:2:17) g_lambda=[](){};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:3:44) global_lambda=[](int x) {\n"
-                                 "                                                                   return x + 1;\n"
-                                 "                                                               };\n"
+                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:3:44) global_lambda=[](int x){ return x + 1; };\n"
                               , (*it++).second[0].fullyQualified);
             }
         }

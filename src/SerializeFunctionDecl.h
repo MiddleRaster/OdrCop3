@@ -251,51 +251,7 @@ namespace OdrCop3
             llvm::raw_string_ostream os(body);
             funcDecl->getBody()->printPretty(os, nullptr, contextItems.printPolicy);
             os.flush();
-
-            // post-process body
-
-            // collapse to "{}" if there's no real content
-            bool allWhitespace = true;
-            for (char c : body) {
-                if ((c == '{') ||
-                    (c == '}'))
-                    continue;
-                if (!std::isspace(static_cast<unsigned char>(c))) {
-                    allWhitespace = false;
-                    break;
-                }
-            }
-            if (allWhitespace)
-                body = "{}";
-
-            // strip "this->"
-            const std::string target = "this->";
-            size_t pos = 0;
-            while ((pos = body.find(target, pos)) != std::string::npos)
-                body.erase(pos, target.length());
-
-            // if it's a one-liner, remove all "\n   "
-            int  semicolons = 0;
-            for (char c : body) {
-                if (c == ';')
-                    ++semicolons;
-            }
-            if (semicolons < 2) {
-                size_t pos = 0;
-                while ((pos = body.find("\n", pos)) != std::string::npos)
-                    body.replace(pos, 1, " ");
-
-                pos = 0;
-                while ((pos = body.find("  ", pos)) != std::string::npos)
-                    body.replace(pos, 2, " ");
-
-                while (body.ends_with(' '))
-                    body = body.substr(0, body.size()-1); // strip off last ' '
-
-                body += "\n";
-            }
-            body = TrimRightIf(body, "\n");
-            return body;
+            return PostProcessBody(body);
         }
     public:
         FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}

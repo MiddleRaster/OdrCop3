@@ -91,6 +91,13 @@ namespace OdrCop3
                 lambdaExpr->printPretty(os, &mph, contextItems.printPolicy);
                 os.flush();
 
+                auto pos = body.find("{");
+                if (pos != std::string::npos)
+                {
+                    std::string captureAndArgs = body.substr(0, pos-1);
+                    body = captureAndArgs + PostProcessBody(body.substr(pos));
+                }
+
                 if (isa<InitListExpr>(varDecl->getInit()->IgnoreImplicit()))
                     return "{" + body + "}";
                 return "=" + body;
