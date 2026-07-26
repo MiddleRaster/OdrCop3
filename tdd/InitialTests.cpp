@@ -867,12 +867,13 @@ Test ExploratoryTestsOfClangAST[] =
                                "auto g_lambda = []() {};\n"
                                "namespace { constexpr auto hidden_lambda = [](int x) { return x + 1; }; } auto global_lambda = hidden_lambda;\n"
                                "namespace { constexpr auto a = [](int x) { return x + 1; }; } auto b = a; auto c = b;\n"
+                               "struct LambdaHolder { inline static auto LambdaField{[](int, double) {}}; };"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(1, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(4, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -884,6 +885,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   void __cdecl DD(const DD &) =delete;\n"
                                  "   constexpr void __cdecl DD(DD &&) =default;\n"
                                  "   void __cdecl ~DD() {}\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("struct LambdaHolder { // sizeof=1\n"
+                                 "   inline static LambdaHolder::(lambda at input.cc:5:54) LambdaField{[](int, double) {\n"
+                                 "                                                                     }};\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }

@@ -58,6 +58,12 @@ namespace OdrCop3
             if (const auto* lambdaExpr = dyn_cast<LambdaExpr>(expr))
                 return lambdaExpr;
 
+            if (const auto* initListExpr = dyn_cast<InitListExpr>(expr))
+                if (initListExpr->getNumInits() == 1)
+                    return FindLambdaExpr(initListExpr->getInit(0));
+                else 
+                    return nullptr;
+
             if (const auto* constructExpr = dyn_cast<CXXConstructExpr>(expr))
                 if (constructExpr->getNumArgs() == 1)
                     return FindLambdaExpr(constructExpr->getArg(0)->IgnoreImplicit());
@@ -84,6 +90,9 @@ namespace OdrCop3
                 llvm::raw_string_ostream os(body);
                 lambdaExpr->printPretty(os, &mph, contextItems.printPolicy);
                 os.flush();
+
+                if (isa<InitListExpr>(varDecl->getInit()->IgnoreImplicit()))
+                    return "{" + body + "}";
                 return "=" + body;
             }
 
