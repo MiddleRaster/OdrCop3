@@ -48,10 +48,45 @@ namespace OdrCop3
             return out;
         }
         std::string get_Static() const { return varDecl->isStaticDataMember() ? "static " : ""; }
+
+        const LambdaExpr* FindLambdaExpr(const Expr* expr) const
+        {
+            if (!expr)
+                return nullptr;
+            expr = expr->IgnoreImplicit();
+
+            if (const auto* lambdaExpr = dyn_cast<LambdaExpr>(expr))
+                return lambdaExpr;
+
+            if (const auto* constructExpr = dyn_cast<CXXConstructExpr>(expr))
+                if (constructExpr->getNumArgs() == 1)
+                    return FindLambdaExpr(constructExpr->getArg(0)->IgnoreImplicit());
+                else
+                    return nullptr;
+
+            if (const auto* declRefExpr = dyn_cast<DeclRefExpr>(expr))
+                if (const auto* referencedVar = dyn_cast<VarDecl>(declRefExpr->getDecl()))
+                    if (referencedVar->hasInit())
+                        return FindLambdaExpr(referencedVar->getInit()->IgnoreImplicit());
+
+            return nullptr;
+        }
         std::string get_Init  () const
         {
-            if (!varDecl->hasInit()) return "";
             const Expr* expr = varDecl->getInit();
+            if (!expr)
+                return "";
+
+            if (const auto* lambdaExpr = FindLambdaExpr(expr))
+            {
+                struct MyPrinterHelper : public PrinterHelper { bool handledStmt(Stmt* E, raw_ostream& OS) override { return false; } } mph;
+                std::string body;
+                llvm::raw_string_ostream os(body);
+                lambdaExpr->printPretty(os, &mph, contextItems.printPolicy);
+                os.flush();
+                return "=" + body;
+            }
+
             llvm::StringRef  text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
             std::string      init = text.str();
             if ((init.starts_with("{")) || init.starts_with("("))
@@ -80,7 +115,7 @@ namespace OdrCop3
                 out += varStr;
             }
             out += get_TemplateFooter();
-            out += get_Init();
+            out += IndentBlock(get_Init(), LengthOfLastLine(out)+1); // +1 for "="
             out += ";\n";
             return out;
         }

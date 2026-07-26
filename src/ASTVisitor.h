@@ -54,26 +54,22 @@ namespace OdrCop3
         static std::string SerializeTypes(const ContextItems& contextItems, const clang::QualType& qt) { return Serialize::Types<&SerializeDecls,                  &SerializeAttrs>(contextItems, qt  ); }
         static std::string SerializeAttrs(const ContextItems& contextItems, const clang::Attr  * attr) { return Serialize::Attrs<&SerializeDecls, &SerializeTypes                 >(contextItems, attr); }
     public:
-        bool VisitFunctionDecl(FunctionDecl* funcDecl)
+        bool VisitFunctionDecl(FunctionDecl* functionDecl)
         {
-            if (context->getSourceManager().isInSystemHeader(funcDecl->getLocation()))
+            if (context->getSourceManager().isInSystemHeader(functionDecl->getLocation()))
                 return true; // skip anything not in the main file or a user header
 
-            if (funcDecl->isImplicit())
+            if (functionDecl->isImplicit())
                 return true;
 
-            if (funcDecl->getStorageClass() == clang::SC_Static || funcDecl->isInAnonymousNamespace())
+            if (isa<CXXMethodDecl>(functionDecl))
+                return true; // if it's a method, it's already in the UDT map
+
+            if (functionDecl->getStorageClass() == clang::SC_Static || functionDecl->isInAnonymousNamespace())
                 return true; // if the function has internal-linkage, skip it
 
-            if (const auto* method = dyn_cast<CXXMethodDecl>(funcDecl))
-            if (const auto* record = dyn_cast<CXXRecordDecl>(method->getDeclContext()))
-            if (record->isLambda())
-                return true; // skip lambdas, too
-
-            if (funcDecl->isThisDeclarationADefinition())
-            {
-                maps.functionMap[CreateKeyForFunctionMap(funcDecl)].push_back({TU, SerializeDecls(contextItems, funcDecl)});
-            }
+            if (functionDecl->isThisDeclarationADefinition())
+                maps.functionMap[CreateKeyForFunctionMap(functionDecl)].push_back({TU, SerializeDecls(contextItems, functionDecl)});
             return true;
         }
 

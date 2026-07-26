@@ -104,6 +104,7 @@ namespace OdrCop3
             {
             case clang::Decl::Kind::CXXMethod:                          // is a subclass of FunctionDecl
             case clang::Decl::Kind::CXXConstructor:                     // so is this
+            case clang::Decl::Kind::CXXDestructor:                      // as is this
             case clang::Decl::Kind::CXXConversion:                      // and this
             case clang::Decl::Kind::Function:                           if (const FunctionDecl*                    functionDecl = dyn_cast<FunctionDecl                          >(decl)) return DeclSerializer::SerializeFunctionDecl                          (contextItems, functionDecl); break;
             case clang::Decl::Kind::ParmVar:                            if (const ParmVarDecl *                             pvd = dyn_cast<ParmVarDecl                           >(decl)) return DeclSerializer::SerializeParmVarDecl                           (contextItems, pvd);          break;

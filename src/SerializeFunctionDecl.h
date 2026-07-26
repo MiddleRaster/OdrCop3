@@ -73,7 +73,7 @@ namespace OdrCop3
             }
             return "";
         }
-        std::string get_ReturnType()      const { return SerializeType(contextItems, funcDecl->getReturnType()) + " "; }
+        std::string get_ReturnType()      const { return TrimRightIf(SerializeType(contextItems, funcDecl->getReturnType()), " ") + " "; }
         std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval " : ""; }
         std::string get_Constexpr()       const { return funcDecl->isConstexpr()                           ? "constexpr " : ""; }
         std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "    : ""; }

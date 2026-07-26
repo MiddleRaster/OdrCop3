@@ -61,22 +61,12 @@ Test ExploratoryTestsOfClangAST[] =
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(9, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found UDTs and functions/methods");
+            Assert::AreEqual(4, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found UDTs and functions/methods");
 
             {
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
                 Assert::AreEqual("export void __cdecl Baz([[deprecated]] int x, int y [[maybe_unused]]) {}\n",    (*it++).second[0].fullyQualified, "should have gotten the function and body");
-                Assert::AreEqual("explicit void __cdecl Foo(int i) : x(7), i(i) { i++; }\n",                      (*it++).second[0].fullyQualified, "should have gotten the ctor and body");
-                Assert::AreEqual("[[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }\n",(*it++).second[0].fullyQualified, "should have gotten the method and body");
-                Assert::AreEqual("template<typename T> T __cdecl doTemplateyStuff(const T & value) "
-                                 "requires requires { typename T::value_type; } const { return value; }\n",       (*it++).second[0].fullyQualified, "should have gotten the method and body");
-                Assert::AreEqual("auto __cdecl make_lambda() const {\n"
-                                 "    return [this](int x) {\n"
-                                 "        return x + i;\n"
-                                 "    };\n"
-                                 "}\n",                                                                           (*it++).second[0].fullyQualified, "should have gotten the operator and body");
-                Assert::AreEqual("explicit int __cdecl operator int() const { return 7; }\n",                     (*it++).second[0].fullyQualified, "should have gotten the operator and body");
             }
             {
                 auto it = maps.udtMap.begin();
@@ -91,7 +81,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 "   int i;\n"
                                 "   explicit void __cdecl Foo(int i) : x(7), i(i) { i++; }\n"
                                 "   [[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }\n"
-                                "   auto __cdecl make_lambda() const {\n"
+                                "   (lambda at input.cc:2:333) __cdecl make_lambda() const {\n"
                                 "       return [this](int x) {\n"
                                 "           return x + i;\n"
                                 "       };\n"
@@ -446,7 +436,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 2, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(11, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual( 3, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -525,38 +515,10 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("T __cdecl get(unsigned int i) const { return data[i]; }\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("void __cdecl set(unsigned int i, const T & value) { data[i] = value; }\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("bool __cdecl get(unsigned int i) const { return (data >> i) & 1U; }\n"
-                              , (*it++).second[0].fullyQualified);
-
-                Assert::AreEqual("void __cdecl set(unsigned int i, bool value) {\n"
-                                 "    unsigned char mask = static_cast<unsigned char>(1U << i);\n"
-                                 "    if (value)\n"
-                                 "        data |= mask;\n"
-                                 "    else\n"
-                                 "        data &= static_cast<unsigned char>(~mask);\n"
-                                 "}\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("bool __cdecl get(unsigned int i) const { return (data[i / 8] >> (i % 8)) & 1U; }\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("void __cdecl set(unsigned int i, bool value) {\n"
-                                 "    unsigned char mask = static_cast<unsigned char>(1U << (i % 8));\n"
-                                 "    if (value)\n"
-                                 "        data[i / 8] |= mask;\n"
-                                 "    else\n"
-                                 "        data[i / 8] &= static_cast<unsigned char>(~mask);\n"
-                                 "}\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int __cdecl get(unsigned int i) const { return data[i]; }\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("void __cdecl set(unsigned int i, const int & value) { data[i] = value; }\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> bool __cdecl identity<bool>(bool value) { return !value; }\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template int __cdecl identity<int>(int value) { return value; }\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> bool __cdecl identity<bool>(bool value) { return !value; }\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template int __cdecl identity<int>(int value) { return value; }\n"        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> T __cdecl identity(T value) { return value; }\n"     , (*it++).second[0].fullyQualified);
             }
-
         }
     },
 
@@ -817,7 +779,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(3, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(1, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(1, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -849,10 +811,6 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.typedefMap.begin();
                 Assert::AreEqual("using CStyleColor = enum (anonymous type at input.cc:5:9) { R, G, B=3 }; // typedef enum (anonymous type at input.cc:5:9) { R, G, B=3 } CStyleColor;\n"
                               , (*it++).second[0].fullyQualified);
-            }
-            {
-                auto it = maps.functionMap.begin();
-                Assert::AreEqual("void __cdecl f() { enum LMN1 { X = 42 }; }\n"                , (*it++).second[0].fullyQualified);
             }
         }
     },
@@ -902,11 +860,59 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+
+    {"Defaulted & deleted functions and lambdas", []
+        {
+            std::string code = "struct DD { DD(const DD&) = delete; DD(DD&&) = default; ~DD() {} }; \n"
+                               "auto g_lambda = []() {};\n"
+                               "namespace { constexpr auto hidden_lambda = [](int x) { return x + 1; }; } auto global_lambda = hidden_lambda;\n"
+                               "namespace { constexpr auto a = [](int x) { return x + 1; }; } auto b = a; auto c = b;\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(1, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(4, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct DD { // sizeof=1\n"
+                                 "   void __cdecl DD(const DD &) =delete;\n"
+                                 "   constexpr void __cdecl DD(DD &&) =default;\n"
+                                 "   void __cdecl ~DD() {}\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:4:32) b=[](int x) {\n"
+                                 "                                                       return x + 1;\n"
+                                 "                                                   };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:4:32) c=[](int x) {\n"
+                                 "                                                       return x + 1;\n"
+                                 "                                                   };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:2:17) g_lambda=[]() {\n"
+                                 "                                   };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:3:44) global_lambda=[](int x) {\n"
+                                 "                                                                   return x + 1;\n"
+                                 "                                                               };\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
+
 };
 /* 
  4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)
  5. Concept declarations (ConceptDecl)
- 6. Out-of-class static data member definitions
  7. Class template deduction guides (CXXDeductionGuideDecl) 
  8. Explicit instantiations vs explicit specializations across translation units
  9. Deleted and defaulted functions
