@@ -113,8 +113,15 @@ namespace OdrCop3
                 return true; // has its own handler
 
             if (auto* classTemplateSpec = dyn_cast<ClassTemplateSpecializationDecl>(cxxRecordDecl))
-                if (classTemplateSpec->getSpecializationKind() == TSK_ImplicitInstantiation) // not actually a specialization
+                switch (classTemplateSpec->getSpecializationKind())
+                {
+                case TemplateSpecializationKind::TSK_ImplicitInstantiation:             // skip implicit because the user can't see it
+                case TemplateSpecializationKind::TSK_ExplicitInstantiationDeclaration:  // e.g., extern template struct Foo<int>;
+                case TemplateSpecializationKind::TSK_ExplicitInstantiationDefinition:   // e.g., template struct Foo<int>;
                     return true;
+                default:
+                    break;
+                }
 
             if (!cxxRecordDecl->isThisDeclarationADefinition())
                 return true;
