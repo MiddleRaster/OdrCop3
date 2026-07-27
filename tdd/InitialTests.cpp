@@ -1010,13 +1010,14 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T, typename U> struct Outer2 { typename T::template Foo<U> member; };\n"
                                "Outer2<HasFoo,int> outer2Instance;\n"
 
-                               "template<typename T> struct Goo { int x; }; template struct Goo<int>;\n"
+                               "template<typename T> struct Goo { int x; }; template   struct Goo<int>;\n"
+                               "template<typename T> struct Hoo { int x; }; template<> struct Hoo<int> { int y; };\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(6, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(8, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(1, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -1038,6 +1039,15 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                        };\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct Hoo {\n"
+                                 "                        int x;\n"
+                                 "                     };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> struct Hoo<int> { // sizeof=4\n"
+                                 "              int y;\n"
+                                 "           };\n"
+                              , (*it++).second[0].fullyQualified);
+
                 Assert::AreEqual("template<template <typename> class TT, typename U> struct Outer1 {\n"
                                  "                                                      TT<U> member;\n"
                                  "                                                   };\n"
