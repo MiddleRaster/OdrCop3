@@ -34,7 +34,12 @@ namespace OdrCop3
                 else if (auto* paren = llvm::dyn_cast<clang::ParenType    >(ty)) ty = paren->getInnerType().getTypePtr();
                 else break;
             }
-            return llvm::isa<clang::TemplateTypeParmType>(ty);
+            if (llvm::isa<clang::TemplateTypeParmType>(ty))
+                return true;
+            if (llvm::isa<clang::TemplateSpecializationType>(ty))
+                return true;
+
+            return false;
         }
         std::string get_Name() const { return fieldDecl->getNameAsString(); }
     public:

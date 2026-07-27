@@ -32,7 +32,7 @@ namespace OdrCop3
                 if (qt.isVolatileQualified()) out += "volatile ";
                 return out + IndentBlock(SerializeDecl(contextItems, recordType->getDecl()), LengthOfLastLine(out));
             } else
-                return qt.getAsString(contextItems.printPolicy);
+                return qt.getAsString(contextItems.printPolicy) + (contextItems.aux.size() > 0 ? " " + contextItems.aux : "");
         }
     };
 }

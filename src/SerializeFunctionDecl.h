@@ -88,46 +88,7 @@ namespace OdrCop3
         std::string get_Variadic()        const { return funcDecl->isVariadic() ? (funcDecl->param_empty() ? "..." : ",...") : ""; }
         std::string get_ExceptionSpecifier() const
         {
-            const auto* proto = funcDecl->getType()->getAs<FunctionProtoType>();
-            if (proto != nullptr)
-            {
-                switch (proto->getExceptionSpecType())
-                {
-                case EST_BasicNoexcept:
-                    if (funcDecl->getExceptionSpecSourceRange().isValid()) // only if the user actually wrote this (i.e., not "inferred" by the compiler)
-                        return "noexcept ";
-                    break;
-                case EST_DependentNoexcept:
-                {
-                    std::string exprStr;
-                    llvm::raw_string_ostream os(exprStr);
-                    proto->getNoexceptExpr()->printPretty(os, nullptr, contextItems.printPolicy);
-                    os.flush();
-                    return "noexcept(" + exprStr + ") ";
-                }
-                case EST_Dynamic:
-                {
-                    std::string result = "throw(";
-                    bool        first = true;
-                    for (QualType t : proto->exceptions())
-                    {
-                        if (!first)
-                            result += ", ";
-                        result += t.getAsString(contextItems.printPolicy);
-                        first = false;
-                    }
-                    return result + ") ";
-                }
-                case EST_NoexceptTrue:  return "noexcept(true) ";
-                case EST_NoexceptFalse: return "noexcept(false) ";
-                case EST_DynamicNone:   return "throw() ";
-                case EST_MSAny:         return "throw(...) ";
-                case EST_None:
-                default:
-                    break;
-                }
-            }
-            return "";
+            return GetExceptionSpecifier(contextItems, funcDecl->getType()->getAs<FunctionProtoType>(), funcDecl);
         }
         std::string get_Explicit() const
         {

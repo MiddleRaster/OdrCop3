@@ -133,4 +133,46 @@ namespace OdrCop3
         }
         return TrimRightIf(body, "\n");
     }
+
+    inline std::string GetExceptionSpecifier(const ContextItems& contextItems, const FunctionProtoType* functionProtoType, const FunctionDecl* functionDecl)
+    {
+        switch (functionProtoType->getExceptionSpecType())
+        {
+        case EST_BasicNoexcept:
+            if (functionDecl == nullptr)
+                return "noexcept ";
+            if (functionDecl->getExceptionSpecSourceRange().isValid()) // only if the user actually wrote this (i.e., not "inferred" by the compiler)
+                return "noexcept ";
+            break;
+        case EST_DependentNoexcept:
+        {
+            std::string exprStr;
+            llvm::raw_string_ostream os(exprStr);
+            functionProtoType->getNoexceptExpr()->printPretty(os, nullptr, contextItems.printPolicy);
+            os.flush();
+            return "noexcept(" + exprStr + ") ";
+        }
+        case EST_Dynamic:
+        {
+            std::string result = "throw(";
+            bool        first = true;
+            for (QualType t : functionProtoType->exceptions())
+            {
+                if (!first)
+                    result += ", ";
+                result += t.getAsString(contextItems.printPolicy);
+                first = false;
+            }
+            return result + ") ";
+        }
+        case EST_NoexceptTrue:  return "noexcept(true) ";
+        case EST_NoexceptFalse: return "noexcept(false) ";
+        case EST_DynamicNone:   return "throw() ";
+        case EST_MSAny:         return "throw(...) ";
+        case EST_None:
+        default:
+            break;
+        }
+        return "";
+    }
 }

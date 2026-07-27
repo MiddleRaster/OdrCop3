@@ -83,6 +83,8 @@ namespace OdrCop3
         CXXRecordDeclSerializer(const ContextItems& contextItems, const CXXRecordDecl* cxxRecordDecl) : contextItems(contextItems), cxxRecordDecl(cxxRecordDecl) {}
         std::string Serialize() const
         {
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
+
             std::string out;
             out += get_Friend();
             out += get_Kind(); // struct/class/union keyword
@@ -101,9 +103,9 @@ namespace OdrCop3
                 if (decl->isImplicit())
                     continue;
                 if (decl->getKind() == clang::Decl::Kind::AccessSpec)
-                    out += SerializeDecl(contextItems, decl); // "public:", for instance, does not get indented
+                    out += SerializeDecl(ci2, decl); // "public:", for instance, does not get indented
                 else
-                    out += IndentBlock(SerializeDecl(contextItems, decl), 3, "   ") + "\n";
+                    out += IndentBlock(SerializeDecl(ci2, decl), 3, "   ") + "\n";
             }
             out += "};\n";
             return out;

@@ -23,6 +23,9 @@ namespace OdrCop3
         QualType qt;
     public:
         BuiltinTypeSerializer(const ContextItems& contextItems, QualType qt, const BuiltinType* builtinType) : contextItems(contextItems), qt(qt), builtinType(builtinType) {}
-        std::string Serialize() const { return qt.getAsString(contextItems.printPolicy); }
+        std::string Serialize() const
+        {
+            return qt.getAsString(contextItems.printPolicy) + (contextItems.aux.size() > 0 ? " " + contextItems.aux : "");
+        }
     };
 }

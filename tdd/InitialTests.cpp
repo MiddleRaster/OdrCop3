@@ -296,7 +296,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "    template <typename X> class Wrap\n"
                                ">\n"
                                "using RecursiveAlias = typename Outer<Wrap, int>::type;\n"
-                               "struct A { Alias member; Alias2 member2;\n"
+                               "struct A { Alias member; Alias2 member2; \n"
                                "   Color  color;"
                                "   Color2 color2;"
                                "   Color3 color3;"
@@ -415,9 +415,9 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code = "template<typename T> struct Box{}; struct S{}; struct A { Box<S> value; };\n"
                                "template<typename T, unsigned N> struct Array { T data[N];  T get(unsigned i) const { return data[i]; } void set(unsigned i, const T& value) { data[i] = value; } };\n"
                                "template<unsigned N> struct Array<bool, N> { unsigned char data[(N+7)/8]; bool get(unsigned i) const { return (data[i/8]>>(i%8))&1u;}\n"
-                               "void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u<<(i%8)); if (value) data[i/8] |= mask; else data[i/8] &= static_cast<unsigned char>(~mask); } };\n"
+                               "   void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u<<(i%8)); if (value) data[i/8] |= mask; else data[i/8] &= static_cast<unsigned char>(~mask); } };\n"
                                "template<> struct Array<bool, 8> { unsigned char data; bool get(unsigned i) const { return (data >> i) & 1u; }\n"
-                               "void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u << i);  if (value) data |= mask; else data &= static_cast<unsigned char>(~mask); } }; \n"
+                               "   void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u << i);  if (value) data |= mask; else data &= static_cast<unsigned char>(~mask); } }; \n"
                                "template struct Array<int, 4>;\nextern template struct Array<double, 8>;\n"
                                "template<typename T> T identity(T value) { return value; }"
                                "template int identity<int>(int);"
@@ -426,7 +426,8 @@ Test ExploratoryTestsOfClangAST[] =
                                "bool b = identity<bool>(true);"
                                "template<typename T> struct Wrapper      {   T value;            };"
                                "template<          > struct Wrapper<int> { int value; int extra; };"
-                               "struct User { Wrapper<int> x; };";
+                               "struct User { Wrapper<int> x; };"
+                               ;
  
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -711,7 +712,6 @@ Test ExploratoryTestsOfClangAST[] =
                                "namespace { namespace Deeply { namespace Nested { struct Struct { enum Enum { Alpha, Beta }; }; }}}"
                                "typedef Deeply::Nested::Struct::Enum DeeplyNestedEnum;"
                                ;
-
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -983,8 +983,101 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+    {"4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)", []
+        {
+            std::string code = "static void StaticFunction() {}\n"
+                               "namespace { void AnonymousFunction() {} }\n"
+                               "static int g_Static = 7;\n"
+                               "namespace { int g_AnonymousNamespace = 6;\n }"
+                               ;
+
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(0, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+        }
+    },
+
+
+    {"Template Specializations", []
+        {
+            std::string code = "template<class T> struct AWrapper { T value; }; namespace { struct Hidden {}; } using MyHiddenWrapper = AWrapper<Hidden>;\n"
+                               "template<typename V> struct Wrapped { V value; };\n"
+                               "template<template<typename> class TT, typename U> struct Outer1 { TT<U> member; };\n"
+                               "Outer1<Wrapped,int> outer1Instance;\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(3, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(1, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(1, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("template<class T> struct AWrapper {\n"
+                                 "                     T value;\n"
+                                 "                  };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<template <typename> class TT, typename U> struct Outer1 {\n"
+                                 "                                                      TT<U> member;\n"
+                                 "                                                   };\n"
+                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename V> struct Wrapped {\n"
+                                 "                        V value;\n"
+                                 "                     };\n"        
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("using MyHiddenWrapper = AWrapper<(anonymous namespace)::Hidden>; // typedef AWrapper<(anonymous namespace)::Hidden> MyHiddenWrapper;\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance=outer1Instance;\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
+
 };
-/* 
+/* some missing test cases
+
+case 1:
+template<typename V> struct Wrapped { V value; };
+template<template<typename> class TT, typename U> struct Outer1 { TT<U> member; };
+Outer1<Wrapped,int> outer1Instance;
+
+
+case 2:
+struct HasFoo { template<typename V> struct Foo { V value; }; };
+template<typename T, typename U>
+struct Outer2
+{
+    typename T::template Foo<U> member;
+};
+Outer2<HasFoo,int> outer2Instance;
+
+
+
+
+
+
  4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)
  5. Concept declarations (ConceptDecl)
  6. Out-of-class static data member definitions

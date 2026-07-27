@@ -49,10 +49,41 @@ namespace OdrCop3
                     first = false;
                 else
                     out += ", ";
-                out += Output(qualType);
+                out += Output(qualType.getDesugaredType(contextItems.context));
             }
             return out;
         }
+        std::string get_Variadic()   const
+        {
+            if (!functionProtoType->isVariadic())
+                return "";
+            if (functionProtoType->getNumParams() == 0)
+                return "...";
+            else
+                return ",...";
+        }
+        std::string get_MethodQuals() const
+        {
+            std::string out;
+            Qualifiers quals = functionProtoType->getMethodQuals();
+            if (quals.hasConst())    out += " const";
+            if (quals.hasVolatile()) out += " volatile";
+            if (quals.hasRestrict()) out += " restrict";
+            return out;
+        }
+        std::string get_RefQualifier() const
+        {
+            switch (functionProtoType->getRefQualifier())
+            {
+            case RQ_LValue: return " &";
+            case RQ_RValue: return " &&";
+            case RQ_None:
+            default:        break;
+            }
+            return "";
+        }
+        std::string get_ExceptionSpecifier() const { return " " + GetExceptionSpecifier(contextItems, functionProtoType, nullptr); }
+
     public:
         FunctionProtoTypeSerializer(const ContextItems& contextItems, QualType qt, const FunctionProtoType* functionProtoType) : contextItems(contextItems), qt(qt), functionProtoType(functionProtoType) {}
         std::string Serialize() const
@@ -67,7 +98,11 @@ namespace OdrCop3
             out += contextItems.aux; // I like this design quite a bit:  this is how I insert (*callback2) or (S::*mp)
             out += "(";
             out += IndentBlock(get_Parameters(), LengthOfLastLine(out));
+            out += get_Variadic();
             out += ")";
+            out += get_MethodQuals();
+            out += get_RefQualifier();
+            out += TrimRightIf(get_ExceptionSpecifier(), " ");
             return out;
         }
     };
