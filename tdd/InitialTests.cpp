@@ -61,7 +61,12 @@ Test ExploratoryTestsOfClangAST[] =
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(4, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found UDTs and functions/methods");
+
+            Assert::AreEqual(2, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(1, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.functionMap.begin();
@@ -107,7 +112,12 @@ Test ExploratoryTestsOfClangAST[] =
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(6, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
+
+            Assert::AreEqual(5, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             auto it = maps.udtMap.begin();
             Assert::AreEqual("Bar",      it->first,        "should have gotten correct key");
@@ -137,11 +147,6 @@ Test ExploratoryTestsOfClangAST[] =
                              "      double b;\n"
                              "   };\n"
                              "   union S::(anonymous type at input.cc:1:294) u;\n"
-                             "};\n"
-                           , (*it++).second[0].fullyQualified, "should have gotten the struct");
-            Assert::AreEqual("union S::(anonymous type at input.cc:1:294) { // sizeof=8\n"
-                             "   int a;\n"
-                             "   double b;\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
         }
@@ -547,9 +552,9 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(14, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(14, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -562,7 +567,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<> char GlobalValue<char>=42;\n"                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike=false;\n"       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike<T *>=true;\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<int N> constexpr const int Square=N*N;\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<int N> constexpr const int Square=N * N;\n"                    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int a=GlobalValue<int>;\n"                                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("double b=GlobalValue<double>;\n"                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("char c=GlobalValue<char>;\n"                                            , (*it++).second[0].fullyQualified);
@@ -828,7 +833,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(3, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(3, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -840,10 +845,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   struct Inner { // sizeof=1\n"
                                  "      static const int counter;\n"
                                  "   };\n"
-                                 "};\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct Inner { // sizeof=1\n"
-                                 "   static const int counter;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Soo { // sizeof=1\n"
@@ -1014,16 +1015,21 @@ Test ExploratoryTestsOfClangAST[] =
     {"Template Specializations", []
         {
             std::string code = "template<class T> struct AWrapper { T value; }; namespace { struct Hidden {}; } using MyHiddenWrapper = AWrapper<Hidden>;\n"
+
                                "template<typename V> struct Wrapped { V value; };\n"
                                "template<template<typename> class TT, typename U> struct Outer1 { TT<U> member; };\n"
                                "Outer1<Wrapped,int> outer1Instance;\n"
+
+                               "struct HasFoo { template<typename V> struct Foo { V value; }; };\n"
+                               "template<typename T, typename U> struct Outer2 { typename T::template Foo<U> member; };\n"
+                               "Outer2<HasFoo,int> outer2Instance;\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(3, maps.udtMap.size(),  "wrong number of UDTs in map");
-            Assert::AreEqual(1, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(5, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(1, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
@@ -1034,10 +1040,20 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                     T value;\n"
                                  "                  };\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct HasFoo { // sizeof=1\n"
+                                 "   template<typename V> struct Foo {\n"
+                                 "                           V value;\n"
+                                 "                        };\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<template <typename> class TT, typename U> struct Outer1 {\n"
                                  "                                                      TT<U> member;\n"
                                  "                                                   };\n"
-                             , (*it++).second[0].fullyQualified);
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T, typename U> struct Outer2 {\n"
+                                 "                                    typename T::template Foo<U> member;\n"
+                                 "                                 };\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename V> struct Wrapped {\n"
                                  "                        V value;\n"
                                  "                     };\n"        
@@ -1049,7 +1065,8 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance=outer1Instance;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual( "Outer2<HasFoo, int> outer2Instance;\n", (*it++).second[0].fullyQualified);
             }
         }
     },
@@ -1057,26 +1074,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 };
 /* some missing test cases
-
-case 1:
-template<typename V> struct Wrapped { V value; };
-template<template<typename> class TT, typename U> struct Outer1 { TT<U> member; };
-Outer1<Wrapped,int> outer1Instance;
-
-
-case 2:
-struct HasFoo { template<typename V> struct Foo { V value; }; };
-template<typename T, typename U>
-struct Outer2
-{
-    typename T::template Foo<U> member;
-};
-Outer2<HasFoo,int> outer2Instance;
-
-
-
-
-
 
  4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)
  5. Concept declarations (ConceptDecl)

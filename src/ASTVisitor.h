@@ -86,6 +86,9 @@ namespace OdrCop3
             if (!classTemplateDecl->isThisDeclarationADefinition())
                 return true;
 
+            if (classTemplateDecl->isCXXClassMember())
+                return true; // already defined nested inside another UDT
+
             std::string key = classTemplateDecl->getQualifiedNameAsString();
             if (auto* CTSD = dyn_cast<ClassTemplateSpecializationDecl>(classTemplateDecl))
                 key += TemplateArgsToString(contextItems, CTSD);
@@ -115,6 +118,9 @@ namespace OdrCop3
 
             if (!cxxRecordDecl->isThisDeclarationADefinition())
                 return true;
+
+            if (cxxRecordDecl->isCXXClassMember())
+                return true; // already defined nested inside another UDT
 
             std::string key = cxxRecordDecl->getQualifiedNameAsString();
             if      (cxxRecordDecl->getDescribedClassTemplate())                                    key += "<>";

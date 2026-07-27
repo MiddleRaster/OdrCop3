@@ -83,9 +83,11 @@ namespace OdrCop3
             if (!expr)
                 return "";
 
+            struct MyPrinterHelper : public PrinterHelper { bool handledStmt(Stmt* E, raw_ostream& OS) override { return false; } } mph;
+
+            // do post-processing on lambda bodies
             if (const auto* lambdaExpr = FindLambdaExpr(expr))
             {
-                struct MyPrinterHelper : public PrinterHelper { bool handledStmt(Stmt* E, raw_ostream& OS) override { return false; } } mph;
                 std::string body;
                 llvm::raw_string_ostream os(body);
                 lambdaExpr->printPretty(os, &mph, contextItems.printPolicy);
@@ -103,12 +105,16 @@ namespace OdrCop3
                 return "=" + body;
             }
 
-            llvm::StringRef  text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
-            std::string      init = text.str();
-            if ((init.starts_with("{")) || init.starts_with("("))
-                return init;
+            std::string e;
+            llvm::raw_string_ostream os(e);
+            expr->printPretty(os, &mph, contextItems.printPolicy);
+            os.flush();
+            if (e == "")
+                return "";
+            if ((e.starts_with("{")) || e.starts_with("("))
+                return e;
             else
-                return "=" + init;
+                return "=" + e;
         }
     public:
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
