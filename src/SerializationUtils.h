@@ -112,12 +112,6 @@ namespace OdrCop3
         if (allWhitespace)
             return "{}";
 
-        // strip "this->"
-        const std::string target = "this->";
-        size_t pos = 0;
-        while ((pos = body.find(target, pos)) != std::string::npos)
-            body.erase(pos, target.length());
-
         // if one-liner (by counting semicolons)
         if (std::count(body.begin(), body.end(), ';') < 2) {
             size_t pos = 0;
