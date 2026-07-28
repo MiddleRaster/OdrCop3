@@ -68,6 +68,15 @@ namespace OdrCop3
             if (functionDecl->getStorageClass() == clang::SC_Static || functionDecl->isInAnonymousNamespace())
                 return true; // if the function has internal-linkage, skip it
 
+            switch (functionDecl->getTemplateSpecializationKind()) { // same deal as with class templates
+            case TemplateSpecializationKind::TSK_ExplicitInstantiationDeclaration:
+            case TemplateSpecializationKind::TSK_ExplicitInstantiationDefinition:
+            case TemplateSpecializationKind::TSK_ImplicitInstantiation:
+                return true; // no bodies; skip
+            default:
+                break;
+            }
+
             if (functionDecl->isThisDeclarationADefinition())
                 maps.functionMap[CreateKeyForFunctionMap(functionDecl)].push_back({TU, SerializeDecls(contextItems, functionDecl)});
             return true;

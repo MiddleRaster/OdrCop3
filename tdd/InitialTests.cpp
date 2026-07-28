@@ -442,7 +442,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(2, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(3, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -509,7 +509,6 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("template<> bool __cdecl identity<bool>(bool value) { return !value; }\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template int __cdecl identity<int>(int value) { return value; }\n"        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> T __cdecl identity(T value) { return value; }\n"     , (*it++).second[0].fullyQualified);
             }
         }
@@ -1012,16 +1011,24 @@ Test ExploratoryTestsOfClangAST[] =
 
                                "template<typename T> struct Goo { int x; }; template   struct Goo<int>;\n"
                                "template<typename T> struct Hoo { int x; }; template<> struct Hoo<int> { int y; };\n"
+
+                               "template<typename T> struct X {}; template<typename T> struct X<T*> { int i; };\n"
+
+                               "template<typename T> inline int v = 0; template<typename T> inline int v<T*> = 1;\n"
+
+                               "template<typename T> void Function(T) {} template<> void Function(int) {}\n"
+
+                               "template<typename T> void ExplicitInstantiation(T) {} template void ExplicitInstantiation<int>(int);\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(8, maps.udtMap.size(),  "wrong number of UDTs in map");
-            Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
-            Assert::AreEqual(1, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(10, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual( 4, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual( 1, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual( 3, maps.functionMap.size(), "wrong number of functions in map");
             
             {
                 auto it = maps.udtMap.begin();
@@ -1060,6 +1067,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                        V value;\n"
                                  "                     };\n"        
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> struct X {\n"
+                                 "                     };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct X<T *> {\n"
+                                 "                         int i;\n"
+                                 "                      };\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
@@ -1067,8 +1081,16 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual( "Outer2<HasFoo, int> outer2Instance;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance;\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual( "Outer2<HasFoo, int> outer2Instance;\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> inline int v=0;\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> inline int v<T *>=1;\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("template<typename T> void __cdecl ExplicitInstantiation(T) {}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> void __cdecl Function<int>(int) {}\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> void __cdecl Function(T) {}\n", (*it++).second[0].fullyQualified);
             }
         }
     },
