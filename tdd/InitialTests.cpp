@@ -1019,15 +1019,20 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T> void Function(T) {} template<> void Function(int) {}\n"
 
                                "template<typename T> void ExplicitInstantiation(T) {} template void ExplicitInstantiation<int>(int);\n"
+
+                               "template<typename T> using Ptr = T*;\n"
+
+                               "enum class Color { Red, Green }; int global = 0; template<auto V> struct Holder {};"
+                               "Holder<42> h1; Holder<true> h2; Holder<Color::Red> h3; Holder<&global> h4; Holder<nullptr> h5;Holder<&Function<int>> h6;\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(10, maps.udtMap.size(),  "wrong number of UDTs in map");
-            Assert::AreEqual( 4, maps.varMap.size(),   "wrong number of vars in map");
-            Assert::AreEqual( 0, maps.enumMap.size(),   "wrong number of enums in map");
-            Assert::AreEqual( 1, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(11, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(11, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual( 1, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual( 2, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual( 3, maps.functionMap.size(), "wrong number of functions in map");
             
             {
@@ -1046,6 +1051,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                        };\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<auto V> struct Holder {\n"
+                                 "                 };\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> struct Hoo {\n"
                                  "                        int x;\n"
                                  "                     };\n"
@@ -1054,7 +1062,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "              int y;\n"
                                  "           };\n"
                               , (*it++).second[0].fullyQualified);
-
                 Assert::AreEqual("template<template <typename> class TT, typename U> struct Outer1 {\n"
                                  "                                                      TT<U> member;\n"
                                  "                                                   };\n"
@@ -1078,9 +1085,21 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.typedefMap.begin();
                 Assert::AreEqual("using MyHiddenWrapper = AWrapper<(anonymous namespace)::Hidden>; // typedef AWrapper<(anonymous namespace)::Hidden> MyHiddenWrapper;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> using Ptr = T *; // no typedef equivalent\n"                                                                      , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum class Color : int { Red, Green };\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("int global=0;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<42> h1;\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<true> h2;\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<Color::Red> h3;\n"                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<&global> h4;\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<nullptr> h5;\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<&Function<int>> h6;\n"               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("Outer1<Wrapped, int> outer1Instance;\n"     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual( "Outer2<HasFoo, int> outer2Instance;\n"     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> inline int v=0;\n"     , (*it++).second[0].fullyQualified);
@@ -1096,12 +1115,179 @@ Test ExploratoryTestsOfClangAST[] =
     },
 
 
+    {"Lambdas", []
+        {
+            std::string code = "auto lambda1 = [](auto x) {};\n"
+                               "auto lambda2 = []<typename T>(T t){};\n"
+                               "auto lambda3 = []<typename T>(T) requires(sizeof(T)==4) {};\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(0, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(3, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("(lambda at input.cc:1:16) lambda1=[](auto x){};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:2:16) lambda2=[]<typename T>(T t){};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:3:16) lambda3=[]<typename T>(T) requires (sizeof(T) == 4) {};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
 };
 /* some missing test cases
- 5. Concept declarations (ConceptDecl)
- 
- 7. Class template deduction guides (CXXDeductionGuideDecl)
- 8. Explicit instantiations vs explicit specializations across translation units
 
-10. Inline variables and inline functions across translation units
+7. Concepts
+            template<typename T> concept C = sizeof(T) == 4;
+         and
+            template<C T> void f(); 
+
+8. Abbreviated function templates
+            void f(auto x);
+         instead of
+            template<typename T> void f(T);
+
+9. requires
+            requires(sizeof(T)==4)
+        and
+            requires C<T>
+
+10. Constrained auto
+            C auto x = ...
+
+11. Conversion operators
+            operator bool() const;
+
+12. Literal operators
+            operator ""_x
+
+13. Three-way comparison
+            auto operator<=>(...) = default;
+        or
+            struct Point
+            {
+                int x, y;
+                int <=>(const Point& other) const
+                {
+                    if (x < other.x)
+                        return -1;
+                    if (x > other.x)
+                        return 1;
+                    return 0;
+                }
+            };
+
+14. Deduction guides
+            A(int)->A<int>;
+
+15. using enum
+            using enum Color; // it looks like these don't CAUSE ODR violations, though they might expose them
+
+16. Pointer-to-member function
+            int (A::*p)();
+
+17. Multi-dimensional arrays
+            int x[3][4];
+
+18. References to arrays
+            int (&r)[3];
+
+19. Function references
+            void (&f)();
+
+20. Array of pointers to functions
+            void Foo(int) {}
+            void Bar(int) {}
+            void (*const table[2])(int) =
+            {
+                &Foo,
+                &Bar
+            };
+
+21. Empty base optimization
+            struct B {};
+            struct D : B {};
+
+22. Multiple inheritance
+            struct D : A, B {};
+
+23. Virtual inheritance
+            struct D : virtual B {};
+
+24. Access-specifier changes
+            private:
+            protected:
+            public:
+        inside the same class.
+
+25. Scoped enum with underlying type
+            enum class E : unsigned short
+
+///////////////////////////////////////////////////////////////////// variables 
+27. Inline variables
+            inline int x=0;
+
+28. Thread local
+            thread_local int x;
+
+29. constinit
+            constinit int x=0;
+
+30. constexpr static data members
+
+30.5. Attributes
+            [[nodiscard]]
+            [[maybe_unused]]
+            [[no_unique_address]] // The last one is especially relevant.
+
+/////////////////////////////////////////////////////////////////////// lambdas
+/////////////////////////////////////////////////////////////////////////// friends
+34. Friend function template
+            template<typename T> friend void f(T);
+
+35. Friend class template
+            template<typename T> class Wrapper;
+            class A { template<typename T> friend class Wrapper; ;
+            template<typename T> class Wrapper { public: T value; };
+
+/////////////////////////////////////////////////////////////////////////// namespace
+
+36. Inline namespaces
+            inline namespace v1
+        Those affect qualification.
+
+37. Namespace aliases
+            namespace N = M;
+
+38. Using declarations
+            using Base::foo;
+
+39. Exception specifications
+            noexcept(false)
+        and
+            noexcept(sizeof(T)==4)
+
+40. Modules
+            export namespace
+        or
+            export using
+
+
 */

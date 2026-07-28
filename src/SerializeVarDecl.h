@@ -48,7 +48,7 @@ namespace OdrCop3
             return out;
         }
         std::string get_Static() const { return varDecl->isStaticDataMember() ? "static " : ""; }
-
+        
         const LambdaExpr* FindLambdaExpr(const Expr* expr) const
         {
             if (!expr)
@@ -77,6 +77,33 @@ namespace OdrCop3
 
             return nullptr;
         }
+        std::string get_RequiresClause(const LambdaExpr* lambdaExpr) const
+        {
+            const clang::CXXMethodDecl* lambdaCallOperator = nullptr;
+            for (const clang::Decl* decl : lambdaExpr->getLambdaClass()->decls())
+            {
+                const clang::CXXMethodDecl* method;
+                if (!(method = llvm::dyn_cast<clang::CXXMethodDecl>(decl)))
+                    if (const auto* functionTemplate = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
+                        method = llvm::dyn_cast<clang::CXXMethodDecl>(functionTemplate->getTemplatedDecl());
+                if (method && method->getOverloadedOperator() == clang::OO_Call) {
+                    lambdaCallOperator = method;
+                    break;
+                }
+            }
+            if (lambdaCallOperator)
+            if (const auto& associatedConstraint = lambdaCallOperator->getTrailingRequiresClause())
+            if (const clang::Expr* requiresExpr = associatedConstraint.ConstraintExpr)
+            {
+                struct MyPrinterHelper : public PrinterHelper { bool handledStmt(Stmt* E, raw_ostream& OS) override { return false; } } mph;
+                std::string requiresStr;
+                llvm::raw_string_ostream os(requiresStr);
+                requiresExpr->printPretty(os, &mph, contextItems.printPolicy);
+                os.flush();
+                return requiresStr;
+            }
+            return "";
+        }
         std::string get_Init  () const
         {
             const Expr* expr = varDecl->getInit();
@@ -85,7 +112,6 @@ namespace OdrCop3
 
             struct MyPrinterHelper : public PrinterHelper { bool handledStmt(Stmt* E, raw_ostream& OS) override { return false; } } mph;
 
-            // do post-processing on lambda bodies
             if (const auto* lambdaExpr = FindLambdaExpr(expr))
             {
                 std::string body;
@@ -96,8 +122,9 @@ namespace OdrCop3
                 auto pos = body.find("{");
                 if (pos != std::string::npos)
                 {
+                    std::string requiresStr = get_RequiresClause(lambdaExpr); // insert requires clause, if necessary
                     std::string captureAndArgs = body.substr(0, pos-1);
-                    body = captureAndArgs + PostProcessBody(body.substr(pos));
+                    body = captureAndArgs + (requiresStr == "" ? "" : " requires " + requiresStr + " ") + PostProcessBody(body.substr(pos));
                 }
 
                 if (isa<InitListExpr>(varDecl->getInit()->IgnoreImplicit()))
