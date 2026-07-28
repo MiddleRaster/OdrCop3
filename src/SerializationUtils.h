@@ -82,29 +82,22 @@ namespace OdrCop3
         return input;
     }
 
-    inline bool NeedsManualSerialization(const ContextItems& contextItems, QualType qt)
+
+    template<typename PrintLambda> inline bool NeedsManualSerialization(const ContextItems& contextItems, PrintLambda print)
     {
         clang::PrintingPolicy policy = contextItems.printPolicy;
-        policy.FullyQualifiedName    = true;
+        policy.FullyQualifiedName = true;
 
         std::string str;
         llvm::raw_string_ostream os(str);
-        qt.print(os, policy);
+        print(os, policy);
         os.flush();
+
         return str.find("(anonymous namespace)") != std::string::npos;
     }
-    inline bool NeedsManualSerialization(const ContextItems& contextItems, const clang::TemplateParameterList* templateParameterList)
-    {
-        clang::PrintingPolicy policy = contextItems.printPolicy;
-        policy.FullyQualifiedName    = true;
-
-        std::string str;
-        llvm::raw_string_ostream os(str);
-        templateParameterList->print(os, contextItems.context, policy);
-        os.flush();
-        return str.find("(anonymous namespace)") != std::string::npos;
-    }
-
+    inline bool NeedsManualSerialization(const ContextItems& contextItems, QualType qt                                              ) { return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) {                     qt.print(os,                       policy); }); }
+    inline bool NeedsManualSerialization(const ContextItems& contextItems, const clang::TemplateParameterList* templateParameterList) { return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) { templateParameterList->print(os, contextItems.context, policy); }); }
+    
     inline std::string PostProcessBody(const std::string& originalBody)
     {
         std::string body(originalBody);
