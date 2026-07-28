@@ -369,7 +369,12 @@ namespace OdrCop3
                     if (i > 0)
                         key += ",";
                     const NamedDecl* param = params->getParam(i);
-
+                    if (const auto* ttp = llvm::dyn_cast<TemplateTypeParmDecl>(param); ttp && ttp->isImplicit())
+                    {                  // abbreviated functions get auto, even though it's not legal C++
+                        key += "auto"; // necessary because one can write "template<typename T> void HalfAbbreviated(T t, auto x) {}"
+                        continue;
+                    }
+                
                     std::string s;
                     llvm::raw_string_ostream os(s);
                     param->print(os, contextItems.printPolicy);

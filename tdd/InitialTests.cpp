@@ -1114,7 +1114,6 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
-
     {"Lambdas", []
         {
             std::string code = "auto lambda1 = [](auto x) {};\n"
@@ -1151,6 +1150,48 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+
+    {"Function templates", []
+        {
+            std::string code = "void Abbreviated(auto x) {} template<typename T> void FunctionTemplate(T) {}"
+                               "template<typename T> void HalfAbbreviated(T t, auto x) {}"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(0, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(3, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("Abbreviated<auto>(auto)"                                            , (*it  ).first, "should have gotten correct key");
+                Assert::AreEqual("void __cdecl Abbreviated(auto x) {}\n"                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FunctionTemplate<typename T>(T)"                                    , (*it  ).first, "should have gotten correct key");
+                Assert::AreEqual("template<typename T> void __cdecl FunctionTemplate(T) {}\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("HalfAbbreviated<typename T,auto>(T,auto)"                           , (*it  ).first, "should have gotten correct key");
+                Assert::AreEqual("template<typename T> void __cdecl HalfAbbreviated(T t, auto x) {}\n", (*it++).second[0].fullyQualified);
+
+            }
+        }
+    },
+
+
 };
 /* some missing test cases
 
@@ -1158,11 +1199,6 @@ Test ExploratoryTestsOfClangAST[] =
             template<typename T> concept C = sizeof(T) == 4;
          and
             template<C T> void f(); 
-
-8. Abbreviated function templates
-            void f(auto x);
-         instead of
-            template<typename T> void f(T);
 
 9. requires
             requires(sizeof(T)==4)
