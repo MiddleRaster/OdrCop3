@@ -85,6 +85,53 @@ namespace OdrCop3
             }
         }
         out += "> ";
+
+        if (const clang::Expr* requiresClause = params->getRequiresClause())
+        {
+            out += "requires ";
+            if (const auto* conceptExpr = dyn_cast<clang::ConceptSpecializationExpr>(requiresClause))
+            {
+                out += conceptExpr->getNamedConcept()->getNameAsString();
+                out += "<";
+
+                const auto& args = conceptExpr->getTemplateArguments();
+                for (unsigned i=0; i<args.size(); ++i)
+                {
+                    if (i)
+                        out += ", ";
+
+                    const auto& arg = args[i];
+                    switch (arg.getKind())
+                    {
+                    case clang::TemplateArgument::Type:        out += TrimRightIf(IndentBlock(SerializeType(contextItems, arg.getAsType()), LengthOfLastLine(out)), ";"); break;
+                    case clang::TemplateArgument::Declaration: out += TrimRightIf(IndentBlock(SerializeDecl(contextItems, arg.getAsDecl()), LengthOfLastLine(out)), ";"); break;
+                    case clang::TemplateArgument::Template:    out += arg.getAsTemplate().getAsTemplateDecl()->getNameAsString();                                         break;
+                    case clang::TemplateArgument::Integral:
+                    {
+                        llvm::SmallString<32> str;
+                        arg.getAsIntegral().toString(str, 10);
+                        out += std::string(str);
+                        break;
+                    }
+                    default:
+                        break;
+                    }
+                }
+                out += "> ";
+            }
+            else
+            {
+                // print Expr* somehow?
+
+                //std::string exprStr;
+                //llvm::raw_string_ostream os(exprStr);
+                //requiresClause->prettyPrint("hi", contextItems.printPolicy);
+                //os.flush();
+
+                //out += exprStr;
+            }
+        }
+
         return out;
     }
 }

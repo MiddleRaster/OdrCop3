@@ -93,6 +93,17 @@ namespace OdrCop3
         os.flush();
         return str.find("(anonymous namespace)") != std::string::npos;
     }
+    inline bool NeedsManualSerialization(const ContextItems& contextItems, const clang::TemplateParameterList* templateParameterList)
+    {
+        clang::PrintingPolicy policy = contextItems.printPolicy;
+        policy.FullyQualifiedName    = true;
+
+        std::string str;
+        llvm::raw_string_ostream os(str);
+        templateParameterList->print(os, contextItems.context, policy);
+        os.flush();
+        return str.find("(anonymous namespace)") != std::string::npos;
+    }
 
     inline std::string PostProcessBody(const std::string& originalBody)
     {

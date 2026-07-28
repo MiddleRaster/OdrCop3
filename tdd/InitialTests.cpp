@@ -1186,11 +1186,54 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<typename T> void __cdecl FunctionTemplate(T) {}\n"         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("HalfAbbreviated<typename T,auto>(T,auto)"                           , (*it  ).first, "should have gotten correct key");
                 Assert::AreEqual("template<typename T> void __cdecl HalfAbbreviated(T t, auto x) {}\n", (*it++).second[0].fullyQualified);
-
             }
         }
     },
 
+    {"Requires", []
+        {
+            std::string code = "template <typename T> T FunctionTemplateWithRequiresClause(const T& value) requires requires { typename T::value_type; } { return value; }\n"
+                               "template<typename T> concept TheConcept = sizeof(T) == 4; template<typename T> requires TheConcept<T> void FunctionTemplateWithConcept(T) {}\n"
+
+                               "namespace { struct NoSeeUm {}; }\n"
+                               "template<typename T, typename U> concept IsSameConcept = true;\n"
+                               "template<typename T> requires IsSameConcept<T, NoSeeUm> void FunctionTemplateWithAnonymousConcept(T) {}\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(0, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(3, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("FunctionTemplateWithAnonymousConcept<typename T>(T)"                                                                                     , (*it).first, "should have gotten correct key");
+                Assert::AreEqual("template<typename T> requires IsSameConcept<T, struct (anonymous namespace)::NoSeeUm { // sizeof=1\n"
+                                 "                                               }> void __cdecl FunctionTemplateWithAnonymousConcept(T) {}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FunctionTemplateWithConcept<typename T>(T)"                                                                                              , (*it  ).first, "should have gotten correct key");
+                Assert::AreEqual("template<typename T> requires TheConcept<T> void __cdecl FunctionTemplateWithConcept(T) {}\n"                                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FunctionTemplateWithRequiresClause<typename T>(const T &)"                                                                               , (*it  ).first, "should have gotten correct key");
+                Assert::AreEqual("template<typename T> T __cdecl FunctionTemplateWithRequiresClause(const T & value) requires requires { typename T::value_type; } { return value; }\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 };
 /* some missing test cases
@@ -1199,11 +1242,6 @@ Test ExploratoryTestsOfClangAST[] =
             template<typename T> concept C = sizeof(T) == 4;
          and
             template<C T> void f(); 
-
-9. requires
-            requires(sizeof(T)==4)
-        and
-            requires C<T>
 
 10. Constrained auto
             C auto x = ...
@@ -1293,7 +1331,6 @@ Test ExploratoryTestsOfClangAST[] =
             [[maybe_unused]]
             [[no_unique_address]] // The last one is especially relevant.
 
-/////////////////////////////////////////////////////////////////////// lambdas
 /////////////////////////////////////////////////////////////////////////// friends
 34. Friend function template
             template<typename T> friend void f(T);

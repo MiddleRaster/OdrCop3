@@ -12,7 +12,7 @@
 #include <clang\AST\RecordLayout.h>
 #include <llvm\Support\raw_ostream.h>
 
-#include "SerializationUtils.h"
+#include "TemplateSerializationUtils.h"
 
 namespace OdrCop3
 {
@@ -50,10 +50,17 @@ namespace OdrCop3
         {
             if (const FunctionTemplateDecl* ftd = funcDecl->getDescribedFunctionTemplate())
             {
-                std::string                 templatePrefix;
-                llvm::raw_string_ostream os(templatePrefix);
-                ftd->getTemplateParameters()->print(os, contextItems.context, contextItems.printPolicy);
-                os.flush();
+                const auto* templateParameterList = ftd->getTemplateParameters();
+
+                std::string templatePrefix;
+                if (NeedsManualSerialization(contextItems, templateParameterList))
+                    templatePrefix = IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, templateParameterList), 0);
+                else
+                {
+                    llvm::raw_string_ostream os(templatePrefix);
+                    templateParameterList->print(os, contextItems.context, contextItems.printPolicy);
+                    os.flush();
+                }
 
                 // change "template <" to "template<"
                 std::string::size_type pos = templatePrefix.find("template <");
