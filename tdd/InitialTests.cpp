@@ -1203,15 +1203,18 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T> requires TheConcept<T> struct ClassRequiresTheConcept { T value; };\n"
                                "template<typename T> requires IsSameConcept<T, NoSeeUm> struct ClassTemplateWithAnonymousConcept { T value; };\n"
 
-                               "struct ValueHolder { static int value; };\n"
                                "template<auto V> concept ValueConcept = true;\n"
-                               "template<typename T> requires ValueConcept<&ValueHolder::value> struct TestDeclarationArg {};\n"
+                                   "struct ValueHolder { static int value; };\n"
+                                   "template<typename T> requires ValueConcept<&ValueHolder::value> struct TestDeclarationArg {};\n"
+
+                                   "namespace { struct Hidden { static const int value = 0; }; }\n"
+                                   "template<typename T> requires ValueConcept<&Hidden::value> struct TestAnonymousNamespaceArg {};\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(4, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(5, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -1230,6 +1233,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                               }> struct ClassTemplateWithAnonymousConcept {\n"
                                  "                                                     T value;\n"
                                  "                                                  };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> requires ValueConcept<&(struct (anonymous namespace)::Hidden { // sizeof=1\n"
+                                 "                                                static const int value=0;\n"
+                                 "                                             })::value> struct TestAnonymousNamespaceArg {\n"
+                                 "                                                        };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T> requires ValueConcept<&ValueHolder::value> struct TestDeclarationArg {\n"
                                  "                                                                };\n"

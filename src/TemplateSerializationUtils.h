@@ -36,8 +36,14 @@ namespace OdrCop3
         }
         // else do it manually
 
-        if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(expr))
-            return declRefExpr->getDecl()->getQualifiedNameAsString(); // this does NOT work:  return SerializeDecl(contextItems, declRefExpr->getDecl());
+        if (const auto* declRefExpr = dyn_cast<DeclRefExpr>(expr))
+        {
+            const clang::ValueDecl* valueDecl = declRefExpr->getDecl();
+            if (const auto* recordDecl = dyn_cast<CXXRecordDecl>(valueDecl->getDeclContext()))
+                return "(" + TrimRightIf(IndentBlock(SerializeDecl(contextItems, recordDecl), 1), ";") + ")::" + valueDecl->getNameAsString();
+
+            return declRefExpr->getDecl()->getQualifiedNameAsString(); // fallback, in case it's not a ValueDecl* after all, so we don't know how to serialize it manually
+        }
 
         if (const auto* unaryOperator = llvm::dyn_cast<clang::UnaryOperator>(expr))
         {
@@ -52,7 +58,7 @@ namespace OdrCop3
             case clang::UO_LNot:   out += "~"; break;
             default:                           break;
             }
-            out += SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, unaryOperator->getSubExpr());
+            out += IndentBlock(SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, unaryOperator->getSubExpr()), 1);
             return out;
         }
 
@@ -156,11 +162,11 @@ namespace OdrCop3
                     switch (arg.getKind())
                     {
                     case clang::TemplateArgument::Type       : out += TrimRightIf(IndentBlock(SerializeType(contextItems, arg.getAsType()), LengthOfLastLine(out)), ";"); break;
-                    case clang::TemplateArgument::Expression : out += SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, arg.getAsExpr()); break;
+                    case clang::TemplateArgument::Expression : out += IndentBlock(SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, arg.getAsExpr()), LengthOfLastLine(out)); break;
                     case clang::TemplateArgument::Declaration:
                     {
                         if (const clang::Expr* expr = arg.getAsExpr())
-                            out += SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, expr);
+                            out += IndentBlock(SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, expr), LengthOfLastLine(out));
                         else
                             out += arg.getAsDecl()->getQualifiedNameAsString();
                         break;
