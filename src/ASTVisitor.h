@@ -71,13 +71,18 @@ namespace OdrCop3
             switch (functionDecl->getTemplateSpecializationKind()) { // same deal as with class templates
             case TemplateSpecializationKind::TSK_ExplicitInstantiationDeclaration:
             case TemplateSpecializationKind::TSK_ExplicitInstantiationDefinition:
-            case TemplateSpecializationKind::TSK_ImplicitInstantiation:
+            case TemplateSpecializationKind::TSK_ImplicitInstantiation:     
                 return true; // no bodies; skip
             default:
                 break;
             }
 
-            if (functionDecl->isThisDeclarationADefinition())
+            if (!functionDecl->isThisDeclarationADefinition())
+                return true;
+
+            if (const FunctionTemplateDecl* functionTemplateDecl = functionDecl->getDescribedFunctionTemplate())
+                maps.functionMap[CreateKeyForFunctionMap(functionDecl)].push_back({TU, SerializeDecls(contextItems, functionTemplateDecl)});
+            else
                 maps.functionMap[CreateKeyForFunctionMap(functionDecl)].push_back({TU, SerializeDecls(contextItems, functionDecl)});
             return true;
         }

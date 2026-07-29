@@ -341,25 +341,25 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using Alias2 = S; // typedef S Alias2;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<auto F, auto... Fs> using AllTrue = decltype((F() && ... && Fs())); // no typedef equivalent\n"
+                Assert::AreEqual("template<auto F, auto ...Fs> using AllTrue = decltype((F() && ... && Fs())); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:13) { Red, Green, Blue }; // typedef enum (anonymous type at input.cc:2:13) { Red, Green, Blue } Color;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename C, typename R, typename... Args> using MemberFuncPtr = R (C::*)(Args...); // no typedef equivalent\n"
+                Assert::AreEqual("template<typename C, typename R, typename ...Args> using MemberFuncPtr = R (C::*)(Args...); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename R, typename... Args> using NoexceptFuncPtr = R (*)(Args...) noexcept; // no typedef equivalent\n"
+                Assert::AreEqual("template<typename R, typename ...Args> using NoexceptFuncPtr = R (*)(Args...) noexcept; // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<template <template <typename T> class Inner, typename U> class Outer, template <typename X> class Wrap> using RecursiveAlias = typename Outer<Wrap, int>::type; // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<auto F, typename... Args> using ReturnTypeOf = decltype(F(Args{}...)); // no typedef equivalent\n"
+                Assert::AreEqual("template<auto F, typename ...Args> using ReturnTypeOf = decltype(F(Args{}...)); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename R, typename... Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...); // no typedef equivalent\n"
+                Assert::AreEqual("template<typename R, typename ...Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...); // no typedef equivalent\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using TypedefForPointerToFunction = int (*)(double, const char *); // typedef int (*)(double, const char *) TypedefForPointerToFunction;\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using UsingAliasForPointerToFunction = int (*)(double, const char *); // typedef int (*)(double, const char *) UsingAliasForPointerToFunction;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename R, typename... Args> using VariadicFuncPtr = R (*)(Args..., ...); // no typedef equivalent\n"
+                Assert::AreEqual("template<typename R, typename ...Args> using VariadicFuncPtr = R (*)(Args..., ...); // no typedef equivalent\n"
                              , (*it++).second[0].fullyQualified);
             }
             {

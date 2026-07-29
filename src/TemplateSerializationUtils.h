@@ -88,11 +88,11 @@ namespace OdrCop3
     {
         auto AddParameterPackAndNameAndDefaultArgument = [](const ContextItems& contextItems, const auto* tp) -> std::string
                                                          {
-                                                             std::string out;
+                                                            std::string out = " ";
                                                              if (tp->isParameterPack())
                                                                  out += "...";
                                                              if (!tp->getName().empty())
-                                                                 out += " " + tp->getName().str();
+                                                                 out += tp->getName().str();
                                                              if (tp->hasDefaultArgument())
                                                              {
                                                                  std::string defaultStr;
@@ -100,7 +100,7 @@ namespace OdrCop3
                                                                  tp->getDefaultArgument().getArgument().getAsExpr()->printPretty(defaultStream, nullptr, contextItems.printPolicy);
                                                                  out += "=" + defaultStr;
                                                              }
-                                                             return out;
+                                                             return TrimRightIf(out, " ");
                                                          };
 
         std::string out = "template<";

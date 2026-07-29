@@ -48,6 +48,7 @@ namespace OdrCop3
 
         std::string get_TemplateHeader() const
         {
+#ifdef KEEP_TO_MOVE_TO_UTILS
             if (const FunctionTemplateDecl* ftd = funcDecl->getDescribedFunctionTemplate())
             {
                 const auto* templateParameterList = ftd->getTemplateParameters();
@@ -68,6 +69,7 @@ namespace OdrCop3
                     templatePrefix.replace(pos, 10, "template<");
                 return templatePrefix;
             }
+#endif
             if (const auto* info = funcDecl->getTemplateSpecializationInfo())
             {
                 switch (info->getTemplateSpecializationKind())
@@ -230,7 +232,7 @@ namespace OdrCop3
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
 
             std::string fqn;
-            fqn += get_TemplateHeader();
+            fqn += get_TemplateHeader();    // N.B.:  TemplateFunctionDecl*s go through their own serializer, but specializations serialize here
             fqn += get_LeadingAttributes();
             fqn += get_Friend();
             fqn += get_Register();
