@@ -22,6 +22,62 @@ namespace OdrCop3
     }
 
     template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
+    std::string SerializeExpr(const ContextItems& contextItems, const clang::Expr* expr)
+    {
+        if (!expr)
+            return {};
+
+        if (!NeedsManualSerialization(contextItems, expr))
+        {
+            std::string exprStr;
+            llvm::raw_string_ostream os(exprStr);
+            expr->printPretty(os, nullptr, contextItems.printPolicy);
+            return exprStr;
+        }
+        // else do it manually
+
+        if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(expr))
+            return declRefExpr->getDecl()->getQualifiedNameAsString(); // this does NOT work:  return SerializeDecl(contextItems, declRefExpr->getDecl());
+
+        if (const auto* unaryOperator = llvm::dyn_cast<clang::UnaryOperator>(expr))
+        {
+            std::string out;
+            switch (unaryOperator->getOpcode())
+            {
+            case clang::UO_AddrOf: out += "&"; break;
+            case clang::UO_Deref:  out += "*"; break;
+            case clang::UO_Minus:  out += "-"; break;
+            case clang::UO_Plus:   out += "+"; break;
+            case clang::UO_Not:    out += "!"; break;
+            case clang::UO_LNot:   out += "~"; break;
+            default:                           break;
+            }
+            out += SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, unaryOperator->getSubExpr());
+            return out;
+        }
+
+        if (const auto* integerLiteral = llvm::dyn_cast<clang::IntegerLiteral>(expr))
+        {
+            llvm::SmallString<32> str;
+            integerLiteral->getValue().toString(str, 10, true);
+            return std::string(str);
+        }
+
+        if (const auto* boolLiteral = llvm::dyn_cast<clang::CXXBoolLiteralExpr>(expr))
+            return boolLiteral->getValue() ? "true" : "false";
+
+        if (const auto* parenExpr = llvm::dyn_cast<clang::ParenExpr>(expr))
+            return "(" + SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, parenExpr->getSubExpr()) + ")";
+
+        {
+            std::string exprStr;
+            llvm::raw_string_ostream os(exprStr);
+            expr->printPretty(os, nullptr, contextItems.printPolicy);
+            return exprStr;
+        }
+    }
+
+    template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
     inline std::string ConstructTemplateParameterList(const ContextItems& contextItems, const clang::TemplateParameterList* params)
     {
         auto AddParameterPackAndNameAndDefaultArgument = [](const ContextItems& contextItems, const auto* tp) -> std::string
@@ -94,18 +150,22 @@ namespace OdrCop3
                 out += conceptExpr->getNamedConcept()->getNameAsString();
                 out += "<";
 
-                const auto& args = conceptExpr->getTemplateArguments();
-                for (unsigned i=0; i<args.size(); ++i)
+                for (const TemplateArgumentLoc& argLoc : conceptExpr->getTemplateArgsAsWritten()->arguments())
                 {
-                    if (i)
-                        out += ", ";
-
-                    const auto& arg = args[i];
+                    const TemplateArgument& arg = argLoc.getArgument();
                     switch (arg.getKind())
                     {
-                    case clang::TemplateArgument::Type:        out += TrimRightIf(IndentBlock(SerializeType(contextItems, arg.getAsType()), LengthOfLastLine(out)), ";"); break;
-                    case clang::TemplateArgument::Declaration: out += TrimRightIf(IndentBlock(SerializeDecl(contextItems, arg.getAsDecl()), LengthOfLastLine(out)), ";"); break;
-                    case clang::TemplateArgument::Template:    out += arg.getAsTemplate().getAsTemplateDecl()->getNameAsString();                                         break;
+                    case clang::TemplateArgument::Type       : out += TrimRightIf(IndentBlock(SerializeType(contextItems, arg.getAsType()), LengthOfLastLine(out)), ";"); break;
+                    case clang::TemplateArgument::Expression : out += SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, arg.getAsExpr()); break;
+                    case clang::TemplateArgument::Declaration:
+                    {
+                        if (const clang::Expr* expr = arg.getAsExpr())
+                            out += SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, expr);
+                        else
+                            out += arg.getAsDecl()->getQualifiedNameAsString();
+                        break;
+                    }
+                    case clang::TemplateArgument::Template: out += arg.getAsTemplate().getAsTemplateDecl()->getNameAsString(); break;
                     case clang::TemplateArgument::Integral:
                     {
                         llvm::SmallString<32> str;
@@ -114,24 +174,27 @@ namespace OdrCop3
                         break;
                     }
                     default:
+                    {
+                        std::string argStr;
+                        llvm::raw_string_ostream os(argStr);
+                        arg.print(contextItems.printPolicy, os, true);
+                        os.flush();
+                        out += argStr;
                         break;
-                    }
+                    }}
+                    out += ", ";
                 }
+                out  = TrimRightIf(out, ", ");
                 out += "> ";
             }
             else
             {
-                // print Expr* somehow?
-
-                //std::string exprStr;
-                //llvm::raw_string_ostream os(exprStr);
-                //requiresClause->prettyPrint("hi", contextItems.printPolicy);
-                //os.flush();
-
-                //out += exprStr;
+                std::string exprStr;
+                llvm::raw_string_ostream os(exprStr);
+                requiresClause->printPretty(os, nullptr, contextItems.printPolicy);
+                out += exprStr;
             }
         }
-
         return out;
     }
 }

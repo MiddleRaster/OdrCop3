@@ -1193,17 +1193,25 @@ Test ExploratoryTestsOfClangAST[] =
     {"Requires", []
         {
             std::string code = "template <typename T> T FunctionTemplateWithRequiresClause(const T& value) requires requires { typename T::value_type; } { return value; }\n"
-                               "template<typename T> concept TheConcept = sizeof(T) == 4; template<typename T> requires TheConcept<T> void FunctionTemplateWithConcept(T) {}\n"
+                               "template<typename T> concept TheConcept = sizeof(T) == 4;"
+                               "template<typename T> requires TheConcept<T> void FunctionTemplateWithConcept(T) {}\n"
 
                                "namespace { struct NoSeeUm {}; }\n"
                                "template<typename T, typename U> concept IsSameConcept = true;\n"
                                "template<typename T> requires IsSameConcept<T, NoSeeUm> void FunctionTemplateWithAnonymousConcept(T) {}\n"
+
+                               "template<typename T> requires TheConcept<T> struct ClassRequiresTheConcept { T value; };\n"
+                               "template<typename T> requires IsSameConcept<T, NoSeeUm> struct ClassTemplateWithAnonymousConcept { T value; };\n"
+
+                               "struct ValueHolder { static int value; };\n"
+                               "template<auto V> concept ValueConcept = true;\n"
+                               "template<typename T> requires ValueConcept<&ValueHolder::value> struct TestDeclarationArg {};\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(0, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(4, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -1211,6 +1219,25 @@ Test ExploratoryTestsOfClangAST[] =
             
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("ClassRequiresTheConcept<>", (*it).first, "should have gotten correct key");
+                Assert::AreEqual("template<typename T> requires TheConcept<T> struct ClassRequiresTheConcept {\n"
+                                 "                                               T value;\n"
+                                 "                                            };\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("ClassTemplateWithAnonymousConcept<>", (*it).first, "should have gotten correct key");
+                Assert::AreEqual("template<typename T> requires IsSameConcept<T, struct (anonymous namespace)::NoSeeUm { // sizeof=1\n"
+                                 "                                               }> struct ClassTemplateWithAnonymousConcept {\n"
+                                 "                                                     T value;\n"
+                                 "                                                  };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> requires ValueConcept<&ValueHolder::value> struct TestDeclarationArg {\n"
+                                 "                                                                };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ValueHolder { // sizeof=1\n"
+                                 "   static int value;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
