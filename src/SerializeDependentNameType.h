@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class DependentNameTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class DependentNameTypeSerializer
     {
         const ContextItems     & contextItems;
         const DependentNameType* dependentNameType;

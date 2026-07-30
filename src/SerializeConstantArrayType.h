@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class ConstantArrayTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class ConstantArrayTypeSerializer
     {
         const ContextItems     & contextItems;
         const ConstantArrayType* constantArrayType;

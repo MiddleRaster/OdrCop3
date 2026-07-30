@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class DecayedTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class DecayedTypeSerializer
     {
         const ContextItems& contextItems;
         const DecayedType * decayedType;

@@ -22,79 +22,7 @@ namespace OdrCop3
         return out;
     }
 
-    template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
-    std::string SerializeExpr(const ContextItems& contextItems, const clang::Expr* expr)
-    {
-        if (!expr)
-            return {};
-
-        if (!NeedsManualSerialization(contextItems, expr))
-        {
-            std::string exprStr;
-            llvm::raw_string_ostream os(exprStr);
-            expr->printPretty(os, nullptr, contextItems.printPolicy);
-            return exprStr;
-        }
-        // else do it manually
-
-
-        if (const auto* functionalCastExpr = llvm::dyn_cast<clang::CXXFunctionalCastExpr>(expr))
-        {
-            std::string out = TrimRightIf(SerializeType(contextItems, functionalCastExpr->getType()), ";");
-            out += SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, functionalCastExpr->getSubExpr());
-            return out;
-        }
-        if (const auto* constantExpr = llvm::dyn_cast<clang::ConstantExpr>(expr))
-            return SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, constantExpr->getSubExpr());
-
-        if (const auto* declRefExpr = dyn_cast<DeclRefExpr>(expr))
-        {
-            const clang::ValueDecl* valueDecl = declRefExpr->getDecl();
-            if (const auto* recordDecl = dyn_cast<CXXRecordDecl>(valueDecl->getDeclContext()))
-                return "(" + TrimRightIf(IndentBlock(SerializeDecl(contextItems, recordDecl), 1), ";") + ")::" + valueDecl->getNameAsString();
-
-            return declRefExpr->getDecl()->getQualifiedNameAsString(); // fallback, in case it's not a ValueDecl* after all, so we don't know how to serialize it manually
-        }
-
-        if (const auto* unaryOperator = llvm::dyn_cast<clang::UnaryOperator>(expr))
-        {
-            std::string out;
-            switch (unaryOperator->getOpcode())
-            {
-            case clang::UO_AddrOf: out += "&"; break;
-            case clang::UO_Deref:  out += "*"; break;
-            case clang::UO_Minus:  out += "-"; break;
-            case clang::UO_Plus:   out += "+"; break;
-            case clang::UO_Not:    out += "!"; break;
-            case clang::UO_LNot:   out += "~"; break;
-            default:                           break;
-            }
-            out += IndentBlock(SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, unaryOperator->getSubExpr()), 1);
-            return out;
-        }
-
-        if (const auto* integerLiteral = llvm::dyn_cast<clang::IntegerLiteral>(expr))
-        {
-            llvm::SmallString<32> str;
-            integerLiteral->getValue().toString(str, 10, true);
-            return std::string(str);
-        }
-
-        if (const auto* boolLiteral = llvm::dyn_cast<clang::CXXBoolLiteralExpr>(expr))
-            return boolLiteral->getValue() ? "true" : "false";
-
-        if (const auto* parenExpr = llvm::dyn_cast<clang::ParenExpr>(expr))
-            return "(" + SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, parenExpr->getSubExpr()) + ")";
-
-        {
-            std::string exprStr;
-            llvm::raw_string_ostream os(exprStr);
-            expr->printPretty(os, nullptr, contextItems.printPolicy);
-            return exprStr;
-        }
-    }
-
-    template <auto SerializeDecl, auto SerializeType, auto SerializeAttr>
+    template <auto SerializeDecl, auto SerializeType, auto SerializeExpr>
     inline std::string ConstructTemplateParameterList(const ContextItems& contextItems, const clang::TemplateParameterList* params)
     {
         auto AddParameterPackAndNameAndDefaultArgument = [](const ContextItems& contextItems, const auto* tp) -> std::string
@@ -150,7 +78,7 @@ namespace OdrCop3
             }
             if (const auto* ttp2 = clang::dyn_cast<clang::TemplateTemplateParmDecl>(param))
             {
-                std::string nested = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, ttp2->getTemplateParameters());
+                std::string nested = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, ttp2->getTemplateParameters());
                 out += "template " + nested.substr(std::string("template").size()); // tweak the spacing a tiny bit
                 out += "class";
                 out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp2);
@@ -162,48 +90,8 @@ namespace OdrCop3
         if (const clang::Expr* requiresClause = params->getRequiresClause())
         {
             out += "requires ";
-            if (const auto* conceptExpr = dyn_cast<clang::ConceptSpecializationExpr>(requiresClause))
-            {
-                out += conceptExpr->getNamedConcept()->getNameAsString();
-                out += "<";
-
-                for (const TemplateArgumentLoc& argLoc : conceptExpr->getTemplateArgsAsWritten()->arguments())
-                {
-                    const TemplateArgument& arg = argLoc.getArgument();
-                    switch (arg.getKind())
-                    {
-                    case clang::TemplateArgument::Type       : out += TrimRightIf(IndentBlock(SerializeType(contextItems, arg.getAsType()), LengthOfLastLine(out)), ";"); break;
-                    case clang::TemplateArgument::Expression : out += IndentBlock(SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, arg.getAsExpr()), LengthOfLastLine(out)); break;
-                    case clang::TemplateArgument::Declaration:
-                    {
-                        if (const clang::Expr* expr = arg.getAsExpr())
-                            out += IndentBlock(SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, expr), LengthOfLastLine(out));
-                        else
-                            out += arg.getAsDecl()->getQualifiedNameAsString();
-                        break;
-                    }
-                    case clang::TemplateArgument::Template: out += arg.getAsTemplate().getAsTemplateDecl()->getNameAsString(); break;
-                    case clang::TemplateArgument::Integral:
-                    {
-                        llvm::SmallString<32> str;
-                        arg.getAsIntegral().toString(str, 10);
-                        out += std::string(str);
-                        break;
-                    }
-                    default:
-                    {
-                        std::string argStr;
-                        llvm::raw_string_ostream os(argStr);
-                        arg.print(contextItems.printPolicy, os, true);
-                        os.flush();
-                        out += argStr;
-                        break;
-                    }}
-                    out += ", ";
-                }
-                out  = TrimRightIf(out, ", ");
-                out += "> ";
-            }
+            if (const auto* conceptSpecializationExpr = dyn_cast<clang::ConceptSpecializationExpr>(requiresClause))
+                out += IndentBlock(SerializeExpr(contextItems, conceptSpecializationExpr), LengthOfLastLine(out));
             else
             {
                 std::string exprStr;

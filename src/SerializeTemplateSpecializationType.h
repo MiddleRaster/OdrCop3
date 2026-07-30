@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class TemplateSpecializationTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class TemplateSpecializationTypeSerializer
     {
         const ContextItems              & contextItems;
         const TemplateSpecializationType* templateSpecializationType;
@@ -47,11 +47,11 @@ namespace OdrCop3
                     switch (arg.getKind())
                     {
                     case clang::TemplateArgument::Type       : out += TrimRightIf(IndentBlock(SerializeType(contextItems, arg.getAsType()), LengthOfLastLine(out)), ";"); break;
-                    case clang::TemplateArgument::Expression : out += IndentBlock(SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, arg.getAsExpr()), LengthOfLastLine(out)); break;
+                    case clang::TemplateArgument::Expression : out += IndentBlock(SerializeExpr(contextItems, arg.getAsExpr()), LengthOfLastLine(out)); break;
                     case clang::TemplateArgument::Declaration:
                     {
                         if (const clang::Expr* expr = arg.getAsExpr())
-                            out += IndentBlock(SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, expr), LengthOfLastLine(out));
+                            out += IndentBlock(SerializeExpr(contextItems, expr), LengthOfLastLine(out));
                         else
                             out += arg.getAsDecl()->getQualifiedNameAsString();
                         break;

@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class FunctionProtoTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FunctionProtoTypeSerializer
     {
         const ContextItems      & contextItems;
         const FunctionProtoType * functionProtoType;

@@ -7,7 +7,7 @@
 #include "..\src\TemplateSerializationUtils.h"
 #include "..\src\SerializeDecls.h"
 #include "..\src\SerializeTypes.h"
-#include "..\src\SerializeAttrs.h"
+#include "..\src\SerializeExprs.h"
 
 namespace OdrCop3
 {
@@ -50,9 +50,9 @@ namespace OdrCop3
             , contextItems (context, printPolicy, this->TU, recursingDecls)
         {}
     private:
-        static std::string SerializeDecls(const ContextItems& contextItems, const clang::Decl  * decl) { return Serialize::Decls<                 &SerializeTypes, &SerializeAttrs>(contextItems, decl); }
-        static std::string SerializeTypes(const ContextItems& contextItems, const clang::QualType& qt) { return Serialize::Types<&SerializeDecls,                  &SerializeAttrs>(contextItems, qt  ); }
-        static std::string SerializeAttrs(const ContextItems& contextItems, const clang::Attr  * attr) { return Serialize::Attrs<&SerializeDecls, &SerializeTypes                 >(contextItems, attr); }
+        static std::string SerializeDecls(const ContextItems& contextItems, const clang::Decl  * decl) { return Serialize::Decls<                 &SerializeTypes, &SerializeExprs>(contextItems, decl); }
+        static std::string SerializeTypes(const ContextItems& contextItems, const clang::QualType& qt) { return Serialize::Types<&SerializeDecls,                  &SerializeExprs>(contextItems, qt  ); }
+        static std::string SerializeExprs(const ContextItems& contextItems, const clang::Expr  * expr) { return Serialize::Exprs<&SerializeDecls, &SerializeTypes                 >(contextItems, expr); }
     public:
         bool VisitFunctionDecl(FunctionDecl* functionDecl)
         {
@@ -173,7 +173,7 @@ namespace OdrCop3
             if (llvm::isa<clang::RecordDecl>(enumDecl->getDeclContext()))
                 return true; // enums local to UDTs     are covered by the  UDT; no need to duplicate it here
 
-            std::string  key = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey<&SerializeDecls, &SerializeTypes, &SerializeAttrs>(contextItems, enumDecl) : enumDecl->getQualifiedNameAsString();
+            std::string  key = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey<&SerializeDecls, &SerializeTypes, &SerializeExprs>(contextItems, enumDecl) : enumDecl->getQualifiedNameAsString();
             maps.enumMap[key].push_back({TU, SerializeDecls(contextItems, enumDecl)});
             return true;
         }

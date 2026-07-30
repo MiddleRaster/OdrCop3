@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class PointerTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class PointerTypeSerializer
     {
         const ContextItems& contextItems;
         const PointerType * pointerType;

@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class ClassTemplateDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class ClassTemplateDeclSerializer
     {
         const ContextItems     & contextItems;
         const ClassTemplateDecl* classTemplateDecl;
@@ -27,7 +27,7 @@ namespace OdrCop3
 
             std::string templatePrefix;
             if (NeedsManualSerialization(contextItems, templateParameterList))
-                templatePrefix = IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, templateParameterList), 0);
+                templatePrefix = IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList), 0);
             else
             {
                 llvm::raw_string_ostream os(templatePrefix);

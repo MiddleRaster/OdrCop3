@@ -13,10 +13,11 @@
 #include <llvm\Support\raw_ostream.h>
 
 #include "TemplateSerializationUtils.h"
+#include "SerializeAttrs.h"
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class FunctionDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FunctionDeclSerializer
     {
         const ContextItems& contextItems;
         const FunctionDecl* funcDecl;

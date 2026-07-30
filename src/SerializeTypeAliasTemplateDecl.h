@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class TypeAliasTemplateDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class TypeAliasTemplateDeclSerializer
     {
         const ContextItems         & contextItems;
         const TypeAliasTemplateDecl* typeAliasTemplateDecl;
@@ -27,7 +27,7 @@ namespace OdrCop3
             TypeAliasDecl* aliasDecl = typeAliasTemplateDecl->getTemplatedDecl();
             QualType      underlying = aliasDecl->getUnderlyingType();
             std::string fqtd;
-            fqtd  = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, typeAliasTemplateDecl->getTemplateParameters());
+            fqtd  = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, typeAliasTemplateDecl->getTemplateParameters());
             fqtd += "using " + typeAliasTemplateDecl->getNameAsString() + " = ";
             if (NeedsManualSerialization(contextItems, underlying))
             {

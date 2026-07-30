@@ -16,16 +16,15 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class BuiltinTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class ConstantExprSerializer
     {
         const ContextItems& contextItems;
-        const BuiltinType * builtinType;
-        QualType qt;
+        const ConstantExpr* constantExpr;
     public:
-        BuiltinTypeSerializer(const ContextItems& contextItems, QualType qt, const BuiltinType* builtinType) : contextItems(contextItems), qt(qt), builtinType(builtinType) {}
+        ConstantExprSerializer(const ContextItems& contextItems, const ConstantExpr* constantExpr) : contextItems(contextItems), constantExpr(constantExpr) {}
         std::string Serialize() const
         {
-            return qt.getAsString(contextItems.printPolicy) + (contextItems.aux.size() > 0 ? " " + contextItems.aux : "");
+            return SerializeExpr(contextItems, constantExpr->getSubExpr());
         }
     };
 }

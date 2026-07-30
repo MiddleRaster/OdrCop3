@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> inline std::string BuildFullyQualifiedParentChain(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> inline std::string BuildFullyQualifiedParentChain(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
     {
         std::string parent;
         const clang::DeclContext* declContext = enumDecl->getDeclContext();
@@ -38,7 +38,7 @@ namespace OdrCop3
         }
         return parent;
     }
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> inline std::string BuildNameForNameless(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> inline std::string BuildNameForNameless(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
     {
         std::string namelessName;
 
@@ -63,13 +63,13 @@ namespace OdrCop3
         std::string anonymous = "(anonymous type at ";
         auto pos = namelessName.find(anonymous);
         if (pos != std::string::npos)
-            namelessName.insert(pos, BuildFullyQualifiedParentChain<SerializeDecl, SerializeType, SerializeAttr>(contextItems, enumDecl));
+            namelessName.insert(pos, BuildFullyQualifiedParentChain<SerializeDecl, SerializeType, SerializeExpr>(contextItems, enumDecl));
 
         return namelessName;
     }
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> inline std::string MakeUnnamedEnumKey(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> inline std::string MakeUnnamedEnumKey(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
     {
-        std::string name = BuildNameForNameless<SerializeDecl, SerializeType, SerializeAttr>(contextItems, enumDecl);
+        std::string name = BuildNameForNameless<SerializeDecl, SerializeType, SerializeExpr>(contextItems, enumDecl);
         name = TrimRightIf(name, ")");
 
         std::string firstEnumName;
@@ -82,7 +82,7 @@ namespace OdrCop3
         return name;
     };
 
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class EnumDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class EnumDeclSerializer
     {
         const ContextItems & contextItems;
         const EnumDecl     * enumDecl;
@@ -131,7 +131,7 @@ namespace OdrCop3
                 return Print(); // not anonymous type nor defined in anonymous namespace: do shortcut.
 
             if (enumName == "")
-                enumName = BuildNameForNameless<SerializeDecl, SerializeType, SerializeAttr>(contextItems, enumDecl);
+                enumName = BuildNameForNameless<SerializeDecl, SerializeType, SerializeExpr>(contextItems, enumDecl);
             else
                 enumName = enumDecl->getQualifiedNameAsString();
             

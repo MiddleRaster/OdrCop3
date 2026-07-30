@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class ClassTemplateSpecializationDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class ClassTemplateSpecializationDeclSerializer
     {
         const ContextItems& contextItems;
         const ClassTemplateSpecializationDecl* classTemplateSpecializationDecl;
@@ -27,7 +27,7 @@ namespace OdrCop3
             std::string out = "template<> ";
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, TemplateArgsToString(contextItems, classTemplateSpecializationDecl));
             // a classTemplateSpecializationDecl* "is a" CXXRecordDecl, so I can't call SerializeDecl, as the RecursionPreventor will kick in. So, call the right serializer directly.
-            return out + IndentBlock(CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(ci2, static_cast<const clang::CXXRecordDecl*>(classTemplateSpecializationDecl)).Serialize(), LengthOfLastLine(out)) + "\n";
+            return out + IndentBlock(CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(ci2, static_cast<const clang::CXXRecordDecl*>(classTemplateSpecializationDecl)).Serialize(), LengthOfLastLine(out)) + "\n";
         }
     };
 }

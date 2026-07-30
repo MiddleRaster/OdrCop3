@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class SubstTemplateTypeParmTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class SubstTemplateTypeParmTypeSerializer
     {
         const ContextItems             & contextItems;
         const SubstTemplateTypeParmType* substTemplateTypeParmType;

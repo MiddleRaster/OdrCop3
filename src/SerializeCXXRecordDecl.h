@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class CXXRecordDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class CXXRecordDeclSerializer
     {
         const ContextItems & contextItems;
         const CXXRecordDecl* cxxRecordDecl;

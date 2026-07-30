@@ -18,7 +18,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class FieldDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FieldDeclSerializer
     {
         const ContextItems& contextItems;
         const FieldDecl   * fieldDecl;

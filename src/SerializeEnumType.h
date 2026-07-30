@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class EnumTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class EnumTypeSerializer
     {
         const ContextItems& contextItems;
         const EnumType    * enumType;

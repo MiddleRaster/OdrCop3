@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class MemberPointerTypeSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class MemberPointerTypeSerializer
     {
         const ContextItems     & contextItems;
         const MemberPointerType* memberPointerType;

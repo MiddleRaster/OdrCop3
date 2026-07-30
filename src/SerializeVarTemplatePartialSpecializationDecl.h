@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeAttr> class VarTemplatePartialSpecializationDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class VarTemplatePartialSpecializationDeclSerializer
     {
         const ContextItems                        & contextItems;
         const VarTemplatePartialSpecializationDecl* varTemplatePartialSpecializationDecl;
@@ -34,7 +34,7 @@ namespace OdrCop3
             if (pos != std::string::npos)
                 templatePrefix.replace(pos, 10, "template<");
 
-            return templatePrefix + IndentBlock(VarDeclSerializer<SerializeDecl, SerializeType, SerializeAttr>(contextItems, static_cast<const clang::VarDecl*>(varTemplatePartialSpecializationDecl)).Serialize(), 0) + "\n";
+            return templatePrefix + IndentBlock(VarDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems, static_cast<const clang::VarDecl*>(varTemplatePartialSpecializationDecl)).Serialize(), 0) + "\n";
         }
     };
 }

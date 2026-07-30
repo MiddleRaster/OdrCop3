@@ -63,13 +63,8 @@ namespace OdrCop3
             }
         };
 
-        template<auto SerializeDecl, auto SerializeType>
         static std::string Attrs(const ContextItems& contextItems, const clang::Attr* attr)
         {
-            const clang::Decl* decl = nullptr;
-            if (decl != nullptr)
-                return SerializeDecl(contextItems, decl); // just checking that recursion will compile
-
             std::string out;
             switch (attr->getKind())
             {
@@ -79,7 +74,6 @@ namespace OdrCop3
             case clang::attr::Final:            if (const auto*       Final = clang::dyn_cast<clang::FinalAttr           >(attr)) return Attr::Serialize(contextItems, Final);       break;
             case clang::attr::Override:         if (const auto*    override = clang::dyn_cast<clang::OverrideAttr        >(attr)) return Attr::Serialize(contextItems, override);    break;
             case clang::attr::Unused:           if (const auto*      unused = clang::dyn_cast<clang::UnusedAttr          >(attr)) return Attr::Serialize(contextItems, unused);      break;
-
 
             // filtering out all of those attributes below here:
             case clang::attr::Visibility:      // Windows doesn't have this concept
@@ -92,5 +86,9 @@ namespace OdrCop3
             };
             throw OdrCop3::UnhandledException(std::string("unhandled attr::getKind: ") + enum_name<clang::attr::Kind,0, 512>(attr->getKind()));
         }
+    }
+    inline std::string SerializeAttr(const ContextItems& contextItems, const clang::Attr* attr)
+    {
+        return Serialize::Attrs(contextItems, attr);
     }
 }
