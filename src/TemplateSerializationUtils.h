@@ -10,14 +10,15 @@ namespace OdrCop3
                                   std::is_same_v<T,VarTemplatePartialSpecializationDecl  >
     inline std::string TemplateArgsToString(const ContextItems& contextItems, const T* ctd)
     {
-        const ASTTemplateArgumentListInfo * ArgsAsWritten = ctd->getTemplateArgsAsWritten();
-        llvm::ArrayRef<TemplateArgumentLoc> ArgsRef(ArgsAsWritten->getTemplateArgs(), ArgsAsWritten->NumTemplateArgs);
-
-        std::string              out;
-        llvm::raw_string_ostream os(out);
-        clang::printTemplateArgumentList(os, ArgsRef, contextItems.printPolicy, nullptr);
-        os.flush();
-
+        std::string out;
+        if (const ASTTemplateArgumentListInfo* ArgsAsWritten = ctd->getTemplateArgsAsWritten())
+        {
+            llvm::ArrayRef<TemplateArgumentLoc> ArgsRef(ArgsAsWritten->getTemplateArgs(), ArgsAsWritten->NumTemplateArgs);
+            llvm::raw_string_ostream os(out);
+            clang::printTemplateArgumentList(os, ArgsRef, contextItems.printPolicy, nullptr);
+            os.flush();
+            return out;
+        }
         return out;
     }
 
@@ -35,6 +36,16 @@ namespace OdrCop3
             return exprStr;
         }
         // else do it manually
+
+
+        if (const auto* functionalCastExpr = llvm::dyn_cast<clang::CXXFunctionalCastExpr>(expr))
+        {
+            std::string out = TrimRightIf(SerializeType(contextItems, functionalCastExpr->getType()), ";");
+            out += SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, functionalCastExpr->getSubExpr());
+            return out;
+        }
+        if (const auto* constantExpr = llvm::dyn_cast<clang::ConstantExpr>(expr))
+            return SerializeExpr<SerializeDecl, SerializeType, SerializeAttr>(contextItems, constantExpr->getSubExpr());
 
         if (const auto* declRefExpr = dyn_cast<DeclRefExpr>(expr))
         {

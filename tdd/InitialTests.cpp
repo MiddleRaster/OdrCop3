@@ -1084,8 +1084,11 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using MyHiddenWrapper = AWrapper<(anonymous namespace)::Hidden>; // typedef AWrapper<(anonymous namespace)::Hidden> MyHiddenWrapper;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> using Ptr = T *; // no typedef equivalent\n"                                                                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using MyHiddenWrapper = AWrapper<struct (anonymous namespace)::Hidden { // sizeof=1\n"
+                                 "                                 }>; // typedef AWrapper<(anonymous namespace)::Hidden> MyHiddenWrapper;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<typename T> using Ptr = T *; // no typedef equivalent\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -1186,6 +1189,49 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<typename T> void __cdecl FunctionTemplate(T) {}\n"         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("HalfAbbreviated<typename T,auto>(T,auto)"                           , (*it  ).first, "should have gotten correct key");
                 Assert::AreEqual("template<typename T> void __cdecl HalfAbbreviated(T t, auto x) {}\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+    {"Class templates", []
+        {
+            std::string code = "namespace { struct Structural { int value; }; }\n"
+                               "template<Structural S> struct Foo {}; Foo<Structural{42}> foo;\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(1, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(1, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("Foo<>", (*it).first, "should have gotten correct key");
+                Assert::AreEqual("template<struct (anonymous namespace)::Structural { // sizeof=4\n"
+                                 "            int value;\n"
+                                 "         }; S> struct Foo {\n"
+                                 "               };\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("foo", (*it).first, "should have gotten correct key");
+                Assert::AreEqual("Foo<struct (anonymous namespace)::Structural { // sizeof=4\n"
+                                 "       int value;\n"
+                                 "    }{42}> foo;\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
             }
         }
     },

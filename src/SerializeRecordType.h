@@ -25,7 +25,7 @@ namespace OdrCop3
         RecordTypeSerializer(const ContextItems& contextItems, QualType qt, const RecordType* recordType) : contextItems(contextItems), qt(qt), recordType(recordType) {}
         std::string Serialize() const
         {
-            if (recordType->getDecl()->isInAnonymousNamespace())
+            if (NeedsManualSerialization(contextItems, qt))
             {
                 std::string out;
                 if (qt.isConstQualified   ()) out += "const ";

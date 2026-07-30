@@ -154,8 +154,8 @@ namespace OdrCop3
             out += get_Static();
             std::string name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
             if (NeedsManualSerialization(contextItems, varDecl->getType())) {
-                out += IndentBlock(SerializeType(contextItems, varDecl->getType()), LengthOfLastLine(out));
-                out += name;
+                out += TrimRightIf(IndentBlock(SerializeType(contextItems, varDecl->getType()), LengthOfLastLine(out)), " ");
+                out += " " + name;
             } else {
                 std::string varStr;
                 llvm::raw_string_ostream os(varStr);

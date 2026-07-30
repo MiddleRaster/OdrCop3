@@ -46,30 +46,8 @@ namespace OdrCop3
             std::string get_PureVirtual() const { return methodDecl && methodDecl->isPureVirtual        () ? "=0 "       : ""; }
         };
 
-        std::string get_TemplateHeader() const
+        std::string get_TemplateSpecializationHeader() const
         {
-#ifdef KEEP_TO_MOVE_TO_UTILS
-            if (const FunctionTemplateDecl* ftd = funcDecl->getDescribedFunctionTemplate())
-            {
-                const auto* templateParameterList = ftd->getTemplateParameters();
-
-                std::string templatePrefix;
-                if (NeedsManualSerialization(contextItems, templateParameterList))
-                    templatePrefix = IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeAttr>(contextItems, templateParameterList), 0);
-                else
-                {
-                    llvm::raw_string_ostream os(templatePrefix);
-                    templateParameterList->print(os, contextItems.context, contextItems.printPolicy);
-                    os.flush();
-                }
-
-                // change "template <" to "template<"
-                std::string::size_type pos = templatePrefix.find("template <");
-                if (pos != std::string::npos)
-                    templatePrefix.replace(pos, 10, "template<");
-                return templatePrefix;
-            }
-#endif
             if (const auto* info = funcDecl->getTemplateSpecializationInfo())
             {
                 switch (info->getTemplateSpecializationKind())
@@ -232,7 +210,7 @@ namespace OdrCop3
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
 
             std::string fqn;
-            fqn += get_TemplateHeader();    // N.B.:  TemplateFunctionDecl*s go through their own serializer, but specializations serialize here
+            fqn += get_TemplateSpecializationHeader();
             fqn += get_LeadingAttributes();
             fqn += get_Friend();
             fqn += get_Register();
