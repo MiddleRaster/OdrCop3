@@ -50,21 +50,28 @@ namespace OdrCop3
             for (const Attr* attr : fieldDecl->attrs())   // attributes on data-members
                 out += SerializeAttr(contextItems, attr);
 
-            if (NeedsManualSerialization(contextItems, fieldDecl->getType().getCanonicalType()) || IsTemplateParamType())
+            if (NeedsManualSerialization(contextItems, fieldDecl->getType().getCanonicalType()))
             {
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, get_Name()); // let appropriate type serializer put in the (*blah) part
 
                 QualType qualType;
-                if (IsTemplateParamType() ||                       // we're trying to get "T", not "type-parameter-0-0". Evidently, getCanonicalType() messes with that.
-                    fieldDecl->getType()->isFunctionPointerType()) // getCanonicalType() sees right through the ParenType which totally hoses the pointer-to-function case.
+                if (fieldDecl->getType()->isFunctionPointerType()) // getCanonicalType() sees right through the ParenType which totally hoses the pointer-to-function case.
                     qualType = fieldDecl->getType();               // TODO: REVIEW
                 else
                     qualType = fieldDecl->getType().getCanonicalType();
                 out += IndentBlock(SerializeType(ci2, qualType), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
             }
+            else if (IsTemplateParamType())
+            {
+                std::string fieldStr;
+                llvm::raw_string_ostream os(fieldStr);
+                fieldDecl->print(os, contextItems.printPolicy);
+                os.flush();
+                out += fieldStr;
+            }
             else
-            {   // field must be done this way to handle array fields as well.
+            {   // unnamed types, e.g., "struct N { enum { D=0, E, F } eVal=E; };", end up clearer this way
                 std::string fieldStr;
                 clang::QualType qt = fieldDecl->getType().getCanonicalType(); // see through typedefs and using aliases
                 llvm::raw_string_ostream os(fieldStr);
