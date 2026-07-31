@@ -50,10 +50,17 @@ namespace OdrCop3
             for (const Attr* attr : fieldDecl->attrs())   // attributes on data-members
                 out += SerializeAttr(contextItems, attr);
 
-            if (NeedsManualSerialization(contextItems, fieldDecl->getType()) || IsTemplateParamType())
+            if (NeedsManualSerialization(contextItems, fieldDecl->getType().getCanonicalType()) || IsTemplateParamType())
             {
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, get_Name()); // let appropriate type serializer put in the (*blah) part
-                out += IndentBlock(SerializeType(ci2, fieldDecl->getType()), LengthOfLastLine(out));
+
+                QualType qualType;
+                if (IsTemplateParamType() ||                       // we're trying to get "T", not "type-parameter-0-0". Evidently, getCanonicalType() messes with that.
+                    fieldDecl->getType()->isFunctionPointerType()) // getCanonicalType() sees right through the ParenType which totally hoses the pointer-to-function case.
+                    qualType = fieldDecl->getType();               // TODO: REVIEW
+                else
+                    qualType = fieldDecl->getType().getCanonicalType();
+                out += IndentBlock(SerializeType(ci2, qualType), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
             }
             else
@@ -80,9 +87,8 @@ namespace OdrCop3
             }
             if (fieldDecl->hasInClassInitializer())
             {
-                const Expr *    expr = fieldDecl->getInClassInitializer();
-                llvm::StringRef text = clang::Lexer::getSourceText(CharSourceRange::getTokenRange(expr->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts());
-                std::string     init = text.str();
+                const Expr* expr = fieldDecl->getInClassInitializer();
+                std::string init = SerializeExpr(contextItems, expr);
                 if ((init.starts_with("{")) || init.starts_with("("))
                     out += init;
                 else

@@ -100,10 +100,8 @@ namespace OdrCop3
     inline bool NeedsManualSerialization(const ContextItems& contextItems, const clang::Expr                 *                  expr) { return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) {                  expr->printPretty(os, nullptr             , policy); }); }
     inline bool NeedsManualSerialization(const ContextItems& contextItems, const clang::Decl                 *                  decl) { return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) {                  decl->print      (os,                       policy); }); }
 
-    inline std::string PostProcessBody(const std::string& originalBody)
+    inline std::string PostProcessBody(std::string body)
     {
-        std::string body(originalBody);
-
         // collapse to "{}" if there's no real content
         bool allWhitespace = true;
         for (char c : body) {

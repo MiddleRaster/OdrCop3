@@ -32,6 +32,7 @@
 #include "SerializeBuiltinType.h"
 #include "SerializeAutoType.h"
 #include "SerializeSubstTemplateTypeParmType.h"
+#include "SerializeDecltypeType.h"
 
 namespace OdrCop3
 {
@@ -57,6 +58,7 @@ namespace OdrCop3
             static std::string SerializeBuiltinType               (const ContextItems& contextItems, QualType qt, const                BuiltinType*                builtinType) { return                BuiltinTypeSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems, qt,                builtinType).Serialize(); }
             static std::string SerializeAutoType                  (const ContextItems& contextItems, QualType qt, const                   AutoType*                   autoType) { return                   AutoTypeSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems, qt,                   autoType).Serialize(); }
             static std::string SerializeSubstTemplateTypeParmType (const ContextItems& contextItems, QualType qt, const  SubstTemplateTypeParmType*  substTemplateTypeParmType) { return  SubstTemplateTypeParmTypeSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems, qt,  substTemplateTypeParmType).Serialize(); }
+            static std::string SerializeDecltypeType              (const ContextItems& contextItems, QualType qt, const               DecltypeType*               decltypeType) { return               DecltypeTypeSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems, qt,               decltypeType).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeExpr>
@@ -82,6 +84,7 @@ namespace OdrCop3
             case clang::Type::TypeClass::Builtin:                if (const                BuiltinType*                builtinType = dyn_cast<               BuiltinType>(qualType.getTypePtr())) return TypeSerializer::SerializeBuiltinType               (contextItems, qualType,                builtinType); break;
             case clang::Type::TypeClass::Auto:                   if (const                   AutoType*                   autoType = dyn_cast<                  AutoType>(qualType.getTypePtr())) return TypeSerializer::SerializeAutoType                  (contextItems, qualType,                   autoType); break;
             case clang::Type::TypeClass::SubstTemplateTypeParm:  if (const SubstTemplateTypeParmType *  substTemplateTypeParmType = dyn_cast< SubstTemplateTypeParmType>(qualType.getTypePtr())) return TypeSerializer::SerializeSubstTemplateTypeParmType (contextItems, qualType,  substTemplateTypeParmType); break;
+            case clang::Type::TypeClass::Decltype:               if (const               DecltypeType*               decltypeType = dyn_cast<              DecltypeType>(qualType.getTypePtr())) return TypeSerializer::SerializeDecltypeType              (contextItems, qualType,               decltypeType); break;
          // case clang::Type::TypeClass::InjectedClassName:
          // case clang::Type::TypeClass::PackExpansion:
             default:

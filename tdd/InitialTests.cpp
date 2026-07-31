@@ -370,7 +370,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   S member;\n"
                                  "   S member2;\n"
                                  "   Color color;\n"
-                                 "   enum (anonymous type at input.cc:2:13) { Red, Green, Blue } color2;\n"
+                                 "   Color color2;\n" // was "   enum (anonymous type at input.cc:2:13) { Red, Green, Blue } color2;\n"
+                                                      // but now using getCanonicalTyp() in FieldDecl because we want to see through any and all typedefs, 
+                                                      // even through ones defined in anonymous namespaces. This enum is not, but the typedef is, but now we see through it.
                                  "   enum (anonymous namespace)::Color3 { Red, Green, Blue } color3;\n"
                                  "   Color4 color4;\n"
                                  "   int (*tdpfn1)(double, const char *);\n"
@@ -1122,12 +1124,13 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code = "auto lambda1 = [](auto x) {};\n"
                                "auto lambda2 = []<typename T>(T t){};\n"
                                "auto lambda3 = []<typename T>(T) requires(sizeof(T)==4) {};\n"
+                               "namespace { auto Lambda = [](int x) { return x * 2; }; } struct StructWithLambdaField { decltype(Lambda) mpf = Lambda; };\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(0, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(1, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(3, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -1135,11 +1138,17 @@ Test ExploratoryTestsOfClangAST[] =
             
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct StructWithLambdaField { // sizeof=1\n"
+                                "   class (anonymous namespace)::(lambda at input.cc:4:27) { // sizeof=1\n"
+                                "      inline constexpr int __cdecl operator()(int x) const { return x * 2; }\n"
+                                "   } mpf=Lambda;\n"
+                                "};\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("(lambda at input.cc:1:16) lambda1=[](auto x){};\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(lambda at input.cc:2:16) lambda2=[]<typename T>(T t){};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:1:16) lambda1=[](auto x){};\n"                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:2:16) lambda2=[]<typename T>(T t){};\n"                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("(lambda at input.cc:3:16) lambda3=[]<typename T>(T) requires (sizeof(T) == 4) {};\n", (*it++).second[0].fullyQualified);
             }
             {
@@ -1212,8 +1221,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("Foo<>", (*it).first, "should have gotten correct key");
                 Assert::AreEqual("template<struct (anonymous namespace)::Structural { // sizeof=4\n"
                                  "            int value;\n"
-                                 "         }; S> struct Foo {\n"
-                                 "               };\n"
+                                 "         } S> struct Foo {\n"
+                                 "              };\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
