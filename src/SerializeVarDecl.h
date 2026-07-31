@@ -95,10 +95,9 @@ namespace OdrCop3
             if (const auto& associatedConstraint = lambdaCallOperator->getTrailingRequiresClause())
             if (const clang::Expr* requiresExpr = associatedConstraint.ConstraintExpr)
             {
-                struct MyPrinterHelper : public PrinterHelper { bool handledStmt(Stmt* E, raw_ostream& OS) override { return false; } } mph;
                 std::string requiresStr;
                 llvm::raw_string_ostream os(requiresStr);
-                requiresExpr->printPretty(os, &mph, contextItems.printPolicy);
+                requiresExpr->printPretty(os, nullptr, contextItems.printPolicy);
                 os.flush();
                 return requiresStr;
             }
@@ -110,13 +109,11 @@ namespace OdrCop3
             if (!expr)
                 return "";
 
-            struct MyPrinterHelper : public PrinterHelper { bool handledStmt(Stmt* E, raw_ostream& OS) override { return false; } } mph;
-
             if (const auto* lambdaExpr = FindLambdaExpr(expr))
             {
                 std::string body;
                 llvm::raw_string_ostream os(body);
-                lambdaExpr->printPretty(os, &mph, contextItems.printPolicy);
+                lambdaExpr->printPretty(os, nullptr, contextItems.printPolicy);
                 os.flush();
 
                 auto pos = body.find("{");
@@ -134,7 +131,7 @@ namespace OdrCop3
 
             std::string e;
             llvm::raw_string_ostream os(e);
-            expr->printPretty(os, &mph, contextItems.printPolicy);
+            expr->printPretty(os, nullptr, contextItems.printPolicy);
             os.flush();
             if (e == "")
                 return "";
