@@ -80,8 +80,22 @@ namespace OdrCop3
         }
         std::string get_Explicit() const
         {
-            if (const auto* ctor = dyn_cast<CXXConstructorDecl>(funcDecl); ctor && ctor->isExplicit())  return "explicit ";
-            if (const auto* conv = dyn_cast< CXXConversionDecl>(funcDecl); conv && conv->isExplicit())  return "explicit ";
+            bool isExplicit = false;
+            ExplicitSpecifier explicitSpecifier;
+
+            if (const auto* ctor      = dyn_cast<CXXConstructorDecl>(funcDecl))
+                if (isExplicit        = ctor->isExplicit())
+                    explicitSpecifier = ctor->getExplicitSpecifier();
+            if (const auto* conv      = dyn_cast< CXXConversionDecl>(funcDecl))
+                if (isExplicit        = conv->isExplicit())
+                    explicitSpecifier = conv->getExplicitSpecifier();
+
+            if (explicitSpecifier.isSpecified())              // user wrote explicit(...)
+                if (auto* expr = explicitSpecifier.getExpr()) // the original condition expression (may be null for plain explicit)
+                    return "explicit(" + SerializeExpr(contextItems, expr) + ") ";
+
+            if (isExplicit)
+                return "explicit ";
             return "";
         }
         std::string get_LeadingAttributes() const

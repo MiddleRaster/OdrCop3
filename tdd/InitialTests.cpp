@@ -1346,20 +1346,71 @@ Test ExploratoryTestsOfClangAST[] =
                                "struct ConversionOperatorClass_Definition  { operator int() { return -7;} };\n"
                                "struct ConversionOperatorClass_Template { template<class T> operator T() const { return T{}; } };\n"
                                "int i= ConversionOperatorClass_Template{}; double d = ConversionOperatorClass_Template{};\n"
-                               "namespace { struct Hidden { }; } struct ConvertsionOperatorClass_AnonymousReturnType { operator Hidden() const; };\n"
+                               "namespace { struct Hidden { }; } struct ConversionOperatorClass_AnonymousReturnType { operator Hidden() const; };\n"
+
+                               "struct ConversionOperatorClass_Explicit          { explicit operator bool() const; };\n"
+                               "struct ConversionOperatorClass_ExplicitCondition { explicit(true) operator bool() const; };\n"
+                               "struct ConversionOperatorClass_Noexcept          { operator int() const noexcept; };\n"
+                               "struct ConversionOperatorClass_RefQualified      { operator int() &; operator double() &&; };\n"
+                               "struct ConversionOperatorClass_ConstVolatile     { operator int() const volatile; };\n"
+                               "struct ConversionOperatorClass_Constexpr         { constexpr operator int() const { return 7; } };\n"
+                               "struct ConversionOperatorClass_Deleted           { operator int() const = delete; };\n"
+
+                               "namespace { struct HiddenPointer   { }; } struct ConversionOperatorClass_AnonymousPointer   { operator       HiddenPointer  *() const; };\n"
+                               "namespace { struct HiddenReference { }; } struct ConversionOperatorClass_AnonymousReference { operator const HiddenReference&() const; };\n"
+
+                               "template<class T> struct Wrapper { }; namespace { struct HiddenTemplateArgument { }; } struct ConversionOperatorClass_AnonymousTemplateArgument { operator Wrapper<HiddenTemplateArgument>() const; };\n"
+
+                               "struct ConversionOperatorClass_ConstrainedTemplate { template<class T> requires (sizeof(T) > 1) operator T() const { return T{}; } };\n"
+
+                               "struct ConversionOperatorClass_Nodiscard { [[nodiscard]] operator int() const { return 7; } };\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(4, maps.udtMap.size(),  "wrong number of UDTs in map");
-            Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
-            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(17, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual( 2, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
             
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousPointer { // sizeof=1\n"
+                                 "   __cdecl operator struct (anonymous namespace)::HiddenPointer { // sizeof=1\n"
+                                 "                    } *() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousReference { // sizeof=1\n"
+                                 "   __cdecl operator const struct (anonymous namespace)::HiddenReference { // sizeof=1\n"
+                                 "                          } &() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousReturnType { // sizeof=1\n"
+                                 "   __cdecl operator struct (anonymous namespace)::Hidden { // sizeof=1\n"
+                                 "                    }() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousTemplateArgument { // sizeof=1\n"
+                                 "   __cdecl operator Wrapper<struct (anonymous namespace)::HiddenTemplateArgument { // sizeof=1\n"
+                                 "                            }>() const;\n"
+                                 "};\n"
+                    , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("struct ConversionOperatorClass_ConstVolatile { // sizeof=1\n"
+                                 "   __cdecl operator int() const volatile;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Constexpr { // sizeof=1\n"
+                                 "   constexpr __cdecl operator int() const { return 7; }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_ConstrainedTemplate { // sizeof=1\n"
+                                 "   template<class T> requires (sizeof(T) > 1) __cdecl operator T() const { return T{}; }\n"
+                                 "};\n"                    
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_Declaration { // sizeof=1\n"
                                  "   __cdecl operator int() const;\n"
                                  "};\n"
@@ -1368,14 +1419,38 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   __cdecl operator int() { return -7; }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Deleted { // sizeof=1\n"
+                                 "   __cdecl operator int() const =delete;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Explicit { // sizeof=1\n"
+                                 "   explicit __cdecl operator bool() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_ExplicitCondition { // sizeof=1\n"
+                                 "   explicit(true) __cdecl operator bool() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Nodiscard { // sizeof=1\n"
+                                 "   [[nodiscard]] __cdecl operator int() const { return 7; }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Noexcept { // sizeof=1\n"
+                                 "   __cdecl operator int() const noexcept;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_RefQualified { // sizeof=1\n"
+                                 "   __cdecl operator int() &;\n"
+                                 "   __cdecl operator double() &&;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_Template { // sizeof=1\n"
                                  "   template<class T> __cdecl operator T() const { return T{}; }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct ConvertsionOperatorClass_AnonymousReturnType { // sizeof=1\n"
-                                 "   __cdecl operator struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                    }() const;\n"
-                                 "};\n"
+
+                Assert::AreEqual("template<class T> struct Wrapper {\n"
+                                 "                  };\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
