@@ -17,10 +17,12 @@
 
 #include "SerializeConceptSpecializationExpr.h"
 #include "SerializeUnaryOperatorExpr.h"
+#include "SerializeBinaryOperatorExpr.h"
 #include "SerializeDeclRefExpr.h"
 #include "SerializeConstantExpr.h"
 #include "SerializeCXXFunctionalCastExpr.h"
 #include "SerializeInitListExpr.h"
+#include "SerializeUnaryExprOrTypeTraitExpr.h"
 
 namespace OdrCop3
 {
@@ -35,6 +37,8 @@ namespace OdrCop3
             static std::string Serialize(const ContextItems& contextItems, const clang::ConstantExpr             *              constantExpr) { return              ConstantExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,              constantExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::CXXFunctionalCastExpr    *     cXXFunctionalCastExpr) { return     CXXFunctionalCastExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,     cXXFunctionalCastExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::InitListExpr             *              initListExpr) { return              InitListExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,              initListExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::BinaryOperator           *            binaryOperator) { return        BinaryOperatorExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,            binaryOperator).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::UnaryExprOrTypeTraitExpr *  unaryExprOrTypeTraitExpr) { return  UnaryExprOrTypeTraitExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,  unaryExprOrTypeTraitExpr).Serialize(); }
         };
 
         template <auto SerializeDecl, auto SerializeType>
@@ -93,9 +97,12 @@ namespace OdrCop3
             case clang::Stmt::StmtClass::ConstantExprClass             : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ConstantExpr             >(expr));
             case clang::Stmt::StmtClass::CXXFunctionalCastExprClass    : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::CXXFunctionalCastExpr    >(expr));
             case clang::Stmt::StmtClass::InitListExprClass             : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::InitListExpr             >(expr));
+            case clang::Stmt::StmtClass::BinaryOperatorClass           : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::BinaryOperator           >(expr));
+            case clang::Stmt::StmtClass::UnaryExprOrTypeTraitExprClass : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::UnaryExprOrTypeTraitExpr >(expr));
             default:
                 break;
             };
+            expr->dump();
             throw OdrCop3::UnhandledException(std::string("unhandled Stmt::StmtClass: ") + enum_name<clang::Stmt::StmtClass,0,512>(expr->getStmtClass()));
         }
     }

@@ -83,16 +83,18 @@ namespace OdrCop3
             bool isExplicit = false;
             ExplicitSpecifier explicitSpecifier;
 
-            if (const auto* ctor      = dyn_cast<CXXConstructorDecl>(funcDecl))
-                if (isExplicit        = ctor->isExplicit())
-                    explicitSpecifier = ctor->getExplicitSpecifier();
-            if (const auto* conv      = dyn_cast< CXXConversionDecl>(funcDecl))
-                if (isExplicit        = conv->isExplicit())
-                    explicitSpecifier = conv->getExplicitSpecifier();
+            if (const auto * ctor = dyn_cast<CXXConstructorDecl>(funcDecl)) {
+                isExplicit        = ctor->isExplicit();
+                explicitSpecifier = ctor->getExplicitSpecifier();
+            }
+            if (const auto* conv = dyn_cast<CXXConversionDecl>(funcDecl)) {
+                isExplicit = conv->isExplicit();
+                explicitSpecifier = conv->getExplicitSpecifier();
+            }
 
             if (explicitSpecifier.isSpecified())              // user wrote explicit(...)
                 if (auto* expr = explicitSpecifier.getExpr()) // the original condition expression (may be null for plain explicit)
-                    return "explicit(" + SerializeExpr(contextItems, expr) + ") ";
+                    return "explicit(" + IndentBlock(SerializeExpr(contextItems, expr), 9) + ") ";
 
             if (isExplicit)
                 return "explicit ";
@@ -233,7 +235,7 @@ namespace OdrCop3
             fqn += get_Static();
             fqn += get_Extern();
             fqn += get_Virtual();
-            fqn += get_Explicit();
+            fqn += IndentBlock(get_Explicit(), LengthOfLastLine(fqn));
             fqn += get_InlineSpecified();
             fqn += get_Constexpr();
             fqn += get_ConstEval();

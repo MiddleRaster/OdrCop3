@@ -1347,6 +1347,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "struct ConversionOperatorClass_Template { template<class T> operator T() const { return T{}; } };\n"
                                "int i= ConversionOperatorClass_Template{}; double d = ConversionOperatorClass_Template{};\n"
                                "namespace { struct Hidden { }; } struct ConversionOperatorClass_AnonymousReturnType { operator Hidden() const; };\n"
+                               "struct UsingHiddenInExplicitExpression { template<class T> explicit(sizeof(Hidden) == sizeof(T)) operator T() const; };\n"
 
                                "struct ConversionOperatorClass_Explicit          { explicit operator bool() const; };\n"
                                "struct ConversionOperatorClass_ExplicitCondition { explicit(true) operator bool() const; };\n"
@@ -1369,7 +1370,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(17, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(18, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual( 2, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -1397,8 +1398,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   __cdecl operator Wrapper<struct (anonymous namespace)::HiddenTemplateArgument { // sizeof=1\n"
                                  "                            }>() const;\n"
                                  "};\n"
-                    , (*it++).second[0].fullyQualified);
-
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_ConstVolatile { // sizeof=1\n"
                                  "   __cdecl operator int() const volatile;\n"
                                  "};\n"
@@ -1448,7 +1448,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   template<class T> __cdecl operator T() const { return T{}; }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-
+                Assert::AreEqual("struct UsingHiddenInExplicitExpression { // sizeof=1\n"
+                                 "   template<class T> explicit(sizeof(struct (anonymous namespace)::Hidden { // sizeof=1\n"
+                                 "                                     }) == sizeof(T)) __cdecl operator T() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<class T> struct Wrapper {\n"
                                  "                  };\n"
                               , (*it++).second[0].fullyQualified);
