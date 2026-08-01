@@ -1342,7 +1342,8 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Conversion operators", []
         {
-            std::string code = "struct ConversionOperatorClass_Declaration { operator int() const; };\n"
+            std::string code =
+                               "struct ConversionOperatorClass_Declaration { operator int() const; };\n"
                                "struct ConversionOperatorClass_Definition  { operator int() { return -7;} };\n"
                                "struct ConversionOperatorClass_Template { template<class T> operator T() const { return T{}; } };\n"
                                "int i= ConversionOperatorClass_Template{}; double d = ConversionOperatorClass_Template{};\n"
@@ -1365,19 +1366,40 @@ Test ExploratoryTestsOfClangAST[] =
                                "struct ConversionOperatorClass_ConstrainedTemplate { template<class T> requires (sizeof(T) > 1) operator T() const { return T{}; } };\n"
 
                                "struct ConversionOperatorClass_Nodiscard { [[nodiscard]] operator int() const { return 7; } };\n"
+
+                               "using FunctionPointer = int (*)(); struct ConversionOperatorClass_FunctionPointer { operator FunctionPointer() const; };\n"
+                               "namespace { struct HiddenFunctionReturn {}; using HiddenFunctionPointer = HiddenFunctionReturn(*)(); } struct ConversionOperatorClass_AnonymousFunctionPointer { operator HiddenFunctionPointer() const; };\n"
+                               "struct ConversionOperatorClass_MemberPointer { operator int ConversionOperatorClass_MemberPointer::*() const; };\n"
+                               "using IntArrayReference = int(&)[3]; struct ConversionOperatorClass_ArrayReference { operator IntArrayReference() const; };\n"
+                               "using FunctionReference = int(&)(); struct ConversionOperatorClass_FunctionReference { operator FunctionReference() const; };\n"
+
+//"namespace { struct HiddenConstraintType {}; } struct ConversionOperatorClass_AnonymousConstraint { template<class T> requires (sizeof(HiddenConstraintType) == sizeof(T)) operator T() const; };\n"
+//"struct ConversionOperatorClass_TemplateExplicit { template<class T> explicit(sizeof(T) > 4) operator T() const { return T{}; } };\n"
+//"struct ConversionOperatorClass_Noexcept { operator int() const noexcept; };\n"
+//"struct ConversionOperatorClass_ConditionalNoexcept { template<class T> operator T() const noexcept(sizeof(T) <= sizeof(int)) { return T{}; } };\n"
+//"namespace { struct HiddenNoexceptType {}; } struct ConversionOperatorClass_AnonymousNoexceptExpression { operator int() const noexcept(sizeof(HiddenNoexceptType) > 0); };\n"
+//"struct ConversionOperatorClass_CvRefQualified { operator int() const&; operator double() volatile&&; };\n"
+//"struct ConversionOperatorClass_Consteval { consteval operator int() const { return 7; } };\n"
+//"struct ConversionOperatorClass_Deprecated { [[deprecated(\"use something else\")]] operator int() const; };\n"
+//"struct ConversionOperatorClass_Virtual { virtual operator int() const; };\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(18, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(23, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual( 2, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),   "wrong number of enums in map");
-            Assert::AreEqual( 0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual( 4, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
             
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousFunctionPointer { // sizeof=1\n"
+                                 "   __cdecl operator struct (anonymous namespace)::HiddenFunctionReturn { // sizeof=1\n"
+                                 "                    } (*)()() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_AnonymousPointer { // sizeof=1\n"
                                  "   __cdecl operator struct (anonymous namespace)::HiddenPointer { // sizeof=1\n"
                                  "                    } *() const;\n"
@@ -1399,6 +1421,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                            }>() const;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_ArrayReference { // sizeof=1\n"
+                                "   __cdecl operator IntArrayReference() const;\n"
+                                "};\n"
+                             , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_ConstVolatile { // sizeof=1\n"
                                  "   __cdecl operator int() const volatile;\n"
                                  "};\n"
@@ -1431,6 +1457,20 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   explicit(true) __cdecl operator bool() const;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_FunctionPointer { // sizeof=1\n"
+                                 "   __cdecl operator FunctionPointer() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("struct ConversionOperatorClass_FunctionReference { // sizeof=1\n"
+                                 "   __cdecl operator FunctionReference() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("struct ConversionOperatorClass_MemberPointer { // sizeof=1\n"
+                                 "   __cdecl operator int ConversionOperatorClass_MemberPointer::*() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_Nodiscard { // sizeof=1\n"
                                  "   [[nodiscard]] __cdecl operator int() const { return 7; }\n"
                                  "};\n"
@@ -1456,6 +1496,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<class T> struct Wrapper {\n"
                                  "                  };\n"
                               , (*it++).second[0].fullyQualified);
+
+            //  Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -1467,6 +1509,14 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.typedefMap.begin();
+                Assert::AreEqual("using (anonymous namespace)::HiddenFunctionPointer = struct (anonymous namespace)::HiddenFunctionReturn { // sizeof=1\n"
+                                 "                                                     } (*)(); // typedef (anonymous namespace)::HiddenFunctionReturn (*)() (anonymous namespace)::HiddenFunctionPointer;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FunctionPointer = int (*)(); // typedef int (*)() FunctionPointer;\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FunctionReference = int (&)(); // typedef int (&)() FunctionReference;\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using IntArrayReference = (int[3]) &; // typedef (int[3]) & IntArrayReference;\n" , (*it++).second[0].fullyQualified);
+
+             // Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();

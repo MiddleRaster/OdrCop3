@@ -18,19 +18,19 @@ namespace OdrCop3
 {
     template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class PointerTypeSerializer
     {
-        const ContextItems& contextItems;
-        const PointerType * pointerType;
+        const ContextItems       & contextItems;
+        const PointerType        * pointerType;
         QualType qt;
     public:
-        PointerTypeSerializer(const ContextItems& contextItems, QualType qt, const PointerType* pointerType) : contextItems(contextItems), qt(qt), pointerType(pointerType) {}
+        PointerTypeSerializer        (const ContextItems& contextItems, QualType qt, const PointerType        *         pointerType) : contextItems(contextItems), qt(qt),         pointerType(        pointerType) {}
         std::string Serialize() const
         {
             if (qt->getPointeeType()->isFunctionProtoType())
-            {   // pointers-to-functions have atypical syntax
-                std::string out = SerializeType(contextItems, qt->getPointeeType());
-                return out; // the "*" is not appended (in fact, it's already handled)
+            {   //   pointers-to-functions have atypical syntax
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (*" + contextItems.aux + ")"); // pointer-to-function syntax
+                std::string out = SerializeType(ci2, qt->getPointeeType());
+                return out;
             }
-            // all other cases
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
             std::string out;
             out += SerializeType(ci2, qt->getPointeeType());

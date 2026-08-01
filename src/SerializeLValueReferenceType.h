@@ -25,9 +25,19 @@ namespace OdrCop3
         LValueReferenceTypeSerializer(const ContextItems& contextItems, QualType qt, const LValueReferenceType* lValueReferenceType) : contextItems(contextItems), qt(qt), lValueReferenceType(lValueReferenceType) {}
         std::string Serialize() const
         {
+            if (qt->getPointeeType()->isFunctionProtoType())
+            {   // references-to-functions have atypical syntax
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (&" + contextItems.aux + ")"); // reference-to-function syntax
+                std::string out = SerializeType(ci2, qt->getPointeeType());
+                return out;
+            }
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-            std::string out = TrimRightIf(IndentBlock(SerializeType(ci2, qt->getPointeeType()), 0), ";");
-            return out + " &" + contextItems.aux;
+            std::string out;
+            out += SerializeType(ci2, qt->getPointeeType());
+            out  = TrimRightIf(out, "\n");
+            out  = TrimRightIf(out, ";");
+            out += " &" + contextItems.aux;
+            return out;
         }
     };
 }
