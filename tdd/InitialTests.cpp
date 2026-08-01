@@ -1514,7 +1514,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using FunctionPointer = int (*)(); // typedef int (*)() FunctionPointer;\n"       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using FunctionReference = int (&)(); // typedef int (&)() FunctionReference;\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using IntArrayReference = (int[3]) &; // typedef (int[3]) & IntArrayReference;\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using IntArrayReference = int (&)[3]; // typedef int (&)[3] IntArrayReference;\n" , (*it++).second[0].fullyQualified);
 
              // Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
