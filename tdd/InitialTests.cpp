@@ -14,18 +14,24 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T> T multiply(T a, T b) { return a*b; }\n"
                                "struct complex { double r; double i; }; template<> complex multiply<complex>(complex a, complex b) { return { a.r*b.r-a.i*b.i, a.r*b.i+a.i*b.r }; }"
                                "template<typename T, typename U> T    add            (T   t, U     u) { return t + u; }\n"
-                               "template<                      > int  add<int, short>(int t, short u) { return t - u; }\n";
+                               "template<                      > int  add<int, short>(int t, short u) { return t - u; }\n"
+                               "namespace { struct Anonymous {}; } [[maybe_unused]] Anonymous ReturnAnonymous() { return Anonymous{}; }\n"
+                               ;
 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(6, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found a map entry");
+
+            Assert::AreEqual(1, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(6, maps.functionMap.size(), "wrong number of functions in map");
 
             const auto& vec = maps.functionMap.begin()->second;
             Assert::AreEqual("input.cc", vec[0].TU, "should have gotten the TU name");
 
             {
-                Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs found");
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct complex { // sizeof=16\n"
                                  "   double r;\n"
@@ -34,8 +40,9 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
             }
             {
-                Assert::AreEqual(5, maps.functionMap.size(), "wrong number of functions found");
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("[[maybe_unused]] struct (anonymous namespace)::Anonymous { // sizeof=1\n"
+                                 "                 } __cdecl ReturnAnonymous() { return Anonymous{}; }\n",                                                 (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> int __cdecl add<int, short>(int t, short u) { return t - u; }\n",                                             (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<typename T, typename U> T __cdecl add(T t, U u) { return t + u; }\n",                                           (*it++).second[0].fullyQualified);
                 Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n",                                  (*it++).second[0].fullyQualified);
@@ -92,7 +99,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 "       };\n"
                                 "   }\n"
                                 "   template<typename T> T __cdecl doTemplateyStuff(const T & value) requires requires { typename T::value_type; } const { return value; }\n"
-                                "   explicit int __cdecl operator int() const { return 7; }\n"
+                                "   explicit __cdecl operator int() const { return 7; }\n"
                                 "};\n"
                               , (*it++).second[0].fullyQualified, "should have gotten the struct");
             }
@@ -1329,6 +1336,61 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template<typename T> requires TheConcept<T> void __cdecl FunctionTemplateWithConcept(T) {}\n"                                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("FunctionTemplateWithRequiresClause<typename T>(const T &)"                                                                               , (*it  ).first, "should have gotten correct key");
                 Assert::AreEqual("template<typename T> T __cdecl FunctionTemplateWithRequiresClause(const T & value) requires requires { typename T::value_type; } { return value; }\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
+    {"Conversion operators", []
+        {
+            std::string code = "struct ConversionOperatorClass_Declaration { operator int() const; };\n"
+                               "struct ConversionOperatorClass_Definition  { operator int() { return -7;} };\n"
+                               "struct ConversionOperatorClass_Template { template<class T> operator T() const { return T{}; } };\n"
+                               "int i= ConversionOperatorClass_Template{}; double d = ConversionOperatorClass_Template{};\n"
+                               "namespace { struct Hidden { }; } struct ConvertsionOperatorClass_AnonymousReturnType { operator Hidden() const; };\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(4, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ConversionOperatorClass_Declaration { // sizeof=1\n"
+                                 "   __cdecl operator int() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Definition { // sizeof=1\n"
+                                 "   __cdecl operator int() { return -7; }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Template { // sizeof=1\n"
+                                 "   template<class T> __cdecl operator T() const { return T{}; }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConvertsionOperatorClass_AnonymousReturnType { // sizeof=1\n"
+                                 "   __cdecl operator struct (anonymous namespace)::Hidden { // sizeof=1\n"
+                                 "                    }() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("double d=ConversionOperatorClass_Template{};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual(   "int i=ConversionOperatorClass_Template{};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
             }
         }
     },

@@ -205,8 +205,8 @@ namespace OdrCop3
         }
     public:
         FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}
-
-        std::string Serialize() const
+    protected:
+        std::string Serialize(auto returnType, auto functionName) const
         {
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
 
@@ -223,9 +223,9 @@ namespace OdrCop3
             fqn += get_InlineSpecified();
             fqn += get_Constexpr();
             fqn += get_ConstEval();
-            fqn += IndentBlock(get_ReturnType(), LengthOfLastLine(fqn)); // returning an anonymous namespace type is multi-line
+            fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
             fqn += get_CallingConvention();
-            fqn += get_FunctionName();
+            fqn += IndentBlock(functionName(), LengthOfLastLine(fqn));
             fqn += '(';
             for (const ParmVarDecl* param : funcDecl->parameters())
             {
@@ -251,6 +251,13 @@ namespace OdrCop3
             else
                 fqn += get_Body();
             return fqn + "\n";
+        }
+
+    public:
+        std::string Serialize() const
+        {
+            return Serialize([&]() { return get_ReturnType  (); },
+                             [&]() { return get_FunctionName(); });
         }
     };
 }
