@@ -41,21 +41,9 @@ namespace OdrCop3
                 out += std::string(getTraitName(unaryExprOrTypeTraitExpr->getKind()));
                 break;
             }
-
             if (unaryExprOrTypeTraitExpr->isArgumentType())
-            {
-                QualType qt = unaryExprOrTypeTraitExpr->getArgumentType();
-                if (NeedsManualSerialization(contextItems, qt))
-                    out += "(" + IndentBlock(SerializeType(contextItems, qt), LengthOfLastLine(out)+1) + ")";
-                else
-                {
-                    std::string str;
-                    llvm::raw_string_ostream os(str);
-                    qt.print(os, contextItems.printPolicy);
-                    os.flush();
-                    out += str;
-                }
-            } else
+                out += "(" + IndentBlock(SerializeType(contextItems, unaryExprOrTypeTraitExpr->getArgumentType()), LengthOfLastLine(out)+1) + ")";
+            else
                 out += "(" + IndentBlock(SerializeExpr(contextItems, unaryExprOrTypeTraitExpr->getArgumentExpr()), LengthOfLastLine(out)+1) + ")";
             return out;
         }
