@@ -55,21 +55,8 @@ namespace OdrCop3
                     os.flush();
                     out += str;
                 }
-            }
-            else
-            {
-                const Expr* expr = unaryExprOrTypeTraitExpr->getArgumentExpr();
-                if (NeedsManualSerialization(contextItems, expr))
-                    out += "(" + IndentBlock(SerializeExpr(contextItems, expr), LengthOfLastLine(out)+1) + ")";
-                else
-                {
-                    std::string str;
-                    llvm::raw_string_ostream os(str);
-                    expr->printPretty(os, nullptr, contextItems.printPolicy);
-                    os.flush();
-                    out += str;
-                }
-            }
+            } else
+                out += "(" + IndentBlock(SerializeExpr(contextItems, unaryExprOrTypeTraitExpr->getArgumentExpr()), LengthOfLastLine(out)+1) + ")";
             return out;
         }
     };

@@ -90,20 +90,7 @@ namespace OdrCop3
         if (const clang::Expr* requiresClause = params->getRequiresClause())
         {
             out += "requires ";
-            if (const auto* conceptSpecializationExpr = dyn_cast<clang::ConceptSpecializationExpr>(requiresClause))
-                out += IndentBlock(SerializeExpr(contextItems, conceptSpecializationExpr), LengthOfLastLine(out));
-            else
-            {
-                if (NeedsManualSerialization(contextItems, requiresClause))
-                    out += IndentBlock(SerializeExpr(contextItems, requiresClause), LengthOfLastLine(out));
-                else
-                {
-                    std::string exprStr;
-                    llvm::raw_string_ostream os(exprStr);
-                    requiresClause->printPretty(os, nullptr, contextItems.printPolicy);
-                    out += exprStr;
-                }
-            }
+            out += IndentBlock(SerializeExpr(contextItems, requiresClause), LengthOfLastLine(out));
         }
         return out;
     }

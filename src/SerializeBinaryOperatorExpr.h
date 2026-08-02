@@ -21,26 +21,14 @@ namespace OdrCop3
         const ContextItems & contextItems;
         const BinaryOperator* binaryOperator;
 
-        std::string get_Side(const Expr* expr, size_t indent) const
-        {
-            if (NeedsManualSerialization(contextItems, expr))
-                return IndentBlock(SerializeExpr(contextItems, expr), indent);
-
-            std::string str;
-            llvm::raw_string_ostream os(str);
-            expr->printPretty(os, nullptr, contextItems.printPolicy);
-            os.flush();
-            return str;
-        }
-
     public:
         BinaryOperatorExprSerializer(const ContextItems& contextItems, const BinaryOperator* binaryOperator) : contextItems(contextItems), binaryOperator(binaryOperator) {}
         std::string Serialize() const
         {
             std::string out;
-            out += get_Side(binaryOperator->getLHS(), LengthOfLastLine(out)); // LHS
-            out += " " + binaryOperator->getOpcodeStr().str() + " ";          // operator:  e.g. "+", "-", "*", "/", "=="
-            out += get_Side(binaryOperator->getRHS(), LengthOfLastLine(out)); // RHS
+            out += IndentBlock(SerializeExpr(contextItems, binaryOperator->getLHS()), LengthOfLastLine(out)); // LHS
+            out += " " + binaryOperator->getOpcodeStr().str() + " ";                                          // operator:  e.g. "+", "-", "*", "/", "=="
+            out += IndentBlock(SerializeExpr(contextItems, binaryOperator->getRHS()), LengthOfLastLine(out)); // RHS
             return out;
         }
     };
