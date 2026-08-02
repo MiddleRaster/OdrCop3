@@ -94,10 +94,15 @@ namespace OdrCop3
                 out += IndentBlock(SerializeExpr(contextItems, conceptSpecializationExpr), LengthOfLastLine(out));
             else
             {
-                std::string exprStr;
-                llvm::raw_string_ostream os(exprStr);
-                requiresClause->printPretty(os, nullptr, contextItems.printPolicy);
-                out += exprStr;
+                if (NeedsManualSerialization(contextItems, requiresClause))
+                    out += IndentBlock(SerializeExpr(contextItems, requiresClause), LengthOfLastLine(out));
+                else
+                {
+                    std::string exprStr;
+                    llvm::raw_string_ostream os(exprStr);
+                    requiresClause->printPretty(os, nullptr, contextItems.printPolicy);
+                    out += exprStr;
+                }
             }
         }
         return out;

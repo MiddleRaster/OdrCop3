@@ -1373,7 +1373,8 @@ Test ExploratoryTestsOfClangAST[] =
                                "using IntArrayReference = int(&)[3]; struct ConversionOperatorClass_ArrayReference { operator IntArrayReference() const; };\n"
                                "using FunctionReference = int(&)(); struct ConversionOperatorClass_FunctionReference { operator FunctionReference() const; };\n"
 
-//"namespace { struct HiddenConstraintType {}; } struct ConversionOperatorClass_AnonymousConstraint { template<class T> requires (sizeof(HiddenConstraintType) == sizeof(T)) operator T() const; };\n"
+                               "namespace { struct HiddenConstraintType {}; } struct ConversionOperatorClass_AnonymousConstraint { template<class T> requires (sizeof(HiddenConstraintType) == sizeof(T)) operator T() const; };\n"
+
 //"struct ConversionOperatorClass_TemplateExplicit { template<class T> explicit(sizeof(T) > 4) operator T() const { return T{}; } };\n"
 //"struct ConversionOperatorClass_Noexcept { operator int() const noexcept; };\n"
 //"struct ConversionOperatorClass_ConditionalNoexcept { template<class T> operator T() const noexcept(sizeof(T) <= sizeof(int)) { return T{}; } };\n"
@@ -1387,7 +1388,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(23, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(24, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual( 2, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual( 4, maps.typedefMap.size(), "wrong number of typedefs in map");
@@ -1395,6 +1396,11 @@ Test ExploratoryTestsOfClangAST[] =
             
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousConstraint { // sizeof=1\n"
+                                 "   template<class T> requires (sizeof(struct (anonymous namespace)::HiddenConstraintType { // sizeof=1\n"
+                                 "                                      }) == sizeof(T)) __cdecl operator T() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_AnonymousFunctionPointer { // sizeof=1\n"
                                  "   __cdecl operator struct (anonymous namespace)::HiddenFunctionReturn { // sizeof=1\n"
                                  "                    } (*)()() const;\n"
@@ -1497,7 +1503,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                  };\n"
                               , (*it++).second[0].fullyQualified);
 
-            //  Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            //    Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();

@@ -23,6 +23,7 @@
 #include "SerializeCXXFunctionalCastExpr.h"
 #include "SerializeInitListExpr.h"
 #include "SerializeUnaryExprOrTypeTraitExpr.h"
+#include "SerializeParenExpr.h"
 
 namespace OdrCop3
 {
@@ -39,6 +40,7 @@ namespace OdrCop3
             static std::string Serialize(const ContextItems& contextItems, const clang::InitListExpr             *              initListExpr) { return              InitListExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,              initListExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::BinaryOperator           *            binaryOperator) { return        BinaryOperatorExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,            binaryOperator).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::UnaryExprOrTypeTraitExpr *  unaryExprOrTypeTraitExpr) { return  UnaryExprOrTypeTraitExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,  unaryExprOrTypeTraitExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::ParenExpr                *                 parenExpr) { return                 ParenExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,                 parenExpr).Serialize(); }
         };
 
         template <auto SerializeDecl, auto SerializeType>
@@ -99,6 +101,7 @@ namespace OdrCop3
             case clang::Stmt::StmtClass::InitListExprClass             : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::InitListExpr             >(expr));
             case clang::Stmt::StmtClass::BinaryOperatorClass           : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::BinaryOperator           >(expr));
             case clang::Stmt::StmtClass::UnaryExprOrTypeTraitExprClass : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::UnaryExprOrTypeTraitExpr >(expr));
+            case clang::Stmt::StmtClass::ParenExprClass                : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ParenExpr                >(expr));
             default:
                 break;
             };
