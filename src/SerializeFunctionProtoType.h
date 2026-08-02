@@ -24,19 +24,11 @@ namespace OdrCop3
 
         std::string Output(QualType qualType) const
         {
-            if (NeedsManualSerialization(contextItems, qualType))
-            {
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls); // strip off any aux (not for return value or args)
-                std::string out = SerializeType(ci2, qualType);
-                out = TrimRightIf(out, "\n");
-                out = TrimRightIf(out, ";");
-                return out;
-            }
-            std::string s;
-            llvm::raw_string_ostream os(s);
-            qualType.print(os, contextItems.printPolicy);
-            os.flush();
-            return s;
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls); // strip off any aux (not for return value or args)
+            std::string out = SerializeType(ci2, qualType);
+            out = TrimRightIf(out, "\n");
+            out = TrimRightIf(out, ";");
+            return out;
         }
         std::string get_ReturnType() const { return Output(functionProtoType->getReturnType()); }
         std::string get_Parameters() const

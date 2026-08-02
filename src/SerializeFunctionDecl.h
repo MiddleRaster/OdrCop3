@@ -141,7 +141,7 @@ namespace OdrCop3
             case CC_X86VectorCall: return "__vectorcall ";
             case CC_Win64:         return "__ms_abi ";
             case CC_C: if (!(funcDecl->isExternC() || funcDecl->isMSVCRTEntryPoint())) 
-                                   return "__cdecl "; // else fall through
+                                   return "__cdecl "; [[fallthrough]];
             default:               return "";
             }
         }

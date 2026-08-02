@@ -25,18 +25,14 @@ namespace OdrCop3
         RecordTypeSerializer(const ContextItems& contextItems, QualType qt, const RecordType* recordType) : contextItems(contextItems), qt(qt), recordType(recordType) {}
         std::string Serialize() const
         {
-            if (NeedsManualSerialization(contextItems, qt))
-            {
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-                std::string out;
-                if (qt.isConstQualified   ()) out += "const ";
-                if (qt.isVolatileQualified()) out += "volatile ";
-                out += IndentBlock(SerializeDecl(ci2, recordType->getDecl()), LengthOfLastLine(out));
-                out  = TrimRightIf(out, ";");
-                out += (contextItems.aux.size() > 0 ? " " + contextItems.aux : "");
-                return out;
-            } else
-                return qt.getAsString(contextItems.printPolicy) + (contextItems.aux.size() > 0 ? " " + contextItems.aux : "");
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
+            std::string out;
+            if (qt.isConstQualified   ()) out += "const ";
+            if (qt.isVolatileQualified()) out += "volatile ";
+            out += IndentBlock(SerializeDecl(ci2, recordType->getDecl()), LengthOfLastLine(out));
+            out  = TrimRightIf(out, ";");
+            out += (contextItems.aux.size() > 0 ? " " + contextItems.aux : "");
+            return out;
         }
     };
 }
