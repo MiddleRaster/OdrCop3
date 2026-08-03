@@ -34,11 +34,6 @@ namespace OdrCop3
                 templateParameterList->print(os, contextItems.context, contextItems.printPolicy);
                 os.flush();
             }
-
-            // change "template <" to "template<"
-            std::string::size_type pos = templatePrefix.find("template <");
-            if (pos != std::string::npos)
-                templatePrefix.replace(pos, 10, "template<");
             return templatePrefix;
         }
 
@@ -46,8 +41,7 @@ namespace OdrCop3
         FunctionTemplateDeclSerializer(const ContextItems& contextItems, const FunctionTemplateDecl* functionTemplateDecl) : contextItems(contextItems), functionTemplateDecl(functionTemplateDecl) {}
         std::string Serialize() const
         {
-            std::string out = get_TemplateHeader();
-            return out + IndentBlock(SerializeDecl(contextItems, functionTemplateDecl->getTemplatedDecl()), LengthOfLastLine(out)) + "\n";
+            return get_TemplateHeader() + SerializeDecl(contextItems, functionTemplateDecl->getTemplatedDecl());
         }
     };
 }

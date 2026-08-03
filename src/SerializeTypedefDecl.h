@@ -36,18 +36,14 @@ namespace OdrCop3
             std::string resolvedType = underlying.getAsString(contextItems.printPolicy);
 
             if (NeedsInlining(underlying)) {
-                std::string fqtd     = "using " + aliasName + " = ";
                 std::string inlined  = SerializeType(contextItems, underlying);
                 inlined              = TrimRightIf(inlined, " "); // for enums
                 inlined              = TrimRightIf(inlined, ";"); // for UDTs
-                fqtd += inlined;
-                if (inlined.find('\n') == std::string::npos)
-                    fqtd += "; // typedef " + inlined      + " " + aliasName + ";\n"; // not multi-line: use serialized result
-                else
-                    fqtd += "; // typedef " + resolvedType + " " + aliasName + ";\n"; // multi-line: just use the print result
+                std::string fqtd     = "typedef ";
+                fqtd += IndentBlock(inlined, LengthOfLastLine(fqtd)) + " " + aliasName + ";\n";
                 return fqtd;
             }
-            return "using " + aliasName + " = " + resolvedType + "; // typedef " + resolvedType + " " + aliasName + ";\n";
+            return "typedef " + resolvedType + " " + aliasName + ";\n";
         }
     };
 }

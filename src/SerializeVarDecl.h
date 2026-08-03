@@ -38,16 +38,16 @@ namespace OdrCop3
                 out += SerializeAttr(contextItems, attr);
             return out;
         }
-        std::string get_ConstexprAndInline() const
+        std::string get_ConstexprAndInline() const { return varDecl->isConstexpr() ? "constexpr " : ""; }
+        std::string get_Static()             const { return varDecl->isStaticDataMember() ? "static " : ""; }
+        std::string get_Inline() const
         {
             std::string out;
-            if (varDecl->isConstexpr())
-                out += "constexpr ";
-            else if (varDecl->isInline()) // constexpr is inline; don't print both
-                out += "inline ";
+            if (varDecl->isInline()) // constexpr is inline; don't print both
+                if (false == varDecl->isConstexpr())
+                    out += "inline ";
             return out;
         }
-        std::string get_Static() const { return varDecl->isStaticDataMember() ? "static " : ""; }
         
         const LambdaExpr* FindLambdaExpr(const Expr* expr) const
         {
@@ -138,7 +138,7 @@ namespace OdrCop3
             if ((e.starts_with("{")) || e.starts_with("("))
                 return e;
             else
-                return "=" + e;
+                return " = " + e;
         }
     public:
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
@@ -147,16 +147,21 @@ namespace OdrCop3
             std::string out;
             out += get_TemplateHeader();
             out += get_Attributes();
-            out += get_ConstexprAndInline();
+            out += get_Inline();
             out += get_Static();
+            out += get_ConstexprAndInline();
+
+            QualType type = varDecl->getType();
+            if (varDecl->isConstexpr())
+                type = type.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const.
             std::string name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
-            if (NeedsManualSerialization(contextItems, varDecl->getType())) {
-                out += TrimRightIf(IndentBlock(SerializeType(contextItems, varDecl->getType()), LengthOfLastLine(out)), " ");
+            if (NeedsManualSerialization(contextItems, type)) {
+                out += TrimRightIf(IndentBlock(SerializeType(contextItems, type), LengthOfLastLine(out)), " ");
                 out += " " + name;
             } else {
                 std::string varStr;
                 llvm::raw_string_ostream os(varStr);
-                varDecl->getType().print(os, contextItems.printPolicy, name);
+                type.print(os, contextItems.printPolicy, name);
                 os.flush();
                 out += varStr;
             }

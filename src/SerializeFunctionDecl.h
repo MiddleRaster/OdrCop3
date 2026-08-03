@@ -44,7 +44,7 @@ namespace OdrCop3
             std::string get_Volatile   () const { return methodDecl && methodDecl->isVolatile           () ? "volatile " : ""; }
             std::string get_Override   () const { return methodDecl && methodDecl->hasAttr<OverrideAttr>() ? "override " : ""; }
             std::string get_Final      () const { return methodDecl && methodDecl->hasAttr<   FinalAttr>() ? "final "    : ""; }
-            std::string get_PureVirtual() const { return methodDecl && methodDecl->isPureVirtual        () ? "=0 "       : ""; }
+            std::string get_PureVirtual() const { return methodDecl && methodDecl->isPureVirtual        () ? "= 0 "      : ""; }
         };
 
         std::string get_TemplateSpecializationHeader() const
@@ -61,7 +61,7 @@ namespace OdrCop3
             }
             return "";
         }
-        std::string get_ReturnType()      const { return TrimRightIf(SerializeType(contextItems, funcDecl->getReturnType()), " ") + " "; }
+        std::string get_ReturnType()      const { return TrimRightIf(SerializeType(contextItems, funcDecl->getReturnType()), " "); }
         std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval "    : ""; }
         std::string get_Constexpr()       const { return funcDecl->isConstexpr()                           ? "constexpr "    : ""; }
         std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "       : ""; }
@@ -72,7 +72,6 @@ namespace OdrCop3
         std::string get_Friend()          const { return funcDecl->getFriendObjectKind() != Decl::FOK_None ? "friend "       : ""; }
         std::string get_Defaulted()       const { return funcDecl->isDefaulted()                           ? "=default "     : ""; }
         std::string get_Deleted()         const { return funcDecl->isDeleted()                             ? "=delete "      : ""; }
-        std::string get_Export()          const { return funcDecl->isInExportDeclContext()                 ? "export "       : ""; }
         std::string get_Variadic()        const { return funcDecl->isVariadic() ? (funcDecl->param_empty() ? "..." : ",...") : ""; }
         std::string get_ExceptionSpecifier() const
         {
@@ -133,44 +132,7 @@ namespace OdrCop3
         }
         std::string get_CallingConvention() const
         {
-            switch (funcDecl->getType()->castAs<FunctionType>()->getCallConv())
-            {
-            case CC_X86StdCall:    return "__stdcall ";
-            case CC_X86FastCall:   return "__fastcall ";
-            case CC_X86ThisCall:   return "__thiscall ";
-            case CC_X86VectorCall: return "__vectorcall ";
-            case CC_Win64:         return "__ms_abi ";
-            case CC_C: if (!(funcDecl->isExternC() || funcDecl->isMSVCRTEntryPoint())) 
-                                   return "__cdecl "; [[fallthrough]];
-            default:               return "";
-            }
-        }
-        std::string get_FunctionName() const
-        {
-            if (const auto* conv = llvm::dyn_cast<clang::CXXConversionDecl>(funcDecl))
-            {
-                std::string typeName;
-                llvm::raw_string_ostream os(typeName);
-                conv->getConversionType().print(os, contextItems.printPolicy);
-                return "operator " + typeName;
-            }
-            std::string name = funcDecl->getNameAsString();
-            if (auto *  args = funcDecl->getTemplateSpecializationArgs())
-            {   // explicit specialization
-                std::string out;
-                llvm::raw_string_ostream os(out);
-                os << "<";
-                for (unsigned i=0; i<args->size(); ++i)
-                {
-                    if (i > 0)
-                        os << ", ";
-                    args->get(i).print(contextItems.printPolicy, os, false);
-                }
-                os << ">";
-                os.flush();
-                name += out;
-            }
-            return name;
+            return ""; // Clang uses attributes for these, but (according to Copilot) doesn't use one for __cdecl. I'll have to test this.
         }
         std::string get_ConstructorInitializers() const
         {
@@ -217,11 +179,32 @@ namespace OdrCop3
             llvm::raw_string_ostream os(body);
             funcDecl->getBody()->printPretty(os, nullptr, contextItems.printPolicy);
             os.flush();
-            return PostProcessBody(body);
+            return body;
         }
     public:
         FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}
+
     protected:
+        std::string get_FunctionName() const
+        {
+            std::string name = funcDecl->getNameAsString();
+            if (auto *  args = funcDecl->getTemplateSpecializationArgs())
+            {   // explicit specialization
+                std::string out;
+                llvm::raw_string_ostream os(out);
+                os << "<";
+                for (unsigned i=0; i<args->size(); ++i)
+                {
+                    if (i > 0)
+                        os << ", ";
+                    args->get(i).print(contextItems.printPolicy, os, false);
+                }
+                os << ">";
+                os.flush();
+                name += out;
+            }
+            return name;
+        }
         std::string Serialize(auto returnType, auto functionName) const
         {
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
@@ -231,7 +214,6 @@ namespace OdrCop3
             fqn += get_LeadingAttributes();
             fqn += get_Friend();
             fqn += get_Register();
-            fqn += get_Export();
             fqn += get_Static();
             fqn += get_Extern();
             fqn += get_Virtual();
@@ -240,6 +222,12 @@ namespace OdrCop3
             fqn += get_Constexpr();
             fqn += get_ConstEval();
             fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
+
+            if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
+            if (fqn.substr(fqn.size()-1) != "&") // e.g., ditto &
+            if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row
+                fqn += " ";                      // e.g., "int" does
+
             fqn += get_CallingConvention();
             fqn += IndentBlock(functionName(), LengthOfLastLine(fqn));
             fqn += '(';
@@ -251,8 +239,8 @@ namespace OdrCop3
             fqn  = TrimRightIf(fqn, ", ");
             fqn += get_Variadic();
             fqn += ") ";
-            fqn += get_TrailingRequiresClause();
             fqn += method.get_Const();
+            fqn += get_TrailingRequiresClause();
             fqn += method.get_Volatile();
             fqn += method.get_RefQualifier();
             fqn += get_ExceptionSpecifier();
@@ -263,9 +251,9 @@ namespace OdrCop3
             fqn += get_ConstructorInitializers(); // if it's a ctor and if it has any initializers
 
             if (!(funcDecl->hasBody() && funcDecl->getBody()) || !contextItems.wantFunctionBody) // either there is no body, or we don't want to serialize the body
-                fqn  = TrimRightIf(fqn, " ") +  ";"; // no body:  end prototype with ';'
+                fqn = TrimRightIf(fqn, " ") + ";"; // no body:  end prototype with ';'
             else
-                fqn += get_Body();
+                fqn += TrimRightIf(get_Body(), "\n");
             return fqn + "\n";
         }
 

@@ -41,8 +41,12 @@ namespace OdrCop3
             } else
                 out += parmVarDecl->getType().getAsString(contextItems.printPolicy);
 
+            if((out.substr(out.size()-1) != "*")&& // e.g., int *i = nullptr (no space between * and i)
+               (out.substr(out.size()-1) != "&") ) // e.g., const T &v       (no space between & and v)
+                out += " ";                        // e.g., T a               (a space between T and a)
+
             if (parmVarDecl->getIdentifier()) // name if any
-                out += " " + parmVarDecl->getName().str();
+                out += parmVarDecl->getName().str();
 
             if (parmVarDecl->hasDefaultArg()) // default argument, if any
             {

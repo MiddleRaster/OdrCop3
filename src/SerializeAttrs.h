@@ -40,12 +40,12 @@ namespace OdrCop3
             static std::string Serialize(const ContextItems& /*contextItems*/, const clang::WarnUnusedResultAttr* nodiscard)
             {
                 const llvm::StringRef msg = nodiscard->getMessage();
-                return msg.empty() ? "[[nodiscard]] " : ("[[nodiscard(\"" + msg.str() + "\")]] ");
+                return "[[nodiscard(\"" + msg.str() + "\")]] ";
             }
             static std::string Serialize(const ContextItems& /*contextItems*/, const clang::DeprecatedAttr* deprecated)
             {
                 const llvm::StringRef msg = deprecated->getMessage();
-                return msg.empty() ? "[[deprecated]] " : ("[[deprecated(\"" + msg.str() + "\")]] ");
+                return "[[deprecated(\"" + msg.str() + "\")]] ";
             }
             static std::string Serialize(const ContextItems& /*contextItems*/, const clang::FinalAttr* /*Final*/) { return "final "; }
             static std::string Serialize(const ContextItems& contextItems, const clang::Attr* attr)

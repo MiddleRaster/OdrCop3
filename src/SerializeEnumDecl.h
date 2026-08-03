@@ -40,14 +40,14 @@ namespace OdrCop3
     }
     template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> inline std::string BuildNameForNameless(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
     {
-        std::string namelessName;
 
         // is it the C-like syntax case?
         if (const TypedefNameDecl* typedefNameDecl = enumDecl->getTypedefNameForAnonDecl())
         {
             clang::SourceManager& sourceManager = enumDecl->getASTContext().getSourceManager();
             clang::PresumedLoc      presumedLoc = sourceManager.getPresumedLoc(enumDecl->getLocation());
-            namelessName = std::string("(anonymous type at ") + presumedLoc.getFilename() + ":" + std::to_string(presumedLoc.getLine()) + ":" + std::to_string(presumedLoc.getColumn()) + ")";
+            std::string namelessName = std::string("(unnamed enum at ") + presumedLoc.getFilename() + ":" + std::to_string(presumedLoc.getLine()) + ":" + std::to_string(presumedLoc.getColumn()) + ")";
+            return namelessName;
         }
         else
         {
@@ -56,16 +56,8 @@ namespace OdrCop3
             QualType enumQT = enumDecl->getASTContext().getTagType(ElaboratedTypeKeyword::None, /*Qualifier=*/std::nullopt, enumDecl, /*OwnsTag=*/false);
             enumQT.print(os, contextItems.printPolicy, enumDecl->getNameAsString());
             os.flush();
-            namelessName = OdrCop3::MakeUnnamedAndAnonymousConsistent(enumStr);
+            return enumStr;
         }
-
-        // add scoping if any
-        std::string anonymous = "(anonymous type at ";
-        auto pos = namelessName.find(anonymous);
-        if (pos != std::string::npos)
-            namelessName.insert(pos, BuildFullyQualifiedParentChain<SerializeDecl, SerializeType, SerializeExpr>(contextItems, enumDecl));
-
-        return namelessName;
     }
     template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> inline std::string MakeUnnamedEnumKey(const ContextItems& contextItems, const clang::EnumDecl* enumDecl)
     {
@@ -90,37 +82,10 @@ namespace OdrCop3
         std::string Print() const
         {
             std::string str;
-        
-            clang::PrintingPolicy policy = contextItems.printPolicy;
-            policy.FullyQualifiedName    = true;
             llvm::raw_string_ostream os(str);
-            enumDecl->print(os, policy);
+            enumDecl->print(os, contextItems.printPolicy);
             os.flush();
-
-            // modify str to look more like my output:
-
-            // change 4 spaces to 3.
-            std::size_t pos  = 0;
-            std::string from = "\n    ";
-            std::string to   = " ";
-            while ((pos = str.find(from, pos)) != std::string::npos)
-                str.replace(pos, from.size(), to);
-
-            // remove spaces around =
-            pos  = 0;
-            from = " = ";
-            to   = "=";
-            while ((pos = str.find(from, pos)) != std::string::npos)
-                str.replace(pos, from.size(), to);
-
-            // remove all "\n"
-            pos = 0;
-            while ((pos = str.find('\n', pos)) != std::string::npos)
-                str.erase(pos, 1);
-
-            str  = TrimRightIf(str, "}");
-            str += " };\n";
-            return str;
+            return str + ";\n";
         }
     public:
         EnumDeclSerializer(const ContextItems& contextItems, const EnumDecl* enumDecl) : contextItems(contextItems), enumDecl(enumDecl) {}
@@ -135,27 +100,23 @@ namespace OdrCop3
             else
                 enumName = enumDecl->getQualifiedNameAsString();
             
-            std::string fqe = (enumDecl->isScoped() ? "enum class " : "enum ") + enumName + (enumDecl->isFixed() ? " : " + enumDecl->getIntegerType().getCanonicalType().getAsString() : "") + " { ";
-            bool first = true;
+            std::string fqe = (enumDecl->isScoped() ? "enum class " : "enum ") + enumName + (enumDecl->isFixed() ? " : " + enumDecl->getIntegerType().getCanonicalType().getAsString() : "") + " {\n";
             for (const EnumConstantDecl* enumeratorDecl : enumDecl->enumerators())
             {
-                if (first)
-                    first = false;
-                else
-                    fqe += ", ";
-                
-                fqe += enumeratorDecl->getName();
+                fqe += "    " + enumeratorDecl->getName().str();
                 if (const Expr* Init = enumeratorDecl->getInitExpr())
                 {
                     llvm::APSInt value = enumeratorDecl->getInitVal();
                     Expr::EvalResult Result;
                     if (Init->EvaluateAsInt(Result, contextItems.context) && (value == Result.Val.getInt()))
-                        fqe += "=" + llvm::toString(value, 10); // Clang's semantic value is valid.
+                        fqe += " = " + llvm::toString(value, 10); // Clang's semantic value is valid.
                     else
-                        fqe += "=" + Lexer::getSourceText(CharSourceRange::getTokenRange(Init->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts()).str(); // go with what the user typed
+                        fqe += " = " + Lexer::getSourceText(CharSourceRange::getTokenRange(Init->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts()).str(); // go with what the user typed
                 }
+                fqe += ",\n";
             }
-            return fqe + " };\n";
+            fqe = TrimRightIf(fqe, ",\n");
+            return fqe + "\n};\n";
         }
     };
 }

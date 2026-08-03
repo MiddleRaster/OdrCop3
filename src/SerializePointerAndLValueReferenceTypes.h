@@ -41,7 +41,14 @@ namespace OdrCop3
             out += SerializeType(ci2, qt->getPointeeType());
             out  = TrimRightIf(out, "\n");
             out  = TrimRightIf(out, ";");
-            out += " " + starOrAmpersand + contextItems.aux;
+            
+            // add space only as appropriate:  we want "Foo **&foo", for example
+            if (out.substr(out.size()-1) != "*")
+            if (out.substr(out.size()-1) != "&")
+            if (out.substr(out.size()-1) != " ")
+                out += " ";
+
+            out += starOrAmpersand + contextItems.aux;
             return out;
         }
     };

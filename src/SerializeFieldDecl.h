@@ -70,6 +70,20 @@ namespace OdrCop3
                 os.flush();
                 out += fieldStr;
             }
+            else if (auto* suppressedAnonymousCXXRecord = fieldDecl->getType()->getAsCXXRecordDecl();
+                           suppressedAnonymousCXXRecord && suppressedAnonymousCXXRecord->getName().empty())
+            {
+                out += IndentBlock(SerializeDecl(contextItems, suppressedAnonymousCXXRecord), LengthOfLastLine(out));
+                out  = TrimRightIf(out, ";");
+                out += " " + fieldDecl->getNameAsString();
+            }
+            else if (const auto* suppressedAnonymousEnumType = fieldDecl->getType()->getAs<EnumType>();
+                                 suppressedAnonymousEnumType && suppressedAnonymousEnumType->getDecl()->getName().empty())
+            {
+                out += IndentBlock(SerializeDecl(contextItems, suppressedAnonymousEnumType->getDecl()), LengthOfLastLine(out));
+                out = TrimRightIf(out, ";");
+                out += " " + fieldDecl->getNameAsString();
+            }
             else
             {   // unnamed types, e.g., "struct N { enum { D=0, E, F } eVal=E; };", end up clearer this way
                 std::string fieldStr;
@@ -90,16 +104,16 @@ namespace OdrCop3
                 llvm::raw_string_ostream os(bitWidth);
                 fieldDecl->getBitWidth()->printPretty(os, nullptr, contextItems.printPolicy);
                 os.flush();
-                out += ":" + bitWidth;
+                out += " : " + bitWidth;
             }
             if (fieldDecl->hasInClassInitializer())
             {
                 const Expr* expr = fieldDecl->getInClassInitializer();
                 std::string init = SerializeExpr(contextItems, expr);
                 if ((init.starts_with("{")) || init.starts_with("("))
-                    out += init;
+                    out += " " + init;
                 else
-                    out += "=" + init;
+                    out += " = " + init;
             }
             out += ";\n";
             return out;

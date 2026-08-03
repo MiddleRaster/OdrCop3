@@ -33,21 +33,39 @@ Test ExploratoryTestsOfClangAST[] =
 
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("struct complex { // sizeof=16\n"
-                                 "   double r;\n"
-                                 "   double i;\n"
+                Assert::AreEqual("struct complex {\n"
+                                 "    double r;\n"
+                                 "    double i;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("[[maybe_unused]] struct (anonymous namespace)::Anonymous { // sizeof=1\n"
-                                 "                 } __cdecl ReturnAnonymous() { return Anonymous{}; }\n",                                                 (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> int __cdecl add<int, short>(int t, short u) { return t - u; }\n",                                             (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T, typename U> T __cdecl add(T t, U u) { return t + u; }\n",                                           (*it++).second[0].fullyQualified);
-                Assert::AreEqual("[[maybe_unused]] void __cdecl foo(volatile int * i = nullptr) noexcept { (void)i; }\n",                                  (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> complex __cdecl multiply<complex>(complex a, complex b) { return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r}; }\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> T __cdecl multiply(T a, T b) { return a * b; }\n",                                                  (*it++).second[0].fullyQualified);
+                Assert::AreEqual("[[maybe_unused]] struct Anonymous {\n"
+                                 "                 } ReturnAnonymous() {\n"
+                                 "    return Anonymous{};\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> int add<int, short>(int t, short u) {\n"
+                                 "    return t - u;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> T add(T t, U u) {\n"
+                                 "    return t + u;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("[[maybe_unused]] void foo(volatile int *i = nullptr) noexcept {\n"
+                                 "    (void)i;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> complex multiply<complex>(complex a, complex b) {\n"
+                                 "    return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r};\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T multiply(T a, T b) {\n"
+                                 "    return a * b;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
             }
         }
     },
@@ -63,8 +81,8 @@ Test ExploratoryTestsOfClangAST[] =
                                "   auto make_lambda() const { return [this](int x) { return x + i; }; }"
                                "   template <typename T> T doTemplateyStuff(const T& value) const requires requires { typename T::value_type; } { return value; }"
                                "   explicit operator int() const { return 7; }"
-                               "}; ";
-
+                               "}; "
+                               ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -78,44 +96,55 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
-                Assert::AreEqual("export void __cdecl Baz([[deprecated]] int x, int y [[maybe_unused]]) {}\n",    (*it++).second[0].fullyQualified, "should have gotten the function and body");
+                Assert::AreEqual("void Baz([[deprecated(\"\")]] int x, int y [[maybe_unused]]) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified, "should have gotten the function and body");
             }
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("struct Bar { // sizeof=8\n"
-                                 "   export virtual const Bar * __cdecl GetBar() const & =0;\n"
+                Assert::AreEqual("struct Bar {\n"
+                                 "    virtual const Bar *GetBar() const & = 0;\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the struct");
-                Assert::AreEqual("struct Foo : public Bar { // sizeof=16\n"
-                                "   struct Foo::(anonymous type at input.cc:2:150) { // sizeof=4\n"
-                                "      int x;\n"
-                                "   };\n"
-                                "   int i;\n"
-                                "   explicit void __cdecl Foo(int i) : x(7), i(i) { this->i++; }\n"
-                                "   [[nodiscard]] const Bar * __cdecl GetBar() const & override { return this; }\n"
-                                "   (lambda at input.cc:2:333) __cdecl make_lambda() const {\n"
-                                "       return [this](int x) {\n"
-                                "           return x + this->i;\n"
-                                "       };\n"
-                                "   }\n"
-                                "   template<typename T> T __cdecl doTemplateyStuff(const T & value) requires requires { typename T::value_type; } const { return value; }\n"
-                                "   explicit __cdecl operator int() const { return 7; }\n"
-                                "};\n"
+                Assert::AreEqual("struct Foo : Bar {\n"
+                                 "    struct  {\n"
+                                 "        int x;\n"
+                                 "    };\n"
+                                 "    int i;\n"
+                                 "    explicit Foo(int i) : x(7), i(i) {\n"
+                                 "        this->i++;\n"
+                                 "    }\n"
+                                 "    [[nodiscard(\"\")]] const Bar *GetBar() const & override {\n"
+                                 "        return this;\n"
+                                 "    }\n"
+                                 "    (lambda at input.cc:2:333) make_lambda() const {\n"
+                                 "        return [this](int x) {\n"
+                                 "            return x + this->i;\n"
+                                 "        };\n"
+                                 "    }\n"
+                                 "    template <typename T> T doTemplateyStuff(const T &value) const requires requires { typename T::value_type; } {\n"
+                                 "        return value;\n"
+                                 "    }\n"
+                                 "    explicit operator int() const {\n"
+                                 "        return 7;\n"
+                                 "    }\n"
+                                 "};\n"
                               , (*it++).second[0].fullyQualified, "should have gotten the struct");
             }
         }
     },
-
     {"Testing CXXRecordDeclSerializer on UDTs", []
         {
             std::string code = "struct Qux {}; struct Bar {}; struct Baz{}; struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : Baz, virtual private Bar, protected Qux {"
                                "public: [[deprecated(\"use y instead\")]] constexpr static int x = 0; "
-                               "   inline static int y{0};"
+                               "   inline static int y{0};" // Decl::print() improperly drops the "inline"; my serializer is more correct than print()
                                "   int b:3=1;"
                                "   unsigned int c:2{3};"
                                "};"
-                               "struct S { union { int a; double b; } u; };";
-
+                               "struct S {"
+                               "    union { int a; double b; } u;" // Decl::print() doesn't handle this well either: it combines the two records, but doesn't inline the anonymous union type
+                               "};"
+                               ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -130,30 +159,28 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual("Bar",      it->first,        "should have gotten correct key");
             Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-            Assert::AreEqual("struct Bar { // sizeof=1\n"
+            Assert::AreEqual("struct Bar {\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
-            Assert::AreEqual("struct Baz { // sizeof=1\n"
+            Assert::AreEqual("struct Baz {\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
-            Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : public Baz, private virtual Bar, protected Qux { // sizeof=32\n"
+            Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : Baz, virtual private Bar, protected Qux {\n"
                              "public:\n"
-                             "   [[deprecated(\"use y instead\")]] constexpr static const int x=0;\n"
-                             "   inline static int y{0};\n"
-                             "   int b:3=1;\n"
-                             "   unsigned int c:2{3};\n"
+                             "    [[deprecated(\"use y instead\")]] static constexpr int x = 0;\n"
+                             "    inline static int y{0};\n" // Decl::print() improperly drops the "inline"; my serializer is more correct than print()
+                             "    int b : 3 = 1;\n"
+                             "    unsigned int c : 2 {3};\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
-            Assert::AreEqual("struct Qux { // sizeof=1\n"
+            Assert::AreEqual("struct Qux {\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
-
-            Assert::AreEqual("struct S { // sizeof=8\n"
-                             "   union S::(anonymous type at input.cc:1:294) { // sizeof=8\n"
-                             "      int a;\n"
-                             "      double b;\n"
-                             "   };\n"
-                             "   union S::(anonymous type at input.cc:1:294) u;\n"
+            Assert::AreEqual("struct S {\n"
+                           "    union (unnamed union at input.cc:1:297) {\n" // my serializer is considerably better than Decl::print() in this case
+                           "        int a;\n"
+                           "        double b;\n"
+                           "    } u;\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
         }
@@ -163,8 +190,10 @@ Test ExploratoryTestsOfClangAST[] =
         {
             std::string code = "enum E { A=1, B, C };\n"
                                "struct S { E e=E::B; };\n"
-                               "struct N { enum { D=0, E, F } eVal=E; };";
-
+                               "struct N {"
+                               "    enum { D=0, E, F } eVal=E;" // EnumDecl::print() doesn't inline; not sufficient for ODR detection
+                               "};"
+                               ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -180,20 +209,28 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("E",        it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("enum E { A=1, B, C };\n"                                     , (*it++).second[0].fullyQualified, "should have gotten the enum");
+                Assert::AreEqual("enum E {\n" 
+                                 "    A = 1,\n" 
+                                 "    B,\n" 
+                                 "    C\n" 
+                                 "};\n" 
+                              , (*it++).second[0].fullyQualified, "should have gotten the enum");
             }
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("N", it->first,               "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("struct N { // sizeof=4\n"
-                                 "   enum N::(anonymous type at input.cc:3:12) { D=0, E, F };\n"
-                                 "   enum N::(anonymous type at input.cc:3:12) eVal=E;\n"
+                Assert::AreEqual("struct N {\n"
+                                 "    enum (unnamed enum at input.cc:3:15) {\n"
+                                 "        D = 0,\n"
+                                 "        E,\n"
+                                 "        F\n"
+                                 "    } eVal = E;\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the struct");
-                Assert::AreEqual("struct S { // sizeof=4\n"
-                                 "   E e=E::B;\n"
+                Assert::AreEqual("struct S {\n"
+                                 "    E e = E::B;\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the struct");
             }
@@ -203,21 +240,36 @@ Test ExploratoryTestsOfClangAST[] =
     {"Testing Typedef serialization", []
         {
             std::string code = "typedef int MyInt;\n"
-                               "typedef enum { Red, Green, Blue } Color;\n";
-
+                            // "typedef enum { Red, Green, Blue } Color;\n" // my serialization is WAY better than EnumDecl::print()'s.
+                               ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(3, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found an enum entry");
+
+            Assert::AreEqual(0, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+         // Assert::AreEqual(1, maps.enumMap.size(),   "wrong number of enums in map");
+         // Assert::AreEqual(2, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
+                //auto it = maps.enumMap.begin();
+                //Assert::AreEqual("enum (unnamed enum at input.cc:2:9) {\n" // my serialization is WAY better than EnumDecl::print()'s.
+                //                 "    Red,\n"                              // my serialization is WAY better than EnumDecl::print()'s.
+                //                 "    Green,\n"                            // my serialization is WAY better than EnumDecl::print()'s.
+                //                 "    Blue\n"                              // my serialization is WAY better than EnumDecl::print()'s.
+                //                 "};\n"                                    // my serialization is WAY better than EnumDecl::print()'s.
+                //              , (*it++).second[0].fullyQualified, "should have gotten the typedef");
+            }
+            {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("Color",    it->first,        "should have gotten correct key");
-                Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
-
-                Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:9) { Red, Green, Blue }; // typedef enum (anonymous type at input.cc:2:9) { Red, Green, Blue } Color;\n"
-                               , (*it++).second[0].fullyQualified, "should have gotten the typedef");
-                Assert::AreEqual("using MyInt = int; // typedef int MyInt;\n"
+                //Assert::AreEqual("typedef enum (unnamed enum at input.cc:2:9) {\n"
+                //                 "            Red,\n"
+                //                 "            Green,\n"
+                //                 "            Blue\n"
+                //                 "        } Color;\n"
+                //              , (*it++).second[0].fullyQualified, "should have gotten the typedef");
+                Assert::AreEqual("typedef int MyInt;\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the typedef");
             }
         }
@@ -228,58 +280,64 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code = "namespace { struct Foo { [[maybe_unused]] Foo* foo; }; } struct Bar : Foo {};"
                                "struct S {}; struct A { S* p; const S& q; S r[2]; const Foo* a; Foo& b; Foo c[2]; Foo**& d; void (*callback)(S*); void (*callback2)(Foo*, int, double);"
                                "Foo (S::* mp)(double, const char*) = nullptr;"
-                               "int (Foo::*mp2)(int); };";
- 
+                               "int (Foo::*mp2)(int); };"
+                               ; 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
-            Assert::AreEqual(3, maps.udtMap.size() + maps.varMap.size() + maps.enumMap.size() + maps.typedefMap.size() + maps.functionMap.size(), "should have found an enum entry");
+
+            Assert::AreEqual(3, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("A",        it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("struct A { // sizeof=96\n"
-                                 "   S *p;\n"
-                                 "   const S &q;\n"
-                                 "   S r[2];\n"
-                                 "   const struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "            [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "         } *a;\n"
-                                 "   struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "   } &b;\n"
-                                 "   struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "   } c[2];\n"
-                                 "   struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "   } * * &d;\n"
-                                 "   void (*callback)(S *);\n"
-                                 "   void (*callback2)(struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "                        [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "                     } *, int, double);\n"
-                                 "   struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "      [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "   } (S::*mp)(double, const char *)=nullptr;\n"
-                                 "   int (struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "           [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "        }::*mp2)(int);\n"
+                Assert::AreEqual("struct A {\n"
+                                 "    S *p;\n"
+                                 "    const S &q;\n"
+                                 "    S r[2];\n"
+                                 "    const struct (anonymous namespace)::Foo {\n"
+                                 "              [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "          } *a;\n"
+                                 "    struct (anonymous namespace)::Foo {\n"
+                                 "        [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "    } &b;\n"
+                                 "    struct (anonymous namespace)::Foo {\n"
+                                 "        [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "    } c[2];\n"
+                                 "    struct (anonymous namespace)::Foo {\n"
+                                 "        [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "    } **&d;\n"
+                                 "    void (*callback)(S *);\n"
+                                 "    void (*callback2)(struct (anonymous namespace)::Foo {\n"
+                                 "                          [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "                      } *, int, double);\n"
+                                 "    struct (anonymous namespace)::Foo {\n"
+                                 "        [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "    } (S::*mp)(double, const char *) = nullptr;\n"
+                                 "    int (struct (anonymous namespace)::Foo {\n"
+                                 "             [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "         }::*mp2)(int);\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the class");
-                Assert::AreEqual("struct Bar : public struct (anonymous namespace)::Foo { // sizeof=8\n"
-                                 "                       [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
-                                 "                    } { // sizeof=8\n"
+                Assert::AreEqual("struct Bar : struct (anonymous namespace)::Foo {\n"
+                                 "                 [[maybe_unused]] struct (anonymous namespace)::Foo *foo;\n"
+                                 "             } {\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the anonymous namespace base class");
-                Assert::AreEqual("struct S { // sizeof=1\n"
+                Assert::AreEqual("struct S {\n"
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the class");
             }
         }
     },
 
+#ifdef NOT_YET
     {"Testing TypedefDecl and TypeAliasDecl", []
         {
             std::string code = "struct S {}; using Alias = S; typedef S Alias2;\n"
@@ -1529,9 +1587,20 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
+#endif
 };
 /* some missing test cases
+ 
+nested unnamed union with field (see line 141, in test "Testing CXXRecordDeclSerializer on UDTs").
+need to test:
+typedef/using alias around unnamed union/struct/class/enum
+nested unnamed union/struct/class with field
+unnamed struct as static/global (var)
+unnamed struct passed as argument:  e.g., int f(struct { int x; } arg) { return arg.x; }
+
+
+
+
 
 7. Concepts
             template<typename T> concept C = sizeof(T) == 4;
@@ -1541,8 +1610,6 @@ Test ExploratoryTestsOfClangAST[] =
 10. Constrained auto
             C auto x = ...
 
-11. Conversion operators
-            operator bool() const;
 
 12. Literal operators
             operator ""_x

@@ -22,15 +22,25 @@ namespace OdrCop3
         const CXXRecordDecl* cxxRecordDecl;
 
         std::string get_Kind()        const { return cxxRecordDecl->getKindName().str() + " "; }
-        std::string get_SizeComment() const { return cxxRecordDecl->isCompleteDefinition() && !cxxRecordDecl->isDependentType() ? " // sizeof=" + std::to_string(contextItems.context.getASTRecordLayout(cxxRecordDecl).getSize().getQuantity()) + "\n" : "\n"; }
         std::string get_Friend()      const { return contextItems.needsFriend ? "friend " : ""; }
         std::string get_Name()        const
         {
             std::string fullyQualifiedName = cxxRecordDecl->getQualifiedNameAsString();
+            if((fullyQualifiedName.find("(anonymous struct at ") != std::string::npos) ||
+               (fullyQualifiedName.find("(anonymous union at " ) != std::string::npos) ||
+               (fullyQualifiedName.find("(anonymous class at " ) != std::string::npos))
+                return ""; // just like print() does
+
+            // leaving these here, because we'll probably need them for (anonymous namespace) stuff
             if (fullyQualifiedName.find("(anonymous ") != std::string::npos)
                 return MakeUnnamedAndAnonymousConsistent(fullyQualifiedName);
-            if (fullyQualifiedName.find("(unnamed "  ) != std::string::npos)
-                return MakeUnnamedAndAnonymousConsistent(fullyQualifiedName);
+            if (fullyQualifiedName.find("(unnamed ") != std::string::npos)
+            {
+                const auto pos = fullyQualifiedName.rfind("::");
+                if (pos != std::string::npos)
+                    fullyQualifiedName.erase(0, pos + 2);
+                return fullyQualifiedName;
+            }
             return cxxRecordDecl->getNameAsString();
         }
         std::string get_Attributes(bool* hasFinal) const
@@ -59,16 +69,18 @@ namespace OdrCop3
                 } else
                     out += ", ";
 
-                switch (base.getAccessSpecifier()) {
-                default:
-                case clang::AS_none:                           break;
-                case clang::AS_public:    out += "public ";    break;
-                case clang::AS_protected: out += "protected "; break;
-                case clang::AS_private:   out += "private ";   break;
+                // do public/protected/private as well as virtual (exactly what the user wrote, which may NOT be what decl::print prints
+                const clang::SourceManager& sourceManager = contextItems.context.getSourceManager();
+                const clang::SourceLocation         begin = sourceManager.getSpellingLoc(base.getBeginLoc());
+                const clang::SourceLocation baseTypeBegin = sourceManager.getSpellingLoc(base.getBaseTypeLoc());
+                const clang::CharSourceRange        range = clang::CharSourceRange::getCharRange(begin, baseTypeBegin);
+                llvm::StringRef prefix = clang::Lexer::getSourceText(range, sourceManager, contextItems.context.getLangOpts()).trim();
+                if (!prefix.empty())
+                {
+                    out += prefix;
+                    out += ' ';
                 }
 
-                if (base.isVirtual())
-                    out += "virtual ";
                 out += IndentBlock(SerializeType(contextItems, base.getType()), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
             }
@@ -77,6 +89,46 @@ namespace OdrCop3
 
             out += "{";
             return out;
+        }
+        static bool IsNestedAnonymousAndHasOwner(const Decl* decl)
+        {
+            // unnamed UDT
+            if (const auto* nestedRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
+            if (nestedRecord->getName().empty())
+            for (const Decl* decl : nestedRecord->getParent()->decls())
+            {
+                if (decl->isImplicit())
+                    continue;
+
+                if (auto* valueDecl = dyn_cast<ValueDecl>(decl))
+                    if (valueDecl->getType()->getAsCXXRecordDecl() == nestedRecord)
+                        return true;
+
+                if (auto* typedefDecl = dyn_cast<TypedefNameDecl>(decl))
+                    if (typedefDecl->getUnderlyingType()->getAsCXXRecordDecl() == nestedRecord)
+                        return true;
+            }
+
+            // unnamed enum
+            if (const auto* nestedEnum = llvm::dyn_cast<clang::EnumDecl>(decl))
+            if (nestedEnum->getName().empty())
+            for (const Decl* decl : nestedEnum->getParent()->decls())
+            {
+                if (decl->isImplicit())
+                    continue;
+
+                if (const auto* valueDecl = dyn_cast<ValueDecl>(decl))
+                    if (const auto* enumType = valueDecl->getType()->getAs<EnumType>())
+                        if (enumType->getDecl() == nestedEnum)
+                            return true;
+
+                if (const auto* typedefDecl = dyn_cast<TypedefNameDecl>(decl))
+                    if (const auto* enumType = typedefDecl->getUnderlyingType()->getAs<EnumType>())
+                        if (enumType->getDecl() == nestedEnum)
+                            return true;
+            }
+
+            return false;
         }
 
     public:
@@ -97,15 +149,19 @@ namespace OdrCop3
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";
             out += IndentBlock(get_Bases(), LengthOfLastLine(out));
-            out += get_SizeComment();
+            out += "\n";
             for (const clang::Decl* decl : cxxRecordDecl->decls())
             {   // data-members, methods, nested decls, etc.
                 if (decl->isImplicit())
                     continue;
+
+                if (IsNestedAnonymousAndHasOwner(decl))
+                    continue; // Decl::print() combines an unnamed union with field, rather than output two Decls.
+
                 if (decl->getKind() == clang::Decl::Kind::AccessSpec)
                     out += SerializeDecl(ci2, decl); // "public:", for instance, does not get indented
                 else
-                    out += IndentBlock(SerializeDecl(ci2, decl), 3, "   ") + "\n";
+                    out += IndentBlock(SerializeDecl(ci2, decl), 4, "    ") + "\n";
             }
             out += "};\n";
             return out;
