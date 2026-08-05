@@ -42,7 +42,7 @@ namespace OdrCop3
                                                              return TrimRightIf(out, " ");
                                                          };
 
-        std::string out = "template<";
+        std::string out = "template <";
 
         bool first = true;
         for (const clang::NamedDecl* param : *params)
@@ -78,8 +78,7 @@ namespace OdrCop3
             }
             if (const auto* ttp2 = clang::dyn_cast<clang::TemplateTemplateParmDecl>(param))
             {
-                std::string nested = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, ttp2->getTemplateParameters());
-                out += "template " + nested.substr(std::string("template").size()); // tweak the spacing a tiny bit
+                out += ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, ttp2->getTemplateParameters());
                 out += "class";
                 out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp2);
                 continue;

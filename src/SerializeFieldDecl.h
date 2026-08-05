@@ -87,9 +87,9 @@ namespace OdrCop3
             else
             {   // unnamed types, e.g., "struct N { enum { D=0, E, F } eVal=E; };", end up clearer this way
                 std::string fieldStr;
-                clang::QualType qt = fieldDecl->getType().getCanonicalType(); // see through typedefs and using aliases
+                clang::QualType qt = fieldDecl->getType();
                 llvm::raw_string_ostream os(fieldStr);
-                qt.print(os, contextItems.printPolicy, (qt->isMemberDataPointerType() ? " " : "") + get_Name()); // adding a space before the field in the pointer-to-member-data case only
+                qt.print(os, contextItems.printPolicy, get_Name());
                 os.flush();
 
                 // is it an unnamed struct/class/union/enum? If so...

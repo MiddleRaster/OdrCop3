@@ -185,6 +185,9 @@ namespace OdrCop3
             if (typedefDecl->isImplicit())
                 return true;
 
+            if (typedefDecl->isInAnonymousNamespace())
+                return true; // TU-local, not an ODR candidate
+
             if (const auto* tad = llvm::dyn_cast<TypeAliasDecl>(typedefDecl))
                 if (tad->getDescribedAliasTemplate() != nullptr)
                     return true; // Skip the templated decl inside a TypeAliasTemplateDecl - handled below

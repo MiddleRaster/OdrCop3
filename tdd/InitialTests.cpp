@@ -347,11 +347,10 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
-#ifdef NOT_YET
     {"Testing TypedefDecl and TypeAliasDecl", []
         {
-            std::string code = "struct S {}; using Alias = S; typedef S Alias2;\n"
+            std::string code =
+                               "struct S {}; using Alias = S; typedef S Alias2;\n"
                                "typedef     enum        { Red, Green, Blue } Color;\n" // Note: don't change the spacing as that changes the TU:line:col
                                "namespace {                            using Color2 = Color; }\n"
                                "namespace { enum Color3 { Red, Green, Blue }; }"
@@ -394,113 +393,129 @@ Test ExploratoryTestsOfClangAST[] =
                                "   AllTrue<[]{ return true; },[]{ return true; },[]{ return false; }> allTrueField; "
                                "   RecursiveAlias<Outer, Wrap> recursivelyDefinedField;"
                                "   int S::* pointertodatamember;"
-                               "};";
- 
+                               "};"
+                              ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            {
-                Assert::AreEqual(15, maps.typedefMap.size(), "wrong number of typedef/aliases in map");
+            Assert::AreEqual( 5, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual( 2, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(12, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
+            {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("(anonymous namespace)::AnonNamespaceTypedefToFuncionPointer", it->first,        "should have gotten correct key");
                 Assert::AreEqual("input.cc",                                                    it->second[0].TU, "should have gotten the TU name");
 
-                Assert::AreEqual("using (anonymous namespace)::AnonNamespaceTypedefToFuncionPointer = int (*)(int, double); // typedef int (*)(int, double) (anonymous namespace)::AnonNamespaceTypedefToFuncionPointer;\n"
+                Assert::AreEqual("using Alias = S;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using (anonymous namespace)::AnonNamespaceUsingAliasToFunctionPointer = int (*)(int, double); // typedef int (*)(int, double) (anonymous namespace)::AnonNamespaceUsingAliasToFunctionPointer;\n"
+                Assert::AreEqual("typedef S Alias2;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using (anonymous namespace)::Color2 = enum (anonymous type at input.cc:2:13) { Red, Green, Blue }; // typedef enum (anonymous type at input.cc:2:13) { Red, Green, Blue } (anonymous namespace)::Color2;\n"
+                Assert::AreEqual("template <auto F, auto ...Fs> using AllTrue = decltype((F() && ... && Fs()));\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Alias = S; // typedef S Alias;\n"
+                Assert::AreEqual("typedef enum (unnamed enum at input.cc:2:13) {\n"
+                                 "            Red,\n"
+                                 "            Green,\n"
+                                 "            Blue\n"
+                                 "        } Color;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Alias2 = S; // typedef S Alias2;\n"
+                Assert::AreEqual("template <typename C, typename R, typename ...Args> using MemberFuncPtr = R (C::*)(Args...);\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<auto F, auto ...Fs> using AllTrue = decltype((F() && ... && Fs())); // no typedef equivalent\n"
+                Assert::AreEqual("template <typename R, typename ...Args> using NoexceptFuncPtr = R (*)(Args...) noexcept;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Color = enum (anonymous type at input.cc:2:13) { Red, Green, Blue }; // typedef enum (anonymous type at input.cc:2:13) { Red, Green, Blue } Color;\n"
+                Assert::AreEqual("template <template <template <typename T> class Inner, typename U> class Outer, template <typename X> class Wrap> using RecursiveAlias = typename Outer<Wrap, int>::type;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename C, typename R, typename ...Args> using MemberFuncPtr = R (C::*)(Args...); // no typedef equivalent\n"
+                Assert::AreEqual("template <auto F, typename ...Args> using ReturnTypeOf = decltype(F(Args{}...));\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename R, typename ...Args> using NoexceptFuncPtr = R (*)(Args...) noexcept; // no typedef equivalent\n"
+                Assert::AreEqual("template <typename R, typename ...Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...);\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<template <template <typename T> class Inner, typename U> class Outer, template <typename X> class Wrap> using RecursiveAlias = typename Outer<Wrap, int>::type; // no typedef equivalent\n"
+                Assert::AreEqual("typedef int (*TypedefForPointerToFunction)(double, const char *);\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<auto F, typename ...Args> using ReturnTypeOf = decltype(F(Args{}...)); // no typedef equivalent\n"
+                Assert::AreEqual("using UsingAliasForPointerToFunction = int (*)(double, const char *);\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename R, typename ...Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...); // no typedef equivalent\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using TypedefForPointerToFunction = int (*)(double, const char *); // typedef int (*)(double, const char *) TypedefForPointerToFunction;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using UsingAliasForPointerToFunction = int (*)(double, const char *); // typedef int (*)(double, const char *) UsingAliasForPointerToFunction;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename R, typename ...Args> using VariadicFuncPtr = R (*)(Args..., ...); // no typedef equivalent\n"
+                Assert::AreEqual("template <typename R, typename ...Args> using VariadicFuncPtr = R (*)(Args..., ...);\n"
                              , (*it++).second[0].fullyQualified);
             }
             {
-                Assert::AreEqual(5, maps.udtMap.size(), "wrong number of UDTs in map");
                 auto it = maps.udtMap.begin();
 
-                Assert::AreEqual("struct A { // sizeof=104\n"
-                                 "   S member;\n"
-                                 "   S member2;\n"
-                                 "   Color color;\n"
-                                 "   Color color2;\n" // was "   enum (anonymous type at input.cc:2:13) { Red, Green, Blue } color2;\n"
-                                                      // but now using getCanonicalTyp() in FieldDecl because we want to see through any and all typedefs, 
-                                                      // even through ones defined in anonymous namespaces. This enum is not, but the typedef is, but now we see through it.
-                                 "   enum (anonymous namespace)::Color3 { Red, Green, Blue } color3;\n"
-                                 "   Color4 color4;\n"
-                                 "   int (*tdpfn1)(double, const char *);\n"
-                                 "   int (*tdpfn2)(double, const char *);\n"
-                                 "   int (*tdpfn3)(int, double);\n"
-                                 "   int (*tdpfn4)(int, double);\n"
-                                 "   TemplateUsingAliasToPointerToFunction<void, double, const char *, int, TemplateUsingAliasToPointerToFunction<int, float, double, const char *>, int, int> tuapfn;\n"
-                                 "   NoexceptFuncPtr<void, int, long, long long, float, double, long double> tuapfnne;\n"
-                                 "   VariadicFuncPtr<int> tuapfnv;\n"
-                                 "   MemberFuncPtr<S, int, const char *> tuapfm;\n"
-                                 "   ReturnTypeOf<[](auto x, auto y) {\n"
-                                 "       return x * y;\n"
-                                 "   }, int, long> fieldDemoingReturnTypeOfNTTP;\n"
-                                 "   AllTrue<[] {\n"
-                                 "       return true;\n"
-                                 "   }, [] {\n"
-                                 "       return true;\n"
-                                 "   }, [] {\n"
-                                 "       return false;\n"
-                                 "   }> allTrueField;\n"
-                                 "   RecursiveAlias<Outer, Wrap> recursivelyDefinedField;\n"
-                                 "   int S::* pointertodatamember;\n"
+                Assert::AreEqual("struct A {\n"
+                                 "    Alias member;\n"
+                                 "    Alias2 member2;\n"
+                                 "    enum (unnamed enum at input.cc:2:13) {\n"
+                                 "        Red,\n"
+                                 "        Green,\n"
+                                 "        Blue\n"
+                                 "    } color;\n"
+                                 "    enum (unnamed enum at input.cc:2:13) {\n"
+                                 "        Red,\n"
+                                 "        Green,\n"
+                                 "        Blue\n"
+                                 "    } color2;\n"
+                                 "    enum (anonymous namespace)::Color3 {\n"
+                                 "        Red,\n"
+                                 "        Green,\n"
+                                 "        Blue\n"
+                                 "    } color3;\n"
+                                 "    Color4 color4;\n"
+                                 "    TypedefForPointerToFunction tdpfn1;\n"
+                                 "    UsingAliasForPointerToFunction tdpfn2;\n"
+                                 "    AnonNamespaceTypedefToFuncionPointer tdpfn3;\n"
+                                 "    AnonNamespaceUsingAliasToFunctionPointer tdpfn4;\n"
+                                 "    TemplateUsingAliasToPointerToFunction<void, double, const char *, int, TemplateUsingAliasToPointerToFunction<int, float, double, const char *>, int, int> tuapfn;\n"
+                                 "    NoexceptFuncPtr<void, int, long, long long, float, double, long double> tuapfnne;\n"
+                                 "    VariadicFuncPtr<int> tuapfnv;\n"
+                                 "    MemberFuncPtr<S, int, const char *> tuapfm;\n"
+                                 "    ReturnTypeOf<[](auto x, auto y) {\n"
+                                 "        return x * y;\n"
+                                 "    }, int, long> fieldDemoingReturnTypeOfNTTP;\n"
+                                 "    AllTrue<[] {\n"
+                                 "        return true;\n"
+                                 "    }, [] {\n"
+                                 "        return true;\n"
+                                 "    }, [] {\n"
+                                 "        return false;\n"
+                                 "    }> allTrueField;\n"
+                                 "    RecursiveAlias<Outer, Wrap> recursivelyDefinedField;\n"
+                                 "    int S::*pointertodatamember;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct Inner {\n"
-                                 "                        using Inner::type = T; // typedef T Inner::type;\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct Inner {\n"
+                                 "                          using type = T;\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<template <typename> class Inner, typename U> struct Outer {\n"
-                                 "                                                         using Outer::type = typename Inner<U>::type; // typedef typename Inner<U>::type Outer::type;\n"
-                                 "                                                      };\n"
+                Assert::AreEqual("template <template <typename> class Inner, typename U> struct Outer {\n"
+                                 "                                                           using type = typename Inner<U>::type;\n"
+                                 "                                                       };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct S { // sizeof=1\n"
+                Assert::AreEqual("struct S {\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename X> struct Wrap {\n"
-                                 "                        using Wrap::type = X; // typedef X Wrap::type;\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename X> struct Wrap {\n"
+                                 "                          using type = X;\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
-                Assert::AreEqual(2, maps.enumMap.size(), "wrong number of enums in map");
                 auto it = maps.enumMap.begin();
-
-                Assert::AreEqual("enum (anonymous type at input.cc:2:13) { Red, Green, Blue };\n"
+                Assert::AreEqual("enum (unnamed enum at input.cc:2:13) {\n"
+                                 "    Red,\n"
+                                 "    Green,\n"
+                                 "    Blue\n"
+                                 "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("enum Color4 { Red, Green, Blue };\n"
+                Assert::AreEqual("enum Color4 {\n"
+                                 "    Red,\n"
+                                 "    Green,\n"
+                                 "    Blue\n"
+                                 "};\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
     },
-
+#ifdef NOT_YET
     {"Testing ClassTemplateSpecialization and ClassTemplatePartialSpecialization", []
         {
             std::string code = "template<typename T> struct Box{}; struct S{}; struct A { Box<S> value; };\n"

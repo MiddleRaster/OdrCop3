@@ -25,19 +25,10 @@ namespace OdrCop3
 
         std::string Serialize() const
         {
-            std::string aliasName = typeAliasDecl->getQualifiedNameAsString();
-            std::string fqtd      = "using " + aliasName + " = ";
-            QualType   underlying = typeAliasDecl->getUnderlyingType();
-
-            std::string resolvedType;
-            if (NeedsManualSerialization(contextItems, underlying)) {
-                resolvedType = underlying.getCanonicalType().getAsString(contextItems.printPolicy);
-                fqtd += TrimRightIf(IndentBlock(SerializeType(contextItems, underlying), fqtd.size()), ";");
-            } else {
-                resolvedType = TrimRightIf(SerializeType(contextItems, underlying), " ");
-                fqtd += resolvedType;
-            }
-            fqtd += "; // typedef " + resolvedType + " " + aliasName + ";\n";
+            std::string fqtd;
+            fqtd = "using " + typeAliasDecl->getNameAsString() + " = ";
+            fqtd += TrimRightIf(IndentBlock(SerializeType(contextItems, typeAliasDecl->getUnderlyingType()), fqtd.size()), ";");
+            fqtd += ";\n";
             return fqtd;
         }
     };

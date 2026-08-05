@@ -23,9 +23,8 @@ namespace OdrCop3
 
         std::string get_TemplateHeader() const
         {
-            const auto* templateParameterList =    classTemplateDecl->getTemplateParameters();
-
             std::string templatePrefix;
+            const auto* templateParameterList = classTemplateDecl->getTemplateParameters();
             if (NeedsManualSerialization(contextItems, templateParameterList))
                 templatePrefix = IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList), 0);
             else
@@ -34,11 +33,6 @@ namespace OdrCop3
                 templateParameterList->print(os, contextItems.context, contextItems.printPolicy);
                 os.flush();
             }
-
-            // change "template <" to "template<"
-            std::string::size_type pos = templatePrefix.find("template <");
-            if (pos != std::string::npos)
-                templatePrefix.replace(pos, 10, "template<");
             return templatePrefix;
         }
 

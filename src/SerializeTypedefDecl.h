@@ -31,19 +31,15 @@ namespace OdrCop3
         TypedefDeclSerializer(const ContextItems& contextItems, const TypedefDecl* typedefDecl) : contextItems(contextItems), typedefDecl(typedefDecl) {}
         std::string Serialize() const
         {
-            QualType    underlying   = typedefDecl->getUnderlyingType().getCanonicalType();
-            std::string aliasName    = typedefDecl->getQualifiedNameAsString();
-            std::string resolvedType = underlying.getAsString(contextItems.printPolicy);
+            std::string aliasName = typedefDecl->getQualifiedNameAsString();
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, aliasName);
 
-            if (NeedsInlining(underlying)) {
-                std::string inlined  = SerializeType(contextItems, underlying);
-                inlined              = TrimRightIf(inlined, " "); // for enums
-                inlined              = TrimRightIf(inlined, ";"); // for UDTs
-                std::string fqtd     = "typedef ";
-                fqtd += IndentBlock(inlined, LengthOfLastLine(fqtd)) + " " + aliasName + ";\n";
-                return fqtd;
-            }
-            return "typedef " + resolvedType + " " + aliasName + ";\n";
+            std::string fqtd;
+            fqtd += "typedef ";
+            fqtd += IndentBlock(SerializeType(ci2, typedefDecl->getUnderlyingType().getCanonicalType()), LengthOfLastLine(fqtd));
+            fqtd  = TrimRightIf(fqtd, " "); // for enums
+            fqtd  = TrimRightIf(fqtd, ";"); // for UDTs
+            return fqtd + ";\n";
         }
     };
 }

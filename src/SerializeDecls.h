@@ -177,8 +177,19 @@ namespace OdrCop3
                 return qualType.getAsString();
             }
 
+            using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>;
+
+            // Decl*s that must be serialized (e.g., for indenting)
+            switch(decl->getKind())
+            {
+         // case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
+         // case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
+            case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
+            default: break;
+            }
+
             if (
-                // false &&
+             // false &&
                 Can::Print(contextItems, decl))
             {
                 struct Semicolon
@@ -205,7 +216,6 @@ namespace OdrCop3
                 return str + Semicolon::IfNeeded(decl);
             }
 
-            using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>;
             switch(decl->getKind())
             {
             case clang::Decl::Kind::CXXMethod:                          // is a subclass of FunctionDecl
