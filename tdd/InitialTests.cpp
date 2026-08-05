@@ -515,10 +515,10 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-#ifdef NOT_YET
     {"Testing ClassTemplateSpecialization and ClassTemplatePartialSpecialization", []
         {
-            std::string code = "template<typename T> struct Box{}; struct S{}; struct A { Box<S> value; };\n"
+            std::string code =
+                               "template<typename T> struct Box{}; struct S{}; struct A { Box<S> value; };\n"
                                "template<typename T, unsigned N> struct Array { T data[N];  T get(unsigned i) const { return data[i]; } void set(unsigned i, const T& value) { data[i] = value; } };\n"
                                "template<unsigned N> struct Array<bool, N> { unsigned char data[(N+7)/8]; bool get(unsigned i) const { return (data[i/8]>>(i%8))&1u;}\n"
                                "   void set(unsigned i, bool value) { unsigned char mask = static_cast<unsigned char>(1u<<(i%8)); if (value) data[i/8] |= mask; else data[i/8] &= static_cast<unsigned char>(~mask); } };\n"
@@ -539,82 +539,96 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(9, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(2, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(9, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("struct A { // sizeof=1\n"
-                                 "   Box<S> value;\n"
+                Assert::AreEqual("struct A {\n"
+                                 "    Box<S> value;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T, unsigned int N> struct Array {\n"
-                                 "                                        T data[N];\n"
-                                 "                                        T __cdecl get(unsigned int i) const { return this->data[i]; }\n"
-                                 "                                        void __cdecl set(unsigned int i, const T & value) { this->data[i] = value; }\n"
-                                 "                                     };\n"
+                Assert::AreEqual("template <typename T, unsigned int N> struct Array {\n"
+                                 "                                          T data[N];\n"
+                                 "                                          T get(unsigned int i) const {\n"
+                                 "                                              return this->data[i];\n"
+                                 "                                          }\n"
+                                 "                                          void set(unsigned int i, const T &value) {\n"
+                                 "                                              this->data[i] = value;\n"
+                                 "                                          }\n"
+                                 "                                      };\n"
                               , (*it++).second[0].fullyQualified);
-
-                Assert::AreEqual("template<> struct Array<bool, 8> { // sizeof=1\n"
-                                 "              unsigned char data;\n"
-                                 "              bool __cdecl get(unsigned int i) const { return (this->data >> i) & 1U; }\n"
-                                 "              void __cdecl set(unsigned int i, bool value) {\n"
-                                 "                  unsigned char mask = static_cast<unsigned char>(1U << i);\n"
-                                 "                  if (value)\n"
-                                 "                      this->data |= mask;\n"
-                                 "                  else\n"
-                                 "                      this->data &= static_cast<unsigned char>(~mask);\n"
-                                 "              }\n"
+                Assert::AreEqual("template<> struct Array<bool, 8> {\n"
+                                 "               unsigned char data;\n"
+                                 "               bool get(unsigned int i) const {\n"
+                                 "                   return (this->data >> i) & 1U;\n"
+                                 "               }\n"
+                                 "               void set(unsigned int i, bool value) {\n"
+                                 "                   unsigned char mask = static_cast<unsigned char>(1U << i);\n"
+                                 "                   if (value)\n"
+                                 "                       this->data |= mask;\n"
+                                 "                   else\n"
+                                 "                       this->data &= static_cast<unsigned char>(~mask);\n"
+                                 "               }\n"
                                  "           };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <unsigned int N> struct Array<bool, N> {\n"
-                                 "                             unsigned char data[(N + 7) / 8];\n"
-                                 "                             bool __cdecl get(unsigned int i) const { return (this->data[i / 8] >> (i % 8)) & 1U; }\n"
-                                 "                             void __cdecl set(unsigned int i, bool value) {\n"
-                                 "                                 unsigned char mask = static_cast<unsigned char>(1U << (i % 8));\n"
-                                 "                                 if (value)\n"
-                                 "                                     this->data[i / 8] |= mask;\n"
-                                 "                                 else\n"
-                                 "                                     this->data[i / 8] &= static_cast<unsigned char>(~mask);\n"
-                                 "                             }\n"
+                                 "                              unsigned char data[(N + 7) / 8];\n"
+                                 "                              bool get(unsigned int i) const {\n"
+                                 "                                  return (this->data[i / 8] >> (i % 8)) & 1U;\n"
+                                 "                              }\n"
+                                 "                              void set(unsigned int i, bool value) {\n"
+                                 "                                  unsigned char mask = static_cast<unsigned char>(1U << (i % 8));\n"
+                                 "                                  if (value)\n"
+                                 "                                      this->data[i / 8] |= mask;\n"
+                                 "                                  else\n"
+                                 "                                      this->data[i / 8] &= static_cast<unsigned char>(~mask);\n"
+                                 "                              }\n"
                                  "                          };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct Box {\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct Box {\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct S { // sizeof=1\n"
+                Assert::AreEqual("struct S {\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct User { // sizeof=8\n"
-                                 "   Wrapper<int> x;\n"
+                Assert::AreEqual("struct User {\n"
+                                 "    Wrapper<int> x;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct Wrapper {\n"
-                                 "                        T value;\n"
-                                 "                     };\n"                    
+                Assert::AreEqual("template <typename T> struct Wrapper {\n"
+                                 "                          T value;\n"
+                                 "                      };\n"                    
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> struct Wrapper<int> { // sizeof=8\n"
-                                 "              int value;\n"
-                                 "              int extra;\n"
+                Assert::AreEqual("template<> struct Wrapper<int> {\n"
+                                 "               int value;\n"
+                                 "               int extra;\n"
                                  "           };\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("int a=identity<int>(42);\n"    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("bool b=identity<bool>(true);\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int a = identity<int>(42);\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("bool b = identity<bool>(true);\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("template<> bool __cdecl identity<bool>(bool value) { return !value; }\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> T __cdecl identity(T value) { return value; }\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> bool identity<bool>(bool value) {\n"
+                                 "               return !value;\n"
+                                 "           }\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T identity(T value) {\n"
+                                 "                          return value;\n"
+                                 "                      }\n"
+                              , (*it++).second[0].fullyQualified);
             }
         }
     },
 
+#ifdef NOT_YET
     {"Testing VarDecl, VarTemplateDecl, VarTemplateSpecializationDecl and VarTemplatePartialSpecializationDecl", []
         {
             std::string code = "template<typename T, int Tag=0> constexpr T DefaultValue = T{};\n"

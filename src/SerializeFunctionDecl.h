@@ -221,6 +221,8 @@ namespace OdrCop3
             fqn += get_InlineSpecified();
             fqn += get_Constexpr();
             fqn += get_ConstEval();
+
+            auto bodyIndentation = LengthOfLastLine(fqn);
             fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
 
             if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
@@ -233,7 +235,7 @@ namespace OdrCop3
             fqn += '(';
             for (const ParmVarDecl* param : funcDecl->parameters())
             {
-                fqn += IndentBlock(SerializeDecl(contextItems, param), LengthOfLastLine(fqn));
+                fqn += TrimRightIf(IndentBlock(SerializeDecl(contextItems, param), LengthOfLastLine(fqn)), ";");
                 fqn += ", ";
             }
             fqn  = TrimRightIf(fqn, ", ");
@@ -253,7 +255,7 @@ namespace OdrCop3
             if (!(funcDecl->hasBody() && funcDecl->getBody()) || !contextItems.wantFunctionBody) // either there is no body, or we don't want to serialize the body
                 fqn = TrimRightIf(fqn, " ") + ";"; // no body:  end prototype with ';'
             else
-                fqn += TrimRightIf(get_Body(), "\n");
+                fqn += IndentBlock(get_Body(), bodyIndentation);
             return fqn + "\n";
         }
 
