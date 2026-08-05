@@ -64,8 +64,86 @@ namespace OdrCop3
             static std::string SerializeFriendDecl                            (const ContextItems& contextItems, const FriendDecl                                * friendDecl) { return FriendDeclSerializer                            <SerializeDecl, SerializeType, SerializeExpr>(contextItems,            friendDecl).Serialize(); }
         };
 
+        class Can
+        {
+            static bool IsStaticInline(const clang::Decl* decl)
+            {   // print() drops "inline" from "static inline" vars
+                if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
+                    if (varDecl->isInlineSpecified())
+                        return true;
+                return false;
+            }
+            static bool IsUnnamedUnion(const clang::Decl* decl)
+            {
+                if (const auto* nestedUnion = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
+                    if (nestedUnion->isUnion() && nestedUnion->getName().empty())
+                        return true;
+                return false;
+            }
+            static bool IsUnnamedEnum(const clang::Decl* decl)
+            {
+                if (const auto* nestedEnum = llvm::dyn_cast<clang::EnumDecl>(decl))
+                    if (nestedEnum->getName().empty())
+                        return true;
+                return false;
+            }
+            static bool IsTypedefOfUnnamedEnum(const clang::Decl* decl)
+            {
+                if (const auto* typedefDecl = llvm::dyn_cast<clang::TypedefDecl>(decl))
+                    if (const auto* enumType = typedefDecl->getUnderlyingType()->getAs<clang::EnumType>())
+                        if (enumType->getDecl()->getName().empty())
+                            return true;
+                return false;
+            }
+
+            template <typename Type> static bool PrintType(const ContextItems& contextItems, clang::QualType qualType)
+            {
+                if (const auto* type = qualType->getAs<Type>())
+                    if (false == Can::Print(contextItems, type->getDecl()))
+                        return false;
+                return true;
+            }
+
+        public:
+            static bool Print(const ContextItems& contextItems, const clang::Decl* decl)
+            {
+                if (decl->getKind() == clang::Decl::Kind::AccessSpec)
+                    return false; // AccessSpecDecl::print() prints nothing
+
+                if (NeedsManualSerialization(contextItems, decl) == true)
+                    return false; // needs (anonymous namespace) type's definition inlined
+
+                // recursively check declarations nested inside CXXRecordDecl*s (n levels deep)
+                if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
+                    for (const clang::Decl* childDecl : cxxRecordDecl->decls())
+                        if (false == Can::Print(contextItems, childDecl))
+                            return false;
+
+                // after recursion, see if field is printable (1 level deep)
+                if (const auto* fieldDecl = llvm::dyn_cast<clang::FieldDecl>(decl))
+                {
+                    const clang::QualType fieldType = fieldDecl->getType();
+                    if (false == Can::PrintType<clang::TypedefType>(contextItems, fieldType)) return false;
+                    if (false == Can::PrintType<clang:: RecordType>(contextItems, fieldType)) return false;
+                    if (false == Can::PrintType<clang::   EnumType>(contextItems, fieldType)) return false;
+                }
+
+                // after recursion (top-level)
+                if (true == IsStaticInline(decl))
+                    return false;
+                if (true == IsUnnamedUnion(decl))
+                    return false;
+                if (true == IsUnnamedEnum(decl))
+                    return false;
+                if (true == IsTypedefOfUnnamedEnum(decl))
+                    return false;
+
+                return true;
+            }
+        };
+
         template<auto SerializeType, auto SerializeExpr>
-        static std::string Decls(const ContextItems& contextItems, const clang::Decl* decl)
+        inline std::string Decls(const ContextItems& contextItems, const clang::Decl* decl)
         {
             class RecursionPreventor
             {
@@ -99,71 +177,8 @@ namespace OdrCop3
                 return qualType.getAsString();
             }
 
-            struct Can
-            {
-                static bool Print(const ContextItems& contextItems, const clang::Decl* decl)
-                {
-                    if (decl->getKind() == clang::Decl::Kind::AccessSpec)
-                        return false; // AccessSpecDecl::print() prints nothing
-
-                    if (NeedsManualSerialization(contextItems, decl) == true)
-                        return false; // needs (anonymous namespace) type's definition inlined
-
-                    // check problematic items nested inside CXXRecordDecl*s
-                    if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
-                    for (const clang::Decl* childDecl : cxxRecordDecl->decls())
-                    {
-                        // print() drops "inline" from "static inline" vars
-                        if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(childDecl))
-                            if (varDecl->isInlineSpecified())
-                                return false;
-
-                        // nested unnamed unions (though I might extend this for structs/classes, too)
-                        if (const auto* nestedUnion = llvm::dyn_cast<clang::CXXRecordDecl>(childDecl))
-                            if (nestedUnion->isUnion() && nestedUnion->getName().empty())
-                                return false;
-
-                        // nested unnamed enums
-                        if (const auto* nestedEnum = llvm::dyn_cast<clang::EnumDecl>(childDecl))
-                            if (nestedEnum->getName().empty())
-                                return false;
-
-
-
-                    }
-                    // after recursion, check the VarDecl (here)
-                    if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
-                        if (varDecl->isInlineSpecified())
-                            return false;
-                    // after recursion,  check the FieldDecl containing the unnamed union (here)
-                    if (const auto* fieldDecl = llvm::dyn_cast<clang::FieldDecl>(decl))
-                    {
-                        if (const auto* recordType = fieldDecl->getType()->getAs<clang::RecordType>())
-                            if (const auto* unionDecl = llvm::dyn_cast<clang::CXXRecordDecl>(recordType->getDecl()))
-                                if (unionDecl->isUnion() && unionDecl->getName().empty())
-                                    return false;
-
-                        if (const auto* enumType = fieldDecl->getType()->getAs<clang::EnumType>())
-                            if (enumType->getDecl()->getName().empty())
-                                return false;
-                    }
-                    // after recursion,  check for the unnamed union here
-                    if (const auto* unionDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
-                        if (unionDecl->isUnion() && unionDecl->getName().empty())
-                            return false;
-
-                    // after recursion,  check for the unnamed enum here
-                    if (const auto* enumDecl = llvm::dyn_cast<clang::EnumDecl>(decl))
-                        if (enumDecl->getName().empty())
-                            return false;
-
-
-
-
-                    return true;
-                }
-            };
-            if ( // false &&
+            if (
+                // false &&
                 Can::Print(contextItems, decl))
             {
                 struct Semicolon

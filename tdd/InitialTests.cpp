@@ -41,7 +41,7 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("[[maybe_unused]] struct Anonymous {\n"
+                Assert::AreEqual("[[maybe_unused]] struct (anonymous namespace)::Anonymous {\n"
                                  "                 } ReturnAnonymous() {\n"
                                  "    return Anonymous{};\n"
                                  "}\n"
@@ -144,21 +144,32 @@ Test ExploratoryTestsOfClangAST[] =
                                "struct S {"
                                "    union { int a; double b; } u;" // Decl::print() doesn't handle this well either: it combines the two records, but doesn't inline the anonymous union type
                                "};"
+                               "struct A { struct B { struct C { union { int x; }; }; }; };"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(5, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(6, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             auto it = maps.udtMap.begin();
-            Assert::AreEqual("Bar",      it->first,        "should have gotten correct key");
+            Assert::AreEqual("A",        it->first,        "should have gotten correct key");
             Assert::AreEqual("input.cc", it->second[0].TU, "should have gotten the TU name");
 
+            Assert::AreEqual("struct A {\n"
+                             "    struct B {\n"
+                             "        struct C {\n"
+                             "            union  {\n"
+                             "                int x;\n"
+                             "            };\n"
+                             "        };\n"
+                             "    };\n"
+                             "};\n"
+                          , (*it++).second[0].fullyQualified, "should have gotten the struct");
             Assert::AreEqual("struct Bar {\n"
                              "};\n"
                            , (*it++).second[0].fullyQualified, "should have gotten the struct");
@@ -213,7 +224,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    A = 1,\n" 
                                  "    B,\n" 
                                  "    C\n" 
-                                 "};\n" 
+                                 "};\n"
                               , (*it++).second[0].fullyQualified, "should have gotten the enum");
             }
             {
@@ -240,7 +251,7 @@ Test ExploratoryTestsOfClangAST[] =
     {"Testing Typedef serialization", []
         {
             std::string code = "typedef int MyInt;\n"
-                            // "typedef enum { Red, Green, Blue } Color;\n" // my serialization is WAY better than EnumDecl::print()'s.
+                               "typedef enum { Red, Green, Blue } Color;\n" // my serialization is WAY better than EnumDecl::print()'s.
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -248,27 +259,27 @@ Test ExploratoryTestsOfClangAST[] =
 
             Assert::AreEqual(0, maps.udtMap.size(),  "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
-         // Assert::AreEqual(1, maps.enumMap.size(),   "wrong number of enums in map");
-         // Assert::AreEqual(2, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(1, maps.enumMap.size(),   "wrong number of enums in map");
+            Assert::AreEqual(2, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
-                //auto it = maps.enumMap.begin();
-                //Assert::AreEqual("enum (unnamed enum at input.cc:2:9) {\n" // my serialization is WAY better than EnumDecl::print()'s.
-                //                 "    Red,\n"                              // my serialization is WAY better than EnumDecl::print()'s.
-                //                 "    Green,\n"                            // my serialization is WAY better than EnumDecl::print()'s.
-                //                 "    Blue\n"                              // my serialization is WAY better than EnumDecl::print()'s.
-                //                 "};\n"                                    // my serialization is WAY better than EnumDecl::print()'s.
-                //              , (*it++).second[0].fullyQualified, "should have gotten the typedef");
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum (unnamed enum at input.cc:2:9) {\n" // my serialization is WAY better than EnumDecl::print()'s.
+                                 "    Red,\n"                              // my serialization is WAY better than EnumDecl::print()'s.
+                                 "    Green,\n"                            // my serialization is WAY better than EnumDecl::print()'s.
+                                 "    Blue\n"                              // my serialization is WAY better than EnumDecl::print()'s.
+                                 "};\n"                                    // my serialization is WAY better than EnumDecl::print()'s.
+                              , (*it++).second[0].fullyQualified, "should have gotten the typedef");
             }
             {
                 auto it = maps.typedefMap.begin();
-                //Assert::AreEqual("typedef enum (unnamed enum at input.cc:2:9) {\n"
-                //                 "            Red,\n"
-                //                 "            Green,\n"
-                //                 "            Blue\n"
-                //                 "        } Color;\n"
-                //              , (*it++).second[0].fullyQualified, "should have gotten the typedef");
+                Assert::AreEqual("typedef enum (unnamed enum at input.cc:2:9) {\n"
+                                 "            Red,\n"
+                                 "            Green,\n"
+                                 "            Blue\n"
+                                 "        } Color;\n"
+                              , (*it++).second[0].fullyQualified, "should have gotten the typedef");
                 Assert::AreEqual("typedef int MyInt;\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the typedef");
             }
