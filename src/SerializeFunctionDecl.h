@@ -211,6 +211,8 @@ namespace OdrCop3
 
             std::string fqn;
             fqn += get_TemplateSpecializationHeader();
+            auto bodyIndentation = LengthOfLastLine(fqn);
+
             fqn += get_LeadingAttributes();
             fqn += get_Friend();
             fqn += get_Register();
@@ -221,10 +223,7 @@ namespace OdrCop3
             fqn += get_InlineSpecified();
             fqn += get_Constexpr();
             fqn += get_ConstEval();
-
-            auto bodyIndentation = LengthOfLastLine(fqn);
             fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
-
             if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
             if (fqn.substr(fqn.size()-1) != "&") // e.g., ditto &
             if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row

@@ -95,6 +95,13 @@ namespace OdrCop3
                             return true;
                 return false;
             }
+            static bool IsTemplateMethod(const clang::Decl* decl)
+            {
+                if (const auto* functionTemplateDecl = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
+                    if (const clang::FunctionDecl* functionDecl = functionTemplateDecl->getTemplatedDecl())
+                        return false;
+                return true;
+            }
 
             template <typename Type> static bool PrintType(const ContextItems& contextItems, clang::QualType qualType)
             {
@@ -116,8 +123,9 @@ namespace OdrCop3
                 // recursively check declarations nested inside CXXRecordDecl*s (n levels deep)
                 if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
                     for (const clang::Decl* childDecl : cxxRecordDecl->decls())
-                        if (false == Can::Print(contextItems, childDecl))
-                            return false;
+                        if (!childDecl->isImplicit())
+                            if (false == Can::Print(contextItems, childDecl))
+                                return false;
 
                 // after recursion, see if field is printable (1 level deep)
                 if (const auto* fieldDecl = llvm::dyn_cast<clang::FieldDecl>(decl))
@@ -128,7 +136,7 @@ namespace OdrCop3
                     if (false == Can::PrintType<clang::   EnumType>(contextItems, fieldType)) return false;
                 }
 
-                // after recursion (top-level)
+                // after recursion (now top-level)
                 if (true == IsStaticInline(decl))
                     return false;
                 if (true == IsUnnamedUnion(decl))
@@ -136,6 +144,8 @@ namespace OdrCop3
                 if (true == IsUnnamedEnum(decl))
                     return false;
                 if (true == IsTypedefOfUnnamedEnum(decl))
+                    return false;
+                if (true == IsTemplateMethod(decl))
                     return false;
 
                 return true;
@@ -191,7 +201,7 @@ namespace OdrCop3
             }
 
             if (
-              false &&
+             // false &&
                 Can::Print(contextItems, decl))
             {
                 struct Semicolon
@@ -201,13 +211,14 @@ namespace OdrCop3
                         switch (decl->getKind())
                         {
                         case clang::Decl::Kind::FunctionTemplate:
-                        case clang::Decl::Kind::CXXMethod:
                         case clang::Decl::Kind::CXXConstructor:
+                        case clang::Decl::Kind::CXXConversion:
                         case clang::Decl::Kind::CXXDestructor:
-                        case clang::Decl::Kind::Function:        return "";
-                        default:
-                            return ";\n"; // structs so far
+                        case clang::Decl::Kind::CXXMethod:
+                        case clang::Decl::Kind::Function: return "";
+                        default: break;
                         }
+                        return ";\n"; // everything else needs this?
                     }
                 };
 

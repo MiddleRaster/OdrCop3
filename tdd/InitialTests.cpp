@@ -47,24 +47,24 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> int add<int, short>(int t, short u) {\n"
-                                 "    return t - u;\n"
-                                 "}\n"
+                                 "               return t - u;\n"
+                                 "           }\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T, typename U> T add(T t, U u) {\n"
-                                 "    return t + u;\n"
-                                 "}\n"
+                                 "                                      return t + u;\n"
+                                 "                                  }\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("[[maybe_unused]] void foo(volatile int *i = nullptr) noexcept {\n"
                                  "    (void)i;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> complex multiply<complex>(complex a, complex b) {\n"
-                                 "    return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r};\n"
-                                 "}\n"
+                                 "               return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r};\n"
+                                 "           }\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> T multiply(T a, T b) {\n"
-                                 "    return a * b;\n"
-                                 "}\n"
+                                 "                          return a * b;\n"
+                                 "                      }\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
@@ -123,8 +123,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        };\n"
                                  "    }\n"
                                  "    template <typename T> T doTemplateyStuff(const T &value) const requires requires { typename T::value_type; } {\n"
-                                 "        return value;\n"
-                                 "    }\n"
+                                 "                              return value;\n"
+                                 "                          }\n"
                                  "    explicit operator int() const {\n"
                                  "        return 7;\n"
                                  "    }\n"
