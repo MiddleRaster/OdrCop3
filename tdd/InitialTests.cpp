@@ -807,11 +807,11 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-#ifdef NOT_YET
     {"Anonymous namespace typedef/alias", []
         {
-            std::string code = "namespace { struct AnonType {}; } using AT = AnonType; typedef AnonType TDA;\n"
-                               "namespace { template<typename T> struct Invisible { using type = T*; }; } template<typename T> using Alias = Invisible<T>;\n" // Alias<int> p;\n"
+            std::string code =
+                               "namespace { struct AnonType {}; } using AT = AnonType; typedef AnonType TDA;\n"
+                               "namespace { template<typename T> struct Invisible { using type = T*; }; } template<typename T> using Alias = Invisible<T>;\n"
                                "namespace { template<typename T> using Ptr = T*; }"
                                "template<typename T> struct S { template<typename U> using Ptr = U*; };"
                                "template<typename T> struct Outer { template<typename U> using Alias = U*; };"
@@ -824,49 +824,53 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(4, maps.udtMap.size(),  "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
             Assert::AreEqual(4, maps.typedefMap.size(), "wrong number of typedefs in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("template<typename T> struct Outer {\n"
-                                 "                        template<typename U> using Alias = U *; // no typedef equivalent\n"
-                                 "                     };\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> struct Outer<T *> {\n"
-                                 "                         template<typename U> using Alias = U &; // no typedef equivalent\n"
+                Assert::AreEqual("template <typename T> struct Outer {\n"
+                                 "                          template <typename U> using Alias = U *;\n"
                                  "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> struct Outer<int> { // sizeof=1\n"
-                                 "              template<typename U> using Alias = U &; // no typedef equivalent\n"
+                Assert::AreEqual("template <typename T> struct Outer<T *> {\n"
+                                 "                          template <typename U> using Alias = U &;\n"
+                                 "                      };\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> struct Outer<int> {\n"
+                                 "               template <typename U> using Alias = U &;\n"
                                  "           };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct S {\n"
-                                 "                        template<typename U> using Ptr = U *; // no typedef equivalent\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct S {\n"
+                                 "                          template <typename U> using Ptr = U *;\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using AT = struct (anonymous namespace)::AnonType { // sizeof=1\n"
-                                 "           }; // typedef (anonymous namespace)::AnonType AT;\n"
+                Assert::AreEqual("using AT = struct (anonymous namespace)::AnonType {\n"
+                                 "           };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> using Alias = template<typename T> struct (anonymous namespace)::Invisible {\n"
-                                 "                                                           using (anonymous namespace)::Invisible::type = T *; // typedef T * (anonymous namespace)::Invisible::type;\n"
-                                 "                                                        }; // no typedef equivalent\n"
+                Assert::AreEqual("template <typename T> using Alias = template <typename T> struct (anonymous namespace)::Invisible {\n"
+                                 "                                                              using type = T *;\n"
+                                 "                                                          };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeeplyNestedEnum = enum (anonymous namespace)::Deeply::Nested::Struct::Enum { Alpha, Beta }; // typedef enum (anonymous namespace)::Deeply::Nested::Struct::Enum { Alpha, Beta } DeeplyNestedEnum;\n"
+                Assert::AreEqual("typedef enum (anonymous namespace)::Deeply::Nested::Struct::Enum {\n"
+                                 "            Alpha,\n"
+                                 "            Beta\n"
+                                 "        } DeeplyNestedEnum;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using TDA = struct (anonymous namespace)::AnonType { // sizeof=1\n"
-                                 "}; // typedef (anonymous namespace)::AnonType TDA;\n"
+                Assert::AreEqual("typedef struct (anonymous namespace)::AnonType {\n"
+                                 "        } TDA;\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
     },
 
+#ifdef NOT_YET
     {"Enums defined in an anonymous namespace or with no name", []
         {
             std::string code = "namespace { enum AnonColor { R=0, G, B }; }\n"  // in anonymous namespace
