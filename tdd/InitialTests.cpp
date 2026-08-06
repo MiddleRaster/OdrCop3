@@ -627,11 +627,10 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
-#ifdef NOT_YET
     {"Testing VarDecl, VarTemplateDecl, VarTemplateSpecializationDecl and VarTemplatePartialSpecializationDecl", []
         {
-            std::string code = "template<typename T, int Tag=0> constexpr T DefaultValue = T{};\n"
+            std::string code =
+                               "template<typename T, int Tag=0> constexpr T DefaultValue = T{};\n"
                                "template<> constexpr int DefaultValue<int, 0> = 42;\n"
                                "template<typename T> constexpr T* DefaultValue<T*, 0> = nullptr;\n"
                                "template<int N> constexpr int Square = N*N;\n"
@@ -647,8 +646,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "            double b = GlobalValue<double>;\n"
                                "              char c = GlobalValue<char>;\n"
                                "template<typename T> constexpr bool IsPointerLike = false; template<typename T> constexpr bool IsPointerLike<T*> = true;\n"
-                               ;
- 
+                               ; 
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -661,24 +659,24 @@ Test ExploratoryTestsOfClangAST[] =
 
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("template<typename T, int Tag=0> constexpr const T DefaultValue=T{};\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> constexpr T *const DefaultValue<T *, 0>=nullptr;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> constexpr const int DefaultValue<int, 0>=42;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> T GlobalValue{};\n"                                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> char GlobalValue<char>=42;\n"                                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike=false;\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> constexpr const bool IsPointerLike<T *>=true;\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<int N> constexpr const int Square=N * N;\n"                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int a=GlobalValue<int>;\n"                                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("double b=GlobalValue<double>;\n"                                        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("char c=GlobalValue<char>;\n"                                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int x=DefaultValue<int>;\n"                                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("double y=DefaultValue<double>;\n"                                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int z=Square<5>;\n"                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, int Tag=0> constexpr T DefaultValue = T{};\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> constexpr T *DefaultValue<T *, 0> = nullptr;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> constexpr int DefaultValue<int, 0> = 42;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T GlobalValue{};\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> char GlobalValue<char> = 42;\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> constexpr bool IsPointerLike = false;\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> constexpr bool IsPointerLike<T *> = true;\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N> constexpr int Square = N * N;\n"                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int a = GlobalValue<int>;\n"                                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("double b = GlobalValue<double>;\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("char c = GlobalValue<char>;\n"                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int x = DefaultValue<int>;\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("double y = DefaultValue<double>;\n"                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int z = Square<5>;\n"                                                , (*it++).second[0].fullyQualified);
             }
         }
     },
-
+#ifdef NOT_YET
     {"2. Friend declarations inside UDTs and templates", []
         {
             std::string code = "struct A { friend void f(A&); };"
