@@ -958,7 +958,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-#ifdef NOT_YET
     {"6. Out-of-class static data member definitions", []
         {
             std::string code = "struct Soo { static int counter; static const char* name; };\n"
@@ -980,27 +979,28 @@ Test ExploratoryTestsOfClangAST[] =
             
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("struct Outer { // sizeof=1\n"
-                                 "   struct Inner { // sizeof=1\n"
-                                 "      static const int counter;\n"
-                                 "   };\n"
+                Assert::AreEqual("struct Outer {\n"
+                                 "    struct Inner {\n"
+                                 "        static const int counter;\n"
+                                 "    };\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct Soo { // sizeof=1\n"
-                                 "   static int counter;\n"
-                                 "   static const char *name;\n"
+                Assert::AreEqual("struct Soo {\n"
+                                 "    static int counter;\n"
+                                 "    static const char *name;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("static const int Outer::Inner::counter=0;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("static int Soo::counter=0;\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("static const char *Soo::name=\"soo\";\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("static const int Outer::Inner::counter = 0;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("static int Soo::counter = 0;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("static const char *Soo::name = \"soo\";\n"    , (*it++).second[0].fullyQualified);
             }
         }
     },
 
+#ifdef NOT_YET
     {"9. Defaulted & deleted functions and lambdas", []
         {
             std::string code = "struct DD { DD(const DD&) = delete; DD(DD&&) = default; ~DD() {} }; \n"
