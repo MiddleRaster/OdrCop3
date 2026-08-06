@@ -93,7 +93,9 @@ namespace OdrCop3
         print(os, policy);
         os.flush();
 
-        return str.find("(anonymous namespace)") != std::string::npos;
+        if (str.find("(anonymous namespace)") != std::string::npos)
+            return true;
+        return false;
     }
     inline bool NeedsManualSerialization(const ContextItems& contextItems, QualType qt                                              ) { return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) {                     qt.print      (os,                       policy); }); }
     inline bool NeedsManualSerialization(const ContextItems& contextItems, const clang::TemplateParameterList* templateParameterList) { return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) { templateParameterList->print      (os, contextItems.context, policy); }); }
@@ -104,51 +106,17 @@ namespace OdrCop3
             if (enumDecl->isInAnonymousNamespace()) // check manually, because decl->print() doesn't always return the "(anonymous namespace)" part for enums
                 return true;
 
+        if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(decl))
+            if (cxxRecordDecl->isInAnonymousNamespace()) // check manually, because decl->print() doesn't always return the "(anonymous namespace)" part for CXXRecords either
+                return true;
+
         return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) { decl->print(os, policy); });
-    }
-
-    inline std::string PostProcessBody(std::string body)
-    {
-        // collapse to "{}" if there's no real content
-        bool allWhitespace = true;
-        for (char c : body) {
-            if ((c == '{') ||
-                (c == '}'))
-                continue;
-            if (!std::isspace(static_cast<unsigned char>(c))) {
-                allWhitespace = false;
-                break;
-            }
-        }
-        if (allWhitespace)
-            return "{}";
-
-        // if one-liner (by counting semicolons)
-        if (std::count(body.begin(), body.end(), ';') < 2) {
-            size_t pos = 0;
-            while ((pos = body.find("\n", pos)) != std::string::npos)
-                body.replace(pos, 1, " ");
-
-            pos = 0;
-            while ((pos = body.find("  ", pos)) != std::string::npos)
-                body.replace(pos, 2, " ");
-
-            while (body.ends_with(' '))
-                body = body.substr(0, body.size() - 1); // strip off last ' '
-        }
-        return TrimRightIf(body, "\n");
     }
 
     inline std::string GetExceptionSpecifier(const ContextItems& contextItems, const FunctionProtoType* functionProtoType, const FunctionDecl* functionDecl)
     {
         switch (functionProtoType->getExceptionSpecType())
         {
-        case EST_BasicNoexcept:
-            if (functionDecl == nullptr)
-                return "noexcept ";
-            if (functionDecl->getExceptionSpecSourceRange().isValid()) // only if the user actually wrote this (i.e., not "inferred" by the compiler)
-                return "noexcept ";
-            break;
         case EST_DependentNoexcept:
         {
             std::string exprStr;
@@ -170,6 +138,7 @@ namespace OdrCop3
             }
             return result + ") ";
         }
+        case EST_BasicNoexcept: return "noexcept ";
         case EST_NoexceptTrue:  return "noexcept(true) ";
         case EST_NoexceptFalse: return "noexcept(false) ";
         case EST_DynamicNone:   return "throw() ";

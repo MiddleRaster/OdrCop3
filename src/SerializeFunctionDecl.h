@@ -63,16 +63,22 @@ namespace OdrCop3
         }
         std::string get_ReturnType()      const { return TrimRightIf(SerializeType(contextItems, funcDecl->getReturnType()), " "); }
         std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval "    : ""; }
-        std::string get_Constexpr()       const { return funcDecl->isConstexpr()                           ? "constexpr "    : ""; }
         std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "       : ""; }
         std::string get_Virtual()         const { return funcDecl->isVirtualAsWritten()                    ? "virtual "      : ""; }
         std::string get_Extern()          const { return funcDecl->getStorageClass() == SC_Extern          ? "extern "       : ""; }
         std::string get_Register()        const { return funcDecl->getStorageClass() == SC_Register        ? "extern "       : ""; }
         std::string get_Static()          const { return funcDecl->isStatic()                              ? "static "       : ""; }
         std::string get_Friend()          const { return funcDecl->getFriendObjectKind() != Decl::FOK_None ? "friend "       : ""; }
-        std::string get_Defaulted()       const { return funcDecl->isDefaulted()                           ? "=default "     : ""; }
-        std::string get_Deleted()         const { return funcDecl->isDeleted()                             ? "=delete "      : ""; }
+        std::string get_Defaulted()       const { return funcDecl->isDefaulted()                           ? "= default "    : ""; }
+        std::string get_Deleted()         const { return funcDecl->isDeleted()                             ? "= delete "     : ""; }
         std::string get_Variadic()        const { return funcDecl->isVariadic() ? (funcDecl->param_empty() ? "..." : ",...") : ""; }
+        std::string get_Constexpr()       const
+        {
+                                                 // this matches Decl::Print()'s behavior
+            if (funcDecl->isConstexprSpecified() && !funcDecl->isExplicitlyDefaulted())
+                return "constexpr ";
+            return "";
+        }
         std::string get_ExceptionSpecifier() const
         {
             return GetExceptionSpecifier(contextItems, funcDecl->getType()->getAs<FunctionProtoType>(), funcDecl);
@@ -224,6 +230,7 @@ namespace OdrCop3
             fqn += get_Constexpr();
             fqn += get_ConstEval();
             fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
+            if (fqn.empty() == false)
             if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
             if (fqn.substr(fqn.size()-1) != "&") // e.g., ditto &
             if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row

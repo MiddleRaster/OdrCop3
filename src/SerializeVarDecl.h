@@ -120,13 +120,14 @@ namespace OdrCop3
                 if (pos != std::string::npos)
                 {
                     std::string requiresStr = get_RequiresClause(lambdaExpr); // insert requires clause, if necessary
-                    std::string captureAndArgs = body.substr(0, pos-1);
-                    body = captureAndArgs + (requiresStr == "" ? "" : " requires " + requiresStr + " ") + PostProcessBody(body.substr(pos));
+                    std::string captureAndArgs = body.substr(0, pos);
+                    body = captureAndArgs + (requiresStr == "" ? "" : " requires " + requiresStr + " ") + body.substr(pos);
                 }
 
                 if (isa<InitListExpr>(varDecl->getInit()->IgnoreImplicit()))
-                    return "{" + body + "}";
-                return "=" + body;
+                    return "{"   + IndentBlock(body, 1) + "}";
+                else
+                    return " = " + IndentBlock(body, 3);
             }
 
             std::string e;
@@ -166,7 +167,7 @@ namespace OdrCop3
                 out += varStr;
             }
             out += get_TemplateFooter();
-            out += IndentBlock(get_Init(), LengthOfLastLine(out)+1); // +1 for "="
+            out += IndentBlock(get_Init(), LengthOfLastLine(out));
             out += ";\n";
             return out;
         }

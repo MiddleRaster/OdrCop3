@@ -10,7 +10,8 @@ Test ExploratoryTestsOfClangAST[] =
 {
     {"Initial Serialize::Decls and FunctionDeclSerializer test", []
         {
-            std::string code = "[[maybe_unused]] void foo(volatile int* i=nullptr) noexcept { (void)i; }\n"
+            std::string code =
+                               "[[maybe_unused]] void foo(volatile int* i=nullptr) noexcept { (void)i; }\n"
                                "template<typename T> T multiply(T a, T b) { return a*b; }\n"
                                "struct complex { double r; double i; }; template<> complex multiply<complex>(complex a, complex b) { return { a.r*b.r-a.i*b.i, a.r*b.i+a.i*b.r }; }"
                                "template<typename T, typename U> T    add            (T   t, U     u) { return t + u; }\n"
@@ -678,7 +679,8 @@ Test ExploratoryTestsOfClangAST[] =
     },
     {"2. Friend declarations inside UDTs and templates", []
         {
-            std::string code = "struct A { friend void f(A&); };"
+            std::string code =
+                               "struct A { friend void f(A&); };"
                                "struct B { friend void f(B&); }; void f(B&) {}"
                                "struct C { friend void f(C&) {} };"
                                "class D; struct E { friend class D; };"
@@ -999,8 +1001,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
-#ifdef NOT_YET
     {"9. Defaulted & deleted functions and lambdas", []
         {
             std::string code = "struct DD { DD(const DD&) = delete; DD(DD&&) = default; ~DD() {} }; \n"
@@ -1021,32 +1021,52 @@ Test ExploratoryTestsOfClangAST[] =
             
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("struct DD { // sizeof=1\n"
-                                 "   void __cdecl DD(const DD &) =delete;\n"
-                                 "   constexpr void __cdecl DD(DD &&) =default;\n"
-                                 "   void __cdecl ~DD() {}\n"
+                Assert::AreEqual("struct DD {\n"
+                                 "    DD(const DD &) = delete;\n"
+                                 "    DD(DD &&) = default;\n"
+                                 "    ~DD() noexcept {\n"
+                                 "    }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-
-                Assert::AreEqual("struct LambdaHolder { // sizeof=1\n"
-                                 "   inline static LambdaHolder::(lambda at input.cc:5:54) LambdaField{[](int, double){}};\n"
+                Assert::AreEqual("struct LambdaHolder {\n"
+                                 "    inline static LambdaHolder::(lambda at input.cc:5:54) LambdaField{[](int, double) {\n"
+                                 "                                                                      }};\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:4:32) b=[](int x){ return x + 1; };\n"
+                Assert::AreEqual("class (anonymous namespace)::(lambda at input.cc:4:32) {\n"
+                                 "    inline constexpr int operator()(int x) const {\n"
+                                 "        return x + 1;\n"
+                                 "    }\n"
+                                 "} b = [](int x) {\n"
+                                 "          return x + 1;\n"
+                                 "      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:4:32) c=[](int x){ return x + 1; };\n"
+                Assert::AreEqual("class (anonymous namespace)::(lambda at input.cc:4:32) {\n"
+                                 "    inline constexpr int operator()(int x) const {\n"
+                                 "        return x + 1;\n"
+                                 "    }\n"
+                                 "} c = [](int x) {\n"
+                                 "          return x + 1;\n"
+                                 "      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(lambda at input.cc:2:17) g_lambda=[](){};\n"
+                Assert::AreEqual("(lambda at input.cc:2:17) g_lambda = []() {\n"
+                                 "                                     };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(anonymous namespace)::(lambda at input.cc:3:44) global_lambda=[](int x){ return x + 1; };\n"
+                Assert::AreEqual("class (anonymous namespace)::(lambda at input.cc:3:44) {\n"
+                                 "    inline constexpr int operator()(int x) const {\n"
+                                 "        return x + 1;\n"
+                                 "    }\n"
+                                 "} global_lambda = [](int x) {\n"
+                                 "                      return x + 1;\n"
+                                 "                  };\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
     },
-
+#ifdef NOT_YET
     {"3. Nested namespaces and qualified names and keys", []
         {
             std::string code = "namespace A {  namespace B { struct STwoDeep {};               namespace C { struct SThreeDeep {};                      namespace { struct SInvisible {};     } } }}\n"

@@ -25,11 +25,7 @@ namespace OdrCop3
         AutoTypeSerializer(const ContextItems& contextItems, QualType qt, const AutoType* autoType) : contextItems(contextItems), qt(qt), autoType(autoType) {}
         std::string Serialize() const
         {
-            std::string autoStr;
-            llvm::raw_string_ostream os(autoStr);
-            qt.getCanonicalType().print(os, contextItems.printPolicy);
-            os.flush();
-            return autoStr + " ";
+            return SerializeType(contextItems, qt.getCanonicalType()) + " ";
         }
     };
 }
