@@ -34,19 +34,16 @@ namespace OdrCop3
                         out += SerializeAttr(contextItems, attr);
             }
 
-            if (NeedsManualSerialization(contextItems, parmVarDecl->getType())) // type
-            {
-                out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
-                out  = TrimRightIf(out, ";");
-            } else
-                out += parmVarDecl->getType().getAsString(contextItems.printPolicy);
-
+            out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
+            out  = TrimRightIf(out, ";");
             if((out.substr(out.size()-1) != "*")&& // e.g., int *i = nullptr (no space between * and i)
                (out.substr(out.size()-1) != "&") ) // e.g., const T &v       (no space between & and v)
                 out += " ";                        // e.g., T a               (a space between T and a)
 
             if (parmVarDecl->getIdentifier()) // name if any
                 out += parmVarDecl->getName().str();
+            else
+                out = TrimRightIf(out, " "); // don't want the space if nameless
 
             if (parmVarDecl->hasDefaultArg()) // default argument, if any
             {

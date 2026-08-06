@@ -676,7 +676,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-#ifdef NOT_YET
     {"2. Friend declarations inside UDTs and templates", []
         {
             std::string code = "struct A { friend void f(A&); };"
@@ -697,8 +696,8 @@ Test ExploratoryTestsOfClangAST[] =
                                "                                struct S { friend void fs(Hidden(*)()); };"
                                "                                struct T { friend void ft(void(*)(Hidden,int)); };"
                                "                                struct U { friend void fu(void(*)(const Hidden&,int)); };"
-                               "                                struct V { friend void fv(void(Hidden::*)(int), int); };";
-
+                               "                                struct V { friend void fv(void(Hidden::*)(int), int); };"
+                               ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -711,99 +710,104 @@ Test ExploratoryTestsOfClangAST[] =
 
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("struct A { // sizeof=1\n"
-                                 "   friend void __cdecl f(A &);\n"
+                Assert::AreEqual("struct A {\n"
+                                 "    friend void f(A &);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct B { // sizeof=1\n"
-                                 "   friend void __cdecl f(B &);\n"
+                Assert::AreEqual("struct B {\n"
+                                 "    friend void f(B &);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct C { // sizeof=1\n"
-                                 "   friend void __cdecl f(C &) {}\n"
+                Assert::AreEqual("struct C {\n"
+                                 "    friend void f(C &) {\n"
+                                 "    }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct E { // sizeof=1\n"
-                                 "   friend class D;\n"
+                Assert::AreEqual("struct E {\n"
+                                 "    friend class D;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct G { // sizeof=1\n"
-                                 "   friend struct F;\n"
+                Assert::AreEqual("struct G {\n"
+                                 "    friend struct F;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct H {\n"
-                                 "                        template<typename U> friend void __cdecl f(U);\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct H {\n"
+                                 "                          template <typename U> friend void f(U);\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct I { // sizeof=1\n"
-                                 "   friend void __cdecl fi<int>(int);\n"
+                Assert::AreEqual("struct I {\n"
+                                 "    friend void fi<int>(int);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct K { // sizeof=1\n"
-                                 "   template<typename T> friend class J;\n"
+                Assert::AreEqual("struct K {\n"
+                                 "    template <typename T> friend class J;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct L {\n"
-                                 "                        friend T;\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct L {\n"
+                                 "                          friend T;\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct M {\n"
-                                 "                        friend void __cdecl fm(M<T>);\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct M {\n"
+                                 "                          friend void fm(M<T>);\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct N {\n"
-                                 "                        friend typename T::type;\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct N {\n"
+                                 "                          friend typename T::type;\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct O { // sizeof=1\n"
-                                 "   friend void __cdecl fo(struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                          });\n"
+                Assert::AreEqual("struct O {\n"
+                                 "    friend void fo(struct (anonymous namespace)::Hidden {\n"
+                                 "                   });\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct P { // sizeof=1\n"
-                                 "   friend void __cdecl fp(struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                          } *);\n"
+                Assert::AreEqual("struct P {\n"
+                                 "    friend void fp(struct (anonymous namespace)::Hidden {\n"
+                                 "                   } *);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct Q { // sizeof=1\n"
-                                 "   friend void __cdecl fq(struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                          } &);\n"
+                Assert::AreEqual("struct Q {\n"
+                                 "    friend void fq(struct (anonymous namespace)::Hidden {\n"
+                                 "                   } &);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct R { // sizeof=1\n"
-                                 "   friend void __cdecl fr(struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                          }[10]);\n"
+                Assert::AreEqual("struct R {\n"
+                                 "    friend void fr(struct (anonymous namespace)::Hidden {\n"
+                                 "                   }[10]);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct S { // sizeof=1\n"
-                                 "   friend void __cdecl fs(struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                          } (*)());\n"
+                Assert::AreEqual("struct S {\n"
+                                 "    friend void fs(struct (anonymous namespace)::Hidden {\n"
+                                 "                   } (*)());\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct T { // sizeof=1\n"
-                                 "   friend void __cdecl ft(void (*)(struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                                   }, int));\n"
+                Assert::AreEqual("struct T {\n"
+                                 "    friend void ft(void (*)(struct (anonymous namespace)::Hidden {\n"
+                                 "                            }, int));\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct U { // sizeof=1\n"
-                                 "   friend void __cdecl fu(void (*)(const struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                                         } &, int));\n"
+                Assert::AreEqual("struct U {\n"
+                                 "    friend void fu(void (*)(const struct (anonymous namespace)::Hidden {\n"
+                                 "                                  } &, int));\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct V { // sizeof=1\n"
-                                 "   friend void __cdecl fv(void (struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                                }::*)(int), int);\n"
+                Assert::AreEqual("struct V {\n"
+                                 "    friend void fv(void (struct (anonymous namespace)::Hidden {\n"
+                                 "                         }::*)(int), int);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual(       "void __cdecl f(B &) {}\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("friend void __cdecl f(C &) {}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void f(B &) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("friend void f(C &) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
             }
         }
     },
-
+#ifdef NOT_YET
     {"Anonymous namespace typedef/alias", []
         {
             std::string code = "namespace { struct AnonType {}; } using AT = AnonType; typedef AnonType TDA;\n"
