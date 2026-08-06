@@ -869,8 +869,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
-#ifdef NOT_YET
     {"Enums defined in an anonymous namespace or with no name", []
         {
             std::string code = "namespace { enum AnonColor { R=0, G, B }; }\n"  // in anonymous namespace
@@ -882,7 +880,6 @@ Test ExploratoryTestsOfClangAST[] =
                                "namespace L { namespace M { namespace N { struct LNM { void f() { enum LMN1 { X = 42 }; } enum { X = 42 }; }; }}}\n"
                                "namespace { enum class Mode { A, B }; } template<Mode M> struct EnumHolder {};\n"
                                ;
-
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -895,38 +892,73 @@ Test ExploratoryTestsOfClangAST[] =
 
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("template<typename T> struct A {\n"
-                                 "                        enum A::(anonymous type at input.cc:6:33) { X=42 };\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct A {\n"
+                                 "                          enum (unnamed enum at input.cc:6:33) {\n"
+                                 "                              X = 42\n"
+                                 "                          };\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<enum class (anonymous namespace)::Mode : int { A, B } M> struct EnumHolder {\n"
-                                 "                                                                  };\n"
+                Assert::AreEqual("template <enum class (anonymous namespace)::Mode : int {\n"
+                                 "              A,\n"
+                                 "              B\n"
+                                 "          } M> struct EnumHolder {\n"
+                                 "               };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct LNM { // sizeof=1\n"
-                                 "   void __cdecl f() { enum LMN1 { X = 42 }; }\n"
-                                 "   enum L::M::N::LNM::(anonymous type at input.cc:7:91) { X=42 };\n"
+                Assert::AreEqual("struct LNM {\n"
+                                 "    void f() {\n"
+                                 "        enum LMN1 {\n"
+                                 "            X = 42\n"
+                                 "        };\n"
+                                 "    }\n"
+                                 "    enum (unnamed enum at input.cc:7:91) {\n"
+                                 "        X = 42\n"
+                                 "    };\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
-                Assert::AreEqual("enum (anonymous type at input.cc:2:1) { R, G=1, B };\n"      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("enum (anonymous type at input.cc:5:9) { R, G, B=3 };\n"      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("enum RGB { R=0, G, B };\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (unnamed enum at input.cc:2:1) {\n"
+                                 "    R,\n"
+                                 "    G = 1,\n"
+                                 "    B\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (unnamed enum at input.cc:5:9) {\n"
+                                 "    R,\n"
+                                 "    G,\n"
+                                 "    B = 3\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum RGB {\n"
+                                 "    R = 0,\n"
+                                 "    G,\n"
+                                 "    B\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("enum (anonymous namespace)::AnonColor { R=0, G, B } ac;\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int x=A<int>::X;\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::AnonColor {\n"
+                                 "    R = 0,\n"
+                                 "    G,\n"
+                                 "    B\n"
+                                 "} ac;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int x = A<int>::X;\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using CStyleColor = enum (anonymous type at input.cc:5:9) { R, G, B=3 }; // typedef enum (anonymous type at input.cc:5:9) { R, G, B=3 } CStyleColor;\n"
+                Assert::AreEqual("typedef enum (unnamed enum at input.cc:5:9) {\n"
+                                 "            R,\n"
+                                 "            G,\n"
+                                 "            B = 3\n"
+                                 "        } CStyleColor;\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
     },
-
+#ifdef NOT_YET
     {"6. Out-of-class static data member definitions", []
         {
             std::string code = "struct Soo { static int counter; static const char* name; };\n"
