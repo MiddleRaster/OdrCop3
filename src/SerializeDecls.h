@@ -99,9 +99,16 @@ namespace OdrCop3
             }
             static bool IsTemplateMethod(const clang::Decl* decl)
             {
-                if (const auto* functionTemplateDecl = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
-                    if (const clang::FunctionDecl* functionDecl = functionTemplateDecl->getTemplatedDecl())
-                        return true;
+                if (llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
+                    return true;
+                return false;
+            }
+            static bool IsTemplateClass(const clang::Decl* decl)
+            {
+                if (llvm::dyn_cast<clang::ClassTemplateDecl>(decl))
+                    return true;
+                if (llvm::dyn_cast<clang::ClassTemplatePartialSpecializationDecl>(decl))
+                    return true;
                 return false;
             }
             static bool IsVarLambda(const clang::Decl* decl)
@@ -167,6 +174,7 @@ namespace OdrCop3
                     if (false == Can::PrintType<clang::TypedefType>(contextItems, fieldType)) return false;
                     if (false == Can::PrintType<clang:: RecordType>(contextItems, fieldType)) return false;
                     if (false == Can::PrintType<clang::   EnumType>(contextItems, fieldType)) return false;
+                    return true;
                 }
 
                 // after recursion (now top-level)
@@ -179,6 +187,8 @@ namespace OdrCop3
                 if (true == IsTypedefOfUnnamedEnum(decl))
                     return false;
                 if (true == IsTemplateMethod(decl))
+                    return false;
+                if (true == IsTemplateClass(decl))
                     return false;
                 if (true == IsVarLambda(decl))
                     return false;
@@ -286,7 +296,7 @@ namespace OdrCop3
          // these are already handled, above
          // case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
          // case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
-         // case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                       ctd = dyn_cast<ClassTemplateDecl                      >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
+         // case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
          // case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
          // case clang::Decl::Kind::Function in both switch statements, as it's also used for CXXMethod and CXXDestructor
          // case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;

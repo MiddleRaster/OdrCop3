@@ -1149,8 +1149,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
-#ifdef NOT_YET
     {"4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)", []
         {
             std::string code = "static void StaticFunction() {}\n"
@@ -1177,7 +1175,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
     {"Template Specializations and Instantiations", []
         {
             std::string code = "template<class T> struct AWrapper { T value; }; namespace { struct Hidden {}; } using MyHiddenWrapper = AWrapper<Hidden>;\n"
@@ -1218,86 +1215,87 @@ Test ExploratoryTestsOfClangAST[] =
             
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("template<class T> struct AWrapper {\n"
-                                 "                     T value;\n"
-                                 "                  };\n"
+                Assert::AreEqual("template <class T> struct AWrapper {\n"
+                                 "                       T value;\n"
+                                 "                   };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct Goo {\n"
-                                 "                        int x;\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct Goo {\n"
+                                 "                          int x;\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct HasFoo { // sizeof=1\n"
-                                 "   template<typename V> struct Foo {\n"
-                                 "                           V value;\n"
-                                 "                        };\n"
+                Assert::AreEqual("struct HasFoo {\n"
+                                 "    template <typename V> struct Foo {\n"
+                                 "                              V value;\n"
+                                 "                          };\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<auto V> struct Holder {\n"
-                                 "                 };\n"
+                Assert::AreEqual("template <auto V> struct Holder {\n"
+                                 "                  };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct Hoo {\n"
-                                 "                        int x;\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct Hoo {\n"
+                                 "                          int x;\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> struct Hoo<int> { // sizeof=4\n"
-                                 "              int y;\n"
+                Assert::AreEqual("template<> struct Hoo<int> {\n"
+                                 "               int y;\n"
                                  "           };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<template <typename> class TT, typename U> struct Outer1 {\n"
-                                 "                                                      TT<U> member;\n"
-                                 "                                                   };\n"
+                Assert::AreEqual("template <template <typename> class TT, typename U> struct Outer1 {\n"
+                                 "                                                        TT<U> member;\n"
+                                 "                                                    };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T, typename U> struct Outer2 {\n"
-                                 "                                    typename T::template Foo<U> member;\n"
-                                 "                                 };\n"
+                Assert::AreEqual("template <typename T, typename U> struct Outer2 {\n"
+                                 "                                      typename T::template Foo<U> member;\n"
+                                 "                                  };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename V> struct Wrapped {\n"
-                                 "                        V value;\n"
-                                 "                     };\n"        
+                Assert::AreEqual("template <typename V> struct Wrapped {\n"
+                                 "                          V value;\n"
+                                 "                      };\n"        
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> struct X {\n"
-                                 "                     };\n"
+                Assert::AreEqual("template <typename T> struct X {\n"
+                                 "                      };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct X<T *> {\n"
-                                 "                         int i;\n"
+                                 "                          int i;\n"
                                  "                      };\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using MyHiddenWrapper = AWrapper<struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                                 }>; // typedef AWrapper<(anonymous namespace)::Hidden> MyHiddenWrapper;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> using Ptr = T *; // no typedef equivalent\n"
-                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using MyHiddenWrapper = AWrapper<struct (anonymous namespace)::Hidden {\n"
+                                 "                                 }>;\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> using Ptr = T *;\n"  , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
-                Assert::AreEqual("enum class Color : int { Red, Green };\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class Color : int {\n    Red,\n    Green\n};\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("int global=0;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<42> h1;\n"                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<true> h2;\n"                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<Color::Red> h3;\n"                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<&global> h4;\n"                      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<nullptr> h5;\n"                      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<&Function<int>> h6;\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance;\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual( "Outer2<HasFoo, int> outer2Instance;\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> inline int v=0;\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> inline int v<T *>=1;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int global = 0;\n"                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<42> h1;\n"                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<true> h2;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<Color::Red> h3;\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<&global> h4;\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<nullptr> h5;\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<&Function<int>> h6;\n"                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance;\n"        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual( "Outer2<HasFoo, int> outer2Instance;\n"        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> inline int v = 0;\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> inline int v<T *> = 1;\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("template<typename T> void __cdecl ExplicitInstantiation(T) {}\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<> void __cdecl Function<int>(int) {}\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> void __cdecl Function(T) {}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void ExplicitInstantiation(T) {\n"
+                                 "                      }\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> void Function<int>(int) {\n"
+                                 "           }\n"                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void Function(T) {\n"
+                                 "                      }\n"                     , (*it++).second[0].fullyQualified);
             }
         }
     },
-
+#ifdef NOT_YET
     {"Lambdas", []
         {
             std::string code = "auto lambda1 = [](auto x) {};\n"
