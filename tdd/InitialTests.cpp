@@ -1383,7 +1383,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-#ifdef NOT_YET
     {"Class templates", []
         {
             std::string code = "namespace { struct Structural { int value; }; }\n"
@@ -1402,17 +1401,17 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("Foo<>", (*it).first, "should have gotten correct key");
-                Assert::AreEqual("template<struct (anonymous namespace)::Structural { // sizeof=4\n"
-                                 "            int value;\n"
-                                 "         } S> struct Foo {\n"
-                                 "              };\n"
+                Assert::AreEqual("template <struct (anonymous namespace)::Structural {\n"
+                                 "              int value;\n"
+                                 "          } S> struct Foo {\n"
+                                 "               };\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
                 Assert::AreEqual("foo", (*it).first, "should have gotten correct key");
-                Assert::AreEqual("Foo<struct (anonymous namespace)::Structural { // sizeof=4\n"
-                                 "       int value;\n"
+                Assert::AreEqual("Foo<struct (anonymous namespace)::Structural {\n"
+                                 "        int value;\n"
                                  "    }{42}> foo;\n"
                               , (*it++).second[0].fullyQualified);
             }
@@ -1428,6 +1427,7 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+#ifdef NOT_YET
     {"Requires", []
         {
             std::string code = "template <typename T> T FunctionTemplateWithRequiresClause(const T& value) requires requires { typename T::value_type; } { return value; }\n"
