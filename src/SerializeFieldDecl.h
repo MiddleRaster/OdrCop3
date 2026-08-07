@@ -110,7 +110,7 @@ namespace OdrCop3
             {
                 const Expr* expr = fieldDecl->getInClassInitializer();
                 std::string init = SerializeExpr(contextItems, expr);
-                if ((init.starts_with("{")) || init.starts_with("("))
+                if (init.starts_with("{") || (init.starts_with("(") && !init.starts_with("(anonymous namespace")))
                     out += " " + init;
                 else
                     out += " = " + init;

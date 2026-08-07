@@ -102,14 +102,8 @@ namespace OdrCop3
     inline bool NeedsManualSerialization(const ContextItems& contextItems, const clang::Expr                 *                  expr) { return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) {                  expr->printPretty(os, nullptr             , policy); }); }
     inline bool NeedsManualSerialization(const ContextItems& contextItems, const clang::Decl                 *                  decl)
     {
-        if (const EnumDecl* enumDecl = dyn_cast<EnumDecl>(decl))
-            if (enumDecl->isInAnonymousNamespace()) // check manually, because decl->print() doesn't always return the "(anonymous namespace)" part for enums
-                return true;
-
-        if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(decl))
-            if (cxxRecordDecl->isInAnonymousNamespace()) // check manually, because decl->print() doesn't always return the "(anonymous namespace)" part for CXXRecords either
-                return true;
-
+        if (decl->isInAnonymousNamespace())
+            return true; // print() often doesn't print "(anonymous namespace)"
         return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) { decl->print(os, policy); });
     }
 

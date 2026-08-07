@@ -24,6 +24,8 @@
 #include "SerializeInitListExpr.h"
 #include "SerializeUnaryExprOrTypeTraitExpr.h"
 #include "SerializeParenExpr.h"
+#include "SerializeCXXConstructExpr.h"
+#include "SerializeImplicitCastExpr.h"
 
 namespace OdrCop3
 {
@@ -41,6 +43,8 @@ namespace OdrCop3
             static std::string Serialize(const ContextItems& contextItems, const clang::BinaryOperator           *            binaryOperator) { return        BinaryOperatorExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,            binaryOperator).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::UnaryExprOrTypeTraitExpr *  unaryExprOrTypeTraitExpr) { return  UnaryExprOrTypeTraitExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,  unaryExprOrTypeTraitExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::ParenExpr                *                 parenExpr) { return                 ParenExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,                 parenExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::CXXConstructExpr         *          cxxConstructExpr) { return          CXXConstructExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,          cxxConstructExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::ImplicitCastExpr         *          implicitCastExpr) { return          ImplicitCastExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,          implicitCastExpr).Serialize(); }
         };
 
         template <auto SerializeDecl, auto SerializeType>
@@ -82,7 +86,27 @@ namespace OdrCop3
         template<auto SerializeDecl, auto SerializeType>
         static std::string Exprs(const ContextItems& contextItems, const clang::Expr* expr)
         {
-            if (!NeedsManualSerialization(contextItems, expr))
+            struct Can
+            {
+                static bool Print(const ContextItems& contextItems, const clang::Expr* expr)
+                {
+                    if (const clang::CXXConstructExpr* cxxContructExpr = dyn_cast<CXXConstructExpr>(expr))
+                        for (unsigned i=0; i < cxxContructExpr->getNumArgs(); ++i)
+                            if (Can::Print(contextItems, cxxContructExpr->getArg(i)) == false)
+                                return false;
+
+                    if (const clang::ImplicitCastExpr* implicitCastExpr = dyn_cast<ImplicitCastExpr>(expr))
+                        if (Can::Print(contextItems, implicitCastExpr->getSubExpr()) == false)
+                            return false;
+
+                    if (const clang::DeclRefExpr* declRefExpr = dyn_cast<DeclRefExpr>(expr))
+                        if (NeedsManualSerialization(contextItems, dyn_cast<clang::Decl>(declRefExpr->getDecl())) == true)
+                            return false;
+
+                    return !NeedsManualSerialization(contextItems, expr);
+                }
+            };
+            if (Can::Print(contextItems, expr))
             {
                 std::string exprStr;
                 llvm::raw_string_ostream os(exprStr);
@@ -102,6 +126,8 @@ namespace OdrCop3
             case clang::Stmt::StmtClass::BinaryOperatorClass           : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::BinaryOperator           >(expr));
             case clang::Stmt::StmtClass::UnaryExprOrTypeTraitExprClass : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::UnaryExprOrTypeTraitExpr >(expr));
             case clang::Stmt::StmtClass::ParenExprClass                : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ParenExpr                >(expr));
+            case clang::Stmt::StmtClass::CXXConstructExprClass         : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::CXXConstructExpr         >(expr));
+            case clang::Stmt::StmtClass::ImplicitCastExprClass         : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ImplicitCastExpr         >(expr));
             default:
                 break;
             };

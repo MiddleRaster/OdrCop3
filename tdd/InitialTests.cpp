@@ -1295,7 +1295,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-#ifdef NOT_YET
     {"Lambdas", []
         {
             std::string code = "auto lambda1 = [](auto x) {};\n"
@@ -1315,18 +1314,23 @@ Test ExploratoryTestsOfClangAST[] =
             
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("struct StructWithLambdaField { // sizeof=1\n"
-                                "   class (anonymous namespace)::(lambda at input.cc:4:27) { // sizeof=1\n"
-                                "      inline constexpr int __cdecl operator()(int x) const { return x * 2; }\n"
-                                "   } mpf=Lambda;\n"
-                                "};\n"
-                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct StructWithLambdaField {\n"
+                                 "    class (anonymous namespace)::(lambda at input.cc:4:27) {\n"
+                                 "        inline constexpr int operator()(int x) const {\n"
+                                 "            return x * 2;\n"
+                                 "        }\n"
+                                 "    } mpf = (anonymous namespace)::Lambda;\n"
+                                 "};\n"
+                               , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("(lambda at input.cc:1:16) lambda1=[](auto x){};\n"                                  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(lambda at input.cc:2:16) lambda2=[]<typename T>(T t){};\n"                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("(lambda at input.cc:3:16) lambda3=[]<typename T>(T) requires (sizeof(T) == 4) {};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:1:16) lambda1 = [](auto x) {\n"
+                                 "                                    };\n"                                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:2:16) lambda2 = []<typename T>(T t) {\n"
+                                 "                                    };\n"                                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:3:16) lambda3 = []<typename T>(T) requires (sizeof(T) == 4) {\n"
+                                 "                                    };\n"                                            , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -1339,7 +1343,7 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
+#ifdef NOT_YET
     {"Function templates", []
         {
             std::string code = "void Abbreviated(auto x) {} template<typename T> void FunctionTemplate(T) {}"

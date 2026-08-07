@@ -121,7 +121,7 @@ namespace OdrCop3
                 {
                     std::string requiresStr = get_RequiresClause(lambdaExpr); // insert requires clause, if necessary
                     std::string captureAndArgs = body.substr(0, pos);
-                    body = captureAndArgs + (requiresStr == "" ? "" : " requires " + requiresStr + " ") + body.substr(pos);
+                    body = captureAndArgs + (requiresStr == "" ? "" : "requires " + requiresStr + " ") + body.substr(pos);
                 }
 
                 if (isa<InitListExpr>(varDecl->getInit()->IgnoreImplicit()))
