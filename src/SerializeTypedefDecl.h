@@ -31,8 +31,7 @@ namespace OdrCop3
         TypedefDeclSerializer(const ContextItems& contextItems, const TypedefDecl* typedefDecl) : contextItems(contextItems), typedefDecl(typedefDecl) {}
         std::string Serialize() const
         {
-            std::string aliasName = typedefDecl->getQualifiedNameAsString();
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, aliasName);
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, typedefDecl->getNameAsString());
 
             std::string fqtd;
             fqtd += "typedef ";

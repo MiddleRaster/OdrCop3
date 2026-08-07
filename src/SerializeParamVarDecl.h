@@ -33,6 +33,7 @@ namespace OdrCop3
                     if (attr->getLocation() <= typeLoc)
                         out += SerializeAttr(contextItems, attr);
             }
+            auto startOfParm = out.size();
 
             out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
             out  = TrimRightIf(out, ";");
@@ -44,6 +45,14 @@ namespace OdrCop3
                 out += parmVarDecl->getName().str();
             else
                 out = TrimRightIf(out, " "); // don't want the space if nameless
+
+            // slighly hilarious special case:  Decl::print() prints ellipsis one way, while Type::print() prints it the other. I'm going with "SomeType ...args". 
+            if (parmVarDecl->isParameterPack())
+            {
+                std::size_t pos = out.find("... ", startOfParm);
+                if (pos != std::string::npos)
+                    out.replace(pos, 4, " ...");
+            }
 
             if (parmVarDecl->hasDefaultArg()) // default argument, if any
             {

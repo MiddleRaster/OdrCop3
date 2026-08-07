@@ -1066,7 +1066,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-#ifdef NOT_YET
     {"3. Nested namespaces and qualified names and keys", []
         {
             std::string code = "namespace A {  namespace B { struct STwoDeep {};               namespace C { struct SThreeDeep {};                      namespace { struct SInvisible {};     } } }}\n"
@@ -1093,56 +1092,65 @@ Test ExploratoryTestsOfClangAST[] =
             
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("A::B::C::SThreeDeep"                                             , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("struct SThreeDeep { // sizeof=1\n};\n"                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::STwoDeep"                                                  , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("struct STwoDeep { // sizeof=1\n};\n"                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Wrapper<>"                                                       , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("template<typename T> struct Wrapper {\n                     };\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::C::SThreeDeep"                                               , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("struct SThreeDeep {\n};\n"                                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::STwoDeep"                                                    , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("struct STwoDeep {\n};\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Wrapper<>"                                                         , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("template <typename T> struct Wrapper {\n                      };\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("A::B::C::FThreeDeep()"                                                                                                                           , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("int __cdecl FThreeDeep() { return 0; }\n"                                                                                                        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::FTwoDeep()"                                                                                                                                , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("void __cdecl FTwoDeep() {}\n"                                                                                                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("FooWithAnonArg(A::B::C::(anonymous namespace in input.cc)::EInvisible)"                                                                          , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("void __cdecl FooWithAnonArg(A::B::MyInvisible) {}\n"                                                                                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("VariadicFunction(int,...)"                                                                                                                       , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("void __cdecl VariadicFunction(int count,...) {}\n"                                                                                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("operator new(unsigned long long)"                                                                                                                , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("void * __cdecl operator new(size_t size) { return (void *)7; }\n"                                                                                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("templateyFunction<int,42,Wrapper,<char, double>>(int,Wrapper<int>,char,double)"                                                                  , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("template<> void __cdecl templateyFunction<int, 42, Wrapper, <char, double>>(int, Wrapper<int>, char, double) {}\n"                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("templateyFunction<typename T,int N,template <typename> class TT,typename ...Args>(T,TT<T>,Args...)"                                              , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("template<typename T, int N, template <typename> class TT, typename ...Args> void __cdecl templateyFunction(T value, TT<T> tt, Args... args) {}\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("void ExternC(int, char **)"                                                                                                                      , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("void ExternC(int, char **) {}\n"                                                                                                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::C::FThreeDeep()"                                                                                      , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("int FThreeDeep() {\n    return 0;\n}\n"                                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::FTwoDeep()"                                                                                           , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void FTwoDeep() {\n}\n"                                                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FooWithAnonArg(A::B::C::(anonymous namespace in input.cc)::EInvisible)"                                     , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void FooWithAnonArg(typedef enum A::B::C::(anonymous namespace)::EInvisible {\n"
+                                 "                                Zero\n"
+                                 "                            } MyInvisible) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("VariadicFunction(int,...)"                                                                                  , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void VariadicFunction(int count,...) {\n}\n"                                                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("operator new(unsigned long long)"                                                                           , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void *operator new(size_t size) {\n    return (void *)7;\n}\n"                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("templateyFunction<int,42,Wrapper,<char, double>>(int,Wrapper<int>,char,double)"                             , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("template<> void templateyFunction<int, 42, Wrapper, <char, double>>(int, Wrapper<int>, char, double) {\n"
+                                 "           }\n"                                                                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("templateyFunction<typename T,int N,template <typename> class TT,typename ...Args>(T,TT<T>,Args...)"         , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("template <typename T, int N, template <typename> class TT, typename ...Args> void templateyFunction(T value, TT<T> tt, Args ...args) {\n"
+                                 "                                                                             }\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void ExternC(int, char **)"                                                                                 , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("void ExternC(int, char **) {\n}\n"                                                                          , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("A::B::C::MyThreeDeep"                                                                                                                                                        , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("using A::B::C::MyThreeDeep = A::B::C::SThreeDeep; // typedef A::B::C::SThreeDeep A::B::C::MyThreeDeep;\n"                                                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::MyInvisible"                                                                                                                                                           , (*it).first, "should have gotten proper key");
-                Assert::AreEqual("using A::B::MyInvisible = enum A::B::C::(anonymous namespace)::EInvisible { Zero }; // typedef enum A::B::C::(anonymous namespace)::EInvisible { Zero } A::B::MyInvisible;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::MyTwoDeep"                                                                                                                                                             , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("using A::B::MyTwoDeep = A::B::STwoDeep; // typedef A::B::STwoDeep A::B::MyTwoDeep;\n"                                                                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::C::MyThreeDeep"                                           , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("using MyThreeDeep = A::B::C::SThreeDeep;\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::MyInvisible"                                              , (*it).first, "should have gotten proper key");
+                Assert::AreEqual("typedef enum A::B::C::(anonymous namespace)::EInvisible {\n"
+                                 "            Zero\n"
+                                 "        } MyInvisible;\n"                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::MyTwoDeep"                                                , (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("typedef A::B::STwoDeep MyTwoDeep;\n"                            , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
-                Assert::AreEqual("A::B::C::EThreeDeep",                      (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("enum EThreeDeep { One, Two, Three=3 };\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::ETwoDeep",                           (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("enum ETwoDeep { One, Two=2 };\n",          (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::C::EThreeDeep",                                        (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("enum EThreeDeep {\n    One,\n    Two,\n    Three = 3\n};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::ETwoDeep",                                             (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("enum ETwoDeep {\n    One,\n    Two = 2\n};\n",               (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("A::B::g_TwoDeep",     (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("int g_TwoDeep=42;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("A::B::g_TwoDeep",       (*it  ).first, "should have gotten proper key");
+                Assert::AreEqual("int g_TwoDeep = 42;\n", (*it++).second[0].fullyQualified);
             }
         }
     },
 
+#ifdef NOT_YET
     {"4. Internal linkage declarations (static variables/functions, anonymous namespace variables/functions)", []
         {
             std::string code = "static void StaticFunction() {}\n"

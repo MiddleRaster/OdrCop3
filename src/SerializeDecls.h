@@ -189,6 +189,14 @@ namespace OdrCop3
                 if (true == IsVarOutOfLine(decl))
                     return false;
 
+                if (const auto* parmVarDecl = llvm::dyn_cast<clang::ParmVarDecl>(decl))
+                {
+                    const clang::QualType parmType = parmVarDecl->getType();
+                    if (false == Can::PrintType<clang::TypedefType>(contextItems, parmType)) return false;
+                    if (false == Can::PrintType<clang:: RecordType>(contextItems, parmType)) return false;
+                    if (false == Can::PrintType<clang::   EnumType>(contextItems, parmType)) return false;
+                }
+
                 return true;
             }
         };
