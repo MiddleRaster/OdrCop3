@@ -1343,7 +1343,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-#ifdef NOT_YET
     {"Function templates", []
         {
             std::string code = "void Abbreviated(auto x) {} template<typename T> void FunctionTemplate(T) {}"
@@ -1373,15 +1372,18 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("Abbreviated<auto>(auto)"                                            , (*it  ).first, "should have gotten correct key");
-                Assert::AreEqual("void __cdecl Abbreviated(auto x) {}\n"                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("FunctionTemplate<typename T>(T)"                                    , (*it  ).first, "should have gotten correct key");
-                Assert::AreEqual("template<typename T> void __cdecl FunctionTemplate(T) {}\n"         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("HalfAbbreviated<typename T,auto>(T,auto)"                           , (*it  ).first, "should have gotten correct key");
-                Assert::AreEqual("template<typename T> void __cdecl HalfAbbreviated(T t, auto x) {}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Abbreviated<auto>(auto)"                                     , (*it  ).first, "should have gotten correct key");
+                Assert::AreEqual("void Abbreviated(auto x) {\n}\n"                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FunctionTemplate<typename T>(T)"                             , (*it  ).first, "should have gotten correct key");
+                Assert::AreEqual("template <typename T> void FunctionTemplate(T) {\n"
+                                 "                      }\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("HalfAbbreviated<typename T,auto>(T,auto)"                    , (*it  ).first, "should have gotten correct key");
+                Assert::AreEqual("template <typename T> void HalfAbbreviated(T t, auto x) {\n"
+                                 "                      }\n"                                   , (*it++).second[0].fullyQualified);
             }
         }
     },
+#ifdef NOT_YET
     {"Class templates", []
         {
             std::string code = "namespace { struct Structural { int value; }; }\n"
