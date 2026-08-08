@@ -23,9 +23,13 @@ namespace OdrCop3
 
         std::string get_FunctionName() const
         {
-            const clang::QualType qualType = cxxConversionDecl->getConversionType();
+            clang::QualType qualType = cxxConversionDecl->getConversionType();
             if (NeedsManualSerialization(contextItems, qualType))
+            {
+                while (const clang::TypedefType* const typedefType = qualType->getAs<clang::TypedefType>())
+                    qualType = typedefType->getDecl()->getUnderlyingType();
                 return "operator " + IndentBlock(SerializeType(contextItems, qualType), 9);
+            }
 
             std::string typeName;
             llvm::raw_string_ostream os(typeName);

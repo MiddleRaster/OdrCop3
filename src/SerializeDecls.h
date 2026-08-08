@@ -141,6 +141,13 @@ namespace OdrCop3
                     return true;
                 return false;
             }
+            static bool IsConversionOperatorReturnTypeInAnonymousNamespace(const ContextItems& contextItems, const clang::Decl* decl)
+            {
+                if (const CXXConversionDecl* cxxConversion = dyn_cast<CXXConversionDecl>(decl))
+                    if (NeedsManualSerialization(contextItems, cxxConversion->getReturnType()))
+                        return true;
+                return false;
+            }
 
             template <typename Type> static bool PrintType(const ContextItems& contextItems, clang::QualType qualType)
             {
@@ -199,6 +206,8 @@ namespace OdrCop3
                 if (true == IsFriendDecl(decl))
                     return false;
                 if (true == IsVarOutOfLine(decl))
+                    return false;
+                if (true == IsConversionOperatorReturnTypeInAnonymousNamespace(contextItems, decl))
                     return false;
 
                 if (const auto* parmVarDecl = llvm::dyn_cast<clang::ParmVarDecl>(decl))
@@ -273,16 +282,14 @@ namespace OdrCop3
                     {
                         switch (decl->getKind())
                         {
-                        case clang::Decl::Kind::Friend:
-                        case clang::Decl::Kind::FunctionTemplate:
-                        case clang::Decl::Kind::CXXConstructor:
-                        case clang::Decl::Kind::CXXConversion:
-                        case clang::Decl::Kind::CXXDestructor:
-                        case clang::Decl::Kind::CXXMethod:
-                        case clang::Decl::Kind::Function: return "";
-                        default: break;
+                        case clang::Decl::FunctionTemplate: return cast<clang::FunctionTemplateDecl>(decl)->getTemplatedDecl()->hasBody() ? "" : ";";
+                        case clang::Decl::CXXConstructor:
+                        case clang::Decl::CXXConversion:
+                        case clang::Decl::CXXDestructor:
+                        case clang::Decl::CXXMethod:        return cast<clang::FunctionDecl>(decl)->hasBody() ? "" : ";";
+                        default:                            break;
                         }
-                        return ";\n"; // everything else needs this?
+                        return ";\n"; // everything else needs this
                     }
                 };
 
