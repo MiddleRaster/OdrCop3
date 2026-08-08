@@ -23,8 +23,9 @@ namespace OdrCop3
 
         std::string get_TemplateHeader() const
         {   // this serializer may be called for varDecls that are actually varTemplateDecl; in that case, add template header
-            const auto* varTemplateDecl = varDecl->getDescribedVarTemplate();
-            return (varTemplateDecl == nullptr) ? "" : ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, varTemplateDecl->getTemplateParameters());
+            if (const auto* varTemplateDecl = varDecl->getDescribedVarTemplate())
+                return GetTemplateHeader<SerializeDecl, SerializeType, SerializeExpr>(contextItems, varTemplateDecl->getTemplateParameters());
+            return "";
         }
         std::string get_TemplateFooter() const
         {   // if it's a VarTemplateSpecializationDecl, add <whatever> after the name

@@ -11,7 +11,7 @@
 
 namespace OdrCop3
 {
-    enum InfoKind { Function, Typedef, Enum, Udt, Var };
+    enum InfoKind { Function, Typedef, Concept, Enum, Udt, Var };
     template<InfoKind K> struct InfoBase
     {
         const std::string TU;
@@ -20,6 +20,7 @@ namespace OdrCop3
     };
     using FunctionInfo = InfoBase<InfoKind::Function>;
     using  TypedefInfo = InfoBase<InfoKind::Typedef>;
+    using  ConceptInfo = InfoBase<InfoKind::Concept>;
     using     EnumInfo = InfoBase<InfoKind::Enum>;
     using      UdtInfo = InfoBase<InfoKind::Udt>;
     using      VarInfo = InfoBase<InfoKind::Var>;
@@ -30,6 +31,7 @@ namespace OdrCop3
         std::map<std::string,std::vector<     VarInfo>>      varMap;
         std::map<std::string,std::vector<    EnumInfo>>     enumMap;
         std::map<std::string,std::vector< TypedefInfo>>  typedefMap;
+        std::map<std::string,std::vector< ConceptInfo>>  conceptMap;
         std::map<std::string,std::vector<FunctionInfo>> functionMap;
     };
 
@@ -265,6 +267,18 @@ namespace OdrCop3
             }
 
             maps.varMap[key].push_back({TU, SerializeDecls(contextItems, varDecl)});
+            return true;
+        }
+        bool VisitConceptDecl(const clang::ConceptDecl* conceptDecl)
+        {
+            if (context->getSourceManager().isInSystemHeader(conceptDecl->getLocation()))
+                return true; // skip anything not in the main file or a user header
+
+            if (conceptDecl->getLinkageAndVisibility().getLinkage()!= Linkage::External)
+                return true;
+
+            std::string key = conceptDecl->getQualifiedNameAsString();
+            maps.conceptMap[key].push_back({TU, SerializeDecls(contextItems, conceptDecl)});
             return true;
         }
 

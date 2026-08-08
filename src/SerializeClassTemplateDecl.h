@@ -20,27 +20,11 @@ namespace OdrCop3
     {
         const ContextItems     & contextItems;
         const ClassTemplateDecl* classTemplateDecl;
-
-        std::string get_TemplateHeader() const
-        {
-            std::string templatePrefix;
-            const auto* templateParameterList = classTemplateDecl->getTemplateParameters();
-            if (NeedsManualSerialization(contextItems, templateParameterList))
-                templatePrefix = IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList), 0);
-            else
-            {
-                llvm::raw_string_ostream os(templatePrefix);
-                templateParameterList->print(os, contextItems.context, contextItems.printPolicy);
-                os.flush();
-            }
-            return templatePrefix;
-        }
-
     public:
         ClassTemplateDeclSerializer(const ContextItems& contextItems, const ClassTemplateDecl* classTemplateDecl) : contextItems(contextItems), classTemplateDecl(classTemplateDecl) {}
         std::string Serialize() const
         {
-            std::string out = get_TemplateHeader();
+            std::string out = GetTemplateHeader<SerializeDecl, SerializeType, SerializeExpr>(contextItems, classTemplateDecl->getTemplateParameters());
             return out + IndentBlock(SerializeDecl(contextItems, classTemplateDecl->getTemplatedDecl()), LengthOfLastLine(out)) + "\n";
         }
     };

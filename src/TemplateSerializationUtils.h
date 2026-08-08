@@ -37,7 +37,7 @@ namespace OdrCop3
                                                                  std::string defaultStr;
                                                                  llvm::raw_string_ostream defaultStream(defaultStr);
                                                                  tp->getDefaultArgument().getArgument().getAsExpr()->printPretty(defaultStream, nullptr, contextItems.printPolicy);
-                                                                 out += "=" + defaultStr;
+                                                                 out += " = " + defaultStr;
                                                              }
                                                              return TrimRightIf(out, " ");
                                                          };
@@ -92,5 +92,18 @@ namespace OdrCop3
             out += IndentBlock(SerializeExpr(contextItems, requiresClause), LengthOfLastLine(out));
         }
         return out;
+    }
+
+    template <auto SerializeDecl, auto SerializeType, auto SerializeExpr>
+    inline std::string GetTemplateHeader(const ContextItems& contextItems, const auto* templateParameterList)
+    {
+        if (NeedsManualSerialization(contextItems, templateParameterList))
+            return IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList), 0);
+
+        std::string                 templatePrefix;
+        llvm::raw_string_ostream os(templatePrefix);
+        templateParameterList->print(os, contextItems.context, contextItems.printPolicy);
+        os.flush();
+        return templatePrefix;
     }
 }

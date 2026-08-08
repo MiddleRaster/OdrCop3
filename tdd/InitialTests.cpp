@@ -660,7 +660,7 @@ Test ExploratoryTestsOfClangAST[] =
 
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("template <typename T, int Tag=0> constexpr T DefaultValue = T{};\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, int Tag = 0> constexpr T DefaultValue = T{};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> constexpr T *DefaultValue<T *, 0> = nullptr;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> constexpr int DefaultValue<int, 0> = 42;\n"               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> T GlobalValue{};\n"                            , (*it++).second[0].fullyQualified);
@@ -1427,7 +1427,6 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
-#ifdef NOT_YET
     {"Requires", []
         {
             std::string code = "template <typename T> T FunctionTemplateWithRequiresClause(const T& value) requires requires { typename T::value_type; } { return value; }\n"
@@ -1452,36 +1451,34 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(5, maps.udtMap.size(),  "wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.varMap.size(),   "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(),   "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(), "wrong number of typedefs in map");
+            Assert::AreEqual(5, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(3, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(3, maps.functionMap.size(), "wrong number of functions in map");
             
             {
                 auto it = maps.udtMap.begin();
-                Assert::AreEqual("ClassRequiresTheConcept<>", (*it).first, "should have gotten correct key");
-                Assert::AreEqual("template<typename T> requires TheConcept<T> struct ClassRequiresTheConcept {\n"
-                                 "                                               T value;\n"
-                                 "                                            };\n"
+                Assert::AreEqual("ClassRequiresTheConcept<>"                                                       , (*it).first, "should have gotten correct key");
+                Assert::AreEqual("template <typename T> requires TheConcept<T> struct ClassRequiresTheConcept {\n"
+                                 "                                                 T value;\n"
+                                 "                                             };\n"                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ClassTemplateWithAnonymousConcept<>"                                             , (*it).first, "should have gotten correct key");
+                Assert::AreEqual("template <typename T> requires IsSameConcept<T, struct (anonymous namespace)::NoSeeUm {\n"
+                                 "                                                }> struct ClassTemplateWithAnonymousConcept {\n"
+                                 "                                                       T value;\n"
+                                 "                                                   };\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires ValueConcept<&(struct (anonymous namespace)::Hidden {\n"
+                                 "                                                  static const int value = 0;\n"
+                                 "                                              })::value> struct TestAnonymousNamespaceArg {\n"
+                                 "                                                         };\n"
                               , (*it++).second[0].fullyQualified);
-
-                Assert::AreEqual("ClassTemplateWithAnonymousConcept<>", (*it).first, "should have gotten correct key");
-                Assert::AreEqual("template<typename T> requires IsSameConcept<T, struct (anonymous namespace)::NoSeeUm { // sizeof=1\n"
-                                 "                                               }> struct ClassTemplateWithAnonymousConcept {\n"
-                                 "                                                     T value;\n"
-                                 "                                                  };\n"
+                Assert::AreEqual("template <typename T> requires ValueConcept<&ValueHolder::value> struct TestDeclarationArg {\n"
+                                 "                                                                 };\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> requires ValueConcept<&(struct (anonymous namespace)::Hidden { // sizeof=1\n"
-                                 "                                                static const int value=0;\n"
-                                 "                                             })::value> struct TestAnonymousNamespaceArg {\n"
-                                 "                                                        };\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template<typename T> requires ValueConcept<&ValueHolder::value> struct TestDeclarationArg {\n"
-                                 "                                                                };\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("struct ValueHolder { // sizeof=1\n"
-                                 "   static int value;\n"
+                Assert::AreEqual("struct ValueHolder {\n"
+                                 "    static int value;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
@@ -1497,17 +1494,31 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("FunctionTemplateWithAnonymousConcept<typename T>(T)"                                                                                     , (*it).first, "should have gotten correct key");
-                Assert::AreEqual("template<typename T> requires IsSameConcept<T, struct (anonymous namespace)::NoSeeUm { // sizeof=1\n"
-                                 "                                               }> void __cdecl FunctionTemplateWithAnonymousConcept(T) {}\n"
+                Assert::AreEqual("template <typename T> requires IsSameConcept<T, struct (anonymous namespace)::NoSeeUm {\n"
+                                 "                                                }> void FunctionTemplateWithAnonymousConcept(T) {\n"
+                                 "                                                   }\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("FunctionTemplateWithConcept<typename T>(T)"                                                                                              , (*it  ).first, "should have gotten correct key");
-                Assert::AreEqual("template<typename T> requires TheConcept<T> void __cdecl FunctionTemplateWithConcept(T) {}\n"                                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires TheConcept<T> void FunctionTemplateWithConcept(T) {\n"
+                                 "                                             }\n"                                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("FunctionTemplateWithRequiresClause<typename T>(const T &)"                                                                               , (*it  ).first, "should have gotten correct key");
-                Assert::AreEqual("template<typename T> T __cdecl FunctionTemplateWithRequiresClause(const T & value) requires requires { typename T::value_type; } { return value; }\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T FunctionTemplateWithRequiresClause(const T &value) requires requires { typename T::value_type; } {\n"
+                                 "                          return value;\n"
+                                 "                      }\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                Assert::AreEqual("IsSameConcept"                                                    , (*it  ).first,                    "should have gotten the correct key");
+                Assert::AreEqual("template <typename T, typename U> concept IsSameConcept = true;\n", (*it++).second[0].fullyQualified, "should have gotten the correct concept");
+                Assert::AreEqual("TheConcept"                                                       , (*it  ).first,                    "should have gotten the correct key");
+                Assert::AreEqual("template <typename T> concept TheConcept = sizeof(T) == 4;\n"     , (*it++).second[0].fullyQualified, "should have gotten the correct concept");
+                Assert::AreEqual("ValueConcept"                                                     , (*it  ).first,                    "should have gotten the correct key");
+                Assert::AreEqual("template <auto V> concept ValueConcept = true;\n"                 , (*it++).second[0].fullyQualified, "should have gotten the correct concept");
             }
         }
     },
 
+#ifdef NOT_YET
     {"Conversion operators", []
         {
             std::string code =

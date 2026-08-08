@@ -36,6 +36,7 @@
 #include "SerializeVarTemplateSpecializationDecl.h"
 #include "SerializeVarTemplatePartialSpecializationDecl.h"
 #include "SerializeFriendDecl.h"
+#include "SerializeConceptDecl.h"
 
 namespace OdrCop3
 {
@@ -64,6 +65,7 @@ namespace OdrCop3
             static std::string SerializeVarTemplateSpecializationDecl         (const ContextItems& contextItems, const VarTemplateSpecializationDecl                   * vtsd) { return VarTemplateSpecializationDeclSerializer         <SerializeDecl, SerializeType, SerializeExpr>(contextItems,                  vtsd).Serialize(); }
             static std::string SerializeVarTemplatePartialSpecializationDecl  (const ContextItems& contextItems, const VarTemplatePartialSpecializationDecl           * vtpsd) { return VarTemplatePartialSpecializationDeclSerializer  <SerializeDecl, SerializeType, SerializeExpr>(contextItems,                 vtpsd).Serialize(); }
             static std::string SerializeFriendDecl                            (const ContextItems& contextItems, const FriendDecl                                * friendDecl) { return FriendDeclSerializer                            <SerializeDecl, SerializeType, SerializeExpr>(contextItems,            friendDecl).Serialize(); }
+            static std::string SerializeConceptDecl                           (const ContextItems& contextItems, const ConceptDecl                              * conceptDecl) { return ConceptDeclSerializer                           <SerializeDecl, SerializeType, SerializeExpr>(contextItems,           conceptDecl).Serialize(); }
         };
 
         class Can
@@ -317,6 +319,7 @@ namespace OdrCop3
             case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<TypeAliasDecl                         >(decl)) return DeclSerializer::SerializeTypeAliasDecl                         (contextItems, tad);                break;
             case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<TypeAliasTemplateDecl                 >(decl)) return DeclSerializer::SerializeTypeAliasTemplateDecl                 (contextItems, tatd);               break;
             case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<FriendDecl                            >(decl)) return DeclSerializer::SerializeFriendDecl                            (contextItems, friendDecl);         break;
+            case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<ConceptDecl                           >(decl)) return DeclSerializer::SerializeConceptDecl                           (contextItems, conceptDecl);        break;
             default: break;
             }
             decl->dump();
