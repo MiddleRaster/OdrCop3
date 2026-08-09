@@ -81,7 +81,7 @@ namespace OdrCop3
         }
         std::string get_ExceptionSpecifier() const
         {
-            return GetExceptionSpecifier(contextItems, funcDecl->getType()->getAs<FunctionProtoType>(), funcDecl);
+            return GetExceptionSpecifier<SerializeDecl, SerializeType, SerializeExpr>(contextItems, funcDecl->getType()->getAs<FunctionProtoType>(), funcDecl);
         }
         std::string get_Explicit() const
         {
@@ -251,7 +251,7 @@ namespace OdrCop3
             fqn += get_TrailingRequiresClause();
             fqn += method.get_Volatile();
             fqn += method.get_RefQualifier();
-            fqn += get_ExceptionSpecifier();
+            fqn += IndentBlock(get_ExceptionSpecifier(), LengthOfLastLine(fqn));
             fqn += get_TrailingAttributes();
             fqn += method.get_PureVirtual();
             fqn += get_Defaulted();

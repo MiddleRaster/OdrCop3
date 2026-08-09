@@ -74,7 +74,7 @@ namespace OdrCop3
             }
             return "";
         }
-        std::string get_ExceptionSpecifier() const { return " " + GetExceptionSpecifier(contextItems, functionProtoType, nullptr); }
+        std::string get_ExceptionSpecifier() const { return " " + GetExceptionSpecifier<SerializeDecl, SerializeType, SerializeExpr>(contextItems, functionProtoType, nullptr); }
 
     public:
         FunctionProtoTypeSerializer(const ContextItems& contextItems, QualType qt, const FunctionProtoType* functionProtoType) : contextItems(contextItems), qt(qt), functionProtoType(functionProtoType) {}

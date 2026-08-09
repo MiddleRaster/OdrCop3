@@ -1552,20 +1552,19 @@ Test ExploratoryTestsOfClangAST[] =
 
                                "namespace { struct HiddenConstraintType {}; } struct ConversionOperatorClass_AnonymousConstraint { template<class T> requires (sizeof(HiddenConstraintType) == sizeof(T)) operator T() const; };\n"
 
-//"struct ConversionOperatorClass_TemplateExplicit { template<class T> explicit(sizeof(T) > 4) operator T() const { return T{}; } };\n"
-//"struct ConversionOperatorClass_Noexcept { operator int() const noexcept; };\n"
-//"struct ConversionOperatorClass_ConditionalNoexcept { template<class T> operator T() const noexcept(sizeof(T) <= sizeof(int)) { return T{}; } };\n"
-//"namespace { struct HiddenNoexceptType {}; } struct ConversionOperatorClass_AnonymousNoexceptExpression { operator int() const noexcept(sizeof(HiddenNoexceptType) > 0); };\n"
-//"struct ConversionOperatorClass_CvRefQualified { operator int() const&; operator double() volatile&&; };\n"
-//"struct ConversionOperatorClass_Consteval { consteval operator int() const { return 7; } };\n"
-//"struct ConversionOperatorClass_Deprecated { [[deprecated(\"use something else\")]] operator int() const; };\n"
-//"struct ConversionOperatorClass_Virtual { virtual operator int() const; };\n"
+                               "struct ConversionOperatorClass_TemplateExplicit { template<class T> explicit(sizeof(T) > 4) operator T() const { return T{}; } };\n"
+                               "struct ConversionOperatorClass_ConditionalNoexcept { template<class T> operator T() const noexcept(sizeof(T) <= sizeof(int)) { return T{}; } };\n"
+                               "namespace { struct HiddenNoexceptType {}; } template<class T> struct ConversionOperatorClass_AnonymousNoexceptExpression { operator int() const noexcept(sizeof(HiddenNoexceptType) == sizeof(T)); };\n"
+                               "struct ConversionOperatorClass_CvRefQualified { operator int() const&; operator double() volatile&&; };\n"
+                               "struct ConversionOperatorClass_Consteval { consteval operator int() const { return 7; } };\n"
+                               "struct ConversionOperatorClass_Deprecated { [[deprecated(\"use something else\")]] operator int() const; };\n"
+                               "struct ConversionOperatorClass_Virtual { virtual operator int() const; };\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(24, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(31, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 2, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 3, maps.typedefMap.size(),"wrong number of typedefs in map");
@@ -1583,6 +1582,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    operator struct (anonymous namespace)::HiddenFunctionReturn {\n"
                                  "             } (*)()() const;\n"
                                  "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <class T> struct ConversionOperatorClass_AnonymousNoexceptExpression {\n"
+                                 "                       operator int() const noexcept(sizeof(struct (anonymous namespace)::HiddenNoexceptType {\n"
+                                 "                                                            }) == sizeof(T));\n"
+                                 "                   };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_AnonymousPointer {\n"
                                  "    operator struct (anonymous namespace)::HiddenPointer {\n"
@@ -1608,9 +1612,21 @@ Test ExploratoryTestsOfClangAST[] =
                                 "    operator IntArrayReference() const;\n"
                                 "};\n"
                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_ConditionalNoexcept {\n"
+                                 "    template <class T> operator T() const noexcept(sizeof(T) <= sizeof(int)) {\n"
+                                 "                           return T{};\n"
+                                 "                       }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_ConstVolatile {\n"
                                  "    operator int() const volatile;\n"
                                  "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Consteval {\n"
+                                 "    consteval operator int() const {\n"
+                                 "        return 7;\n"
+                                 "    }\n"
+                                 "};\n"              
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_Constexpr {\n"
                                  "    constexpr operator int() const {\n"
@@ -1624,6 +1640,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                                }\n"
                                  "};\n"                    
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_CvRefQualified {\n"
+                                 "    operator int() const &;\n"
+                                 "    operator double() volatile &&;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_Declaration {\n"
                                  "    operator int() const;\n"
                                  "};\n"
@@ -1636,6 +1657,10 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_Deleted {\n"
                                  "    operator int() const = delete;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Deprecated {\n"
+                                 "    [[deprecated(\"use something else\")]] operator int() const;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_Explicit {\n"
@@ -1679,6 +1704,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                       }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_TemplateExplicit {\n"
+                                 "    template <class T> explicit(sizeof(T) > 4) operator T() const {\n"
+                                 "                           return T{};\n"
+                                 "                       }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_Virtual {\n"
+                                 "    virtual operator int() const;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct UsingHiddenInExplicitExpression {\n"
                                  "    template <class T> explicit(sizeof(struct (anonymous namespace)::Hidden {\n"
                                  "                                       }) == sizeof(T)) operator T() const;\n"
@@ -1687,8 +1722,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <class T> struct Wrapper {\n"
                                  "                   };\n"
                               , (*it++).second[0].fullyQualified);
-
-            //    Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -1703,8 +1736,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("using FunctionPointer = int (*)();\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using FunctionReference = int (&)();\n"  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using IntArrayReference = int (&)[3];\n" , (*it++).second[0].fullyQualified);
-
-             // Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -1712,7 +1743,6 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.conceptMap.begin();
             }
-
         }
     },
 

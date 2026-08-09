@@ -107,36 +107,31 @@ namespace OdrCop3
         return NeedsManualSerialization(contextItems, [&](llvm::raw_ostream& os, const clang::PrintingPolicy& policy) { decl->print(os, policy); });
     }
 
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr>
     inline std::string GetExceptionSpecifier(const ContextItems& contextItems, const FunctionProtoType* functionProtoType, const FunctionDecl* functionDecl)
     {
         switch (functionProtoType->getExceptionSpecType())
         {
-        case EST_DependentNoexcept:
-        {
-            std::string exprStr;
-            llvm::raw_string_ostream os(exprStr);
-            functionProtoType->getNoexceptExpr()->printPretty(os, nullptr, contextItems.printPolicy);
-            os.flush();
-            return "noexcept(" + exprStr + ") ";
-        }
         case EST_Dynamic:
         {
             std::string result = "throw(";
-            bool        first = true;
+            bool first = true;
             for (QualType t : functionProtoType->exceptions())
             {
-                if (!first)
+                if (first)
+                    first = false;
+                else
                     result += ", ";
                 result += t.getAsString(contextItems.printPolicy);
-                first = false;
             }
             return result + ") ";
         }
-        case EST_BasicNoexcept: return "noexcept ";
-        case EST_NoexceptTrue:  return "noexcept(true) ";
-        case EST_NoexceptFalse: return "noexcept(false) ";
-        case EST_DynamicNone:   return "throw() ";
-        case EST_MSAny:         return "throw(...) ";
+        case EST_DependentNoexcept: return "noexcept(" + IndentBlock(SerializeExpr(contextItems, functionProtoType->getNoexceptExpr()), 9) + ") ";
+        case EST_BasicNoexcept:     return "noexcept ";
+        case EST_NoexceptTrue:      return "noexcept(true) ";
+        case EST_NoexceptFalse:     return "noexcept(false) ";
+        case EST_DynamicNone:       return "throw() ";
+        case EST_MSAny:             return "throw(...) ";
         case EST_None:
         default:
             break;
