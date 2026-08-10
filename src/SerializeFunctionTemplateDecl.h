@@ -16,17 +16,17 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FunctionTemplateDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FunctionTemplateDeclSerializer : private TemplateDeclBaseSerializer<SerializeDecl, SerializeType, SerializeExpr>
     {
-        const ContextItems& contextItems;
         const FunctionTemplateDecl* functionTemplateDecl;
     public:
-        FunctionTemplateDeclSerializer(const ContextItems& contextItems, const FunctionTemplateDecl* functionTemplateDecl) : contextItems(contextItems), functionTemplateDecl(functionTemplateDecl) {}
+        FunctionTemplateDeclSerializer(const ContextItems& contextItems, const FunctionTemplateDecl* functionTemplateDecl)
+            : TemplateDeclBaseSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems)
+            , functionTemplateDecl(functionTemplateDecl)
+        {}
         std::string Serialize() const
         {
-            std::string out = GetTemplateHeader<SerializeDecl, SerializeType, SerializeExpr>(contextItems, functionTemplateDecl->getTemplateParameters());
-            out += IndentBlock(SerializeDecl(contextItems, functionTemplateDecl->getTemplatedDecl()), LengthOfLastLine(out));
-            return out + "\n";
+            return TemplateDeclBaseSerializer<SerializeDecl, SerializeType, SerializeExpr>::Serialize(functionTemplateDecl->getTemplateParameters(), functionTemplateDecl->getTemplatedDecl());
         }
     };
 }

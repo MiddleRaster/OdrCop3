@@ -27,7 +27,8 @@ namespace OdrCop3
             std::string out = "template<> ";
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, TemplateArgsToString(contextItems, classTemplateSpecializationDecl));
             // a classTemplateSpecializationDecl* "is a" CXXRecordDecl, so I can't call SerializeDecl, as the RecursionPreventor will kick in. So, call the right serializer directly.
-            return out + IndentBlock(CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(ci2, static_cast<const clang::CXXRecordDecl*>(classTemplateSpecializationDecl)).Serialize(), LengthOfLastLine(out)) + "\n";
+            out += CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(ci2, static_cast<const clang::CXXRecordDecl*>(classTemplateSpecializationDecl)).Serialize();
+            return out;
         }
     };
 }

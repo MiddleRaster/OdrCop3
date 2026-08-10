@@ -138,4 +138,33 @@ namespace OdrCop3
         }
         return "";
     }
+
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class TemplateDeclBaseSerializer
+    {
+        const ContextItems& contextItems;
+
+        static size_t GetIndentation(const std::string& prefix, const std::string& block)
+        {
+            // idea: examine block. 
+            // If it is multi-line AND the second line starts with more than 4 spaces, then we know that some "(anonymous namespace)" type was serialized inline.
+            // In that case, we need to indent by an extra prefix.size(); otherwise, we can just concatenate it or indent by 0.
+
+            size_t indent = 0;
+            auto pos = block.find("\n");
+            if (pos != std::string::npos)
+                if (block.size() > pos+1 + 5) // 1 to get past "\n" and 5 for 5 spaces
+                    if (0 == block.compare(pos + 1, 5, "     "))
+                        indent = prefix.size();
+
+            return indent;
+        }
+    public:
+        TemplateDeclBaseSerializer(const ContextItems& contextItems) : contextItems(contextItems) {}
+        std::string Serialize(const clang::TemplateParameterList* templateParameterList, const clang::Decl* decl) const
+        {
+            std::string prefix = GetTemplateHeader<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList);
+            std::string block  = SerializeDecl(contextItems, decl);
+            return prefix + IndentBlock(block, GetIndentation(prefix, block)) + "\n";
+        }
+    };
 }

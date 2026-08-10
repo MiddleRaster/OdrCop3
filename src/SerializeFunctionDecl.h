@@ -217,8 +217,6 @@ namespace OdrCop3
 
             std::string fqn;
             fqn += get_TemplateSpecializationHeader();
-            auto bodyIndentation = LengthOfLastLine(fqn);
-
             fqn += get_LeadingAttributes();
             fqn += get_Friend();
             fqn += get_Register();
@@ -261,7 +259,7 @@ namespace OdrCop3
             if (!(funcDecl->hasBody() && funcDecl->getBody()) || !contextItems.wantFunctionBody) // either there is no body, or we don't want to serialize the body
                 fqn = TrimRightIf(fqn, " ") + ";"; // no body:  end prototype with ';'
             else
-                fqn += IndentBlock(get_Body(), bodyIndentation);
+                fqn += TrimRightIf(get_Body(), "\n");
             return fqn + "\n";
         }
 
