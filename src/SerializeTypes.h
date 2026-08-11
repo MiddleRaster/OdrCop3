@@ -64,19 +64,32 @@ namespace OdrCop3
         template<auto SerializeDecl, auto SerializeExpr>
         static std::string Types(const ContextItems& contextItems, clang::QualType qualType)
         {
-            using TypeSerializer = Serialize::Type<SerializeDecl, &Types<SerializeDecl, SerializeExpr>, SerializeExpr>;
 
-            // some types must be manually serialized, no matter what. E.g., typedefs
-            switch (qualType.getTypePtr()->getTypeClass())
+            struct Can
             {
-            case clang::Type::TypeClass::Typedef:       if (const       TypedefType*       typedefType = dyn_cast<      TypedefType>(qualType.getTypePtr())) return TypeSerializer::SerializeTypedefType      (contextItems, qualType,       typedefType); break;
-            case clang::Type::TypeClass::Enum:          if (const          EnumType*          enumType = dyn_cast<         EnumType>(qualType.getTypePtr())) return TypeSerializer::SerializeEnumType         (contextItems, qualType,          enumType); break;
-            case clang::Type::TypeClass::FunctionProto: if (const FunctionProtoType* functionProtoType = dyn_cast<FunctionProtoType>(qualType.getTypePtr())) return TypeSerializer::SerializeFunctionProtoType(contextItems, qualType, functionProtoType); break; // TODO: think about this one. The print facility puts an extra set of () around the pointer-to-member-function case, for unknown reasons.
-            case clang::Type::TypeClass::Paren:         if (const         ParenType*         parenType = dyn_cast<        ParenType>(qualType.getTypePtr())) return TypeSerializer::SerializeParenType        (contextItems, qualType,         parenType); break;
-            default: break;
-            }
+                static bool Print(const ContextItems& contextItems, QualType qualType)
+                {
+                    // some types must be manually serialized, no matter what. E.g., typedefs
+                    switch (qualType.getTypePtr()->getTypeClass())
+                    {
+                    case clang::Type::TypeClass::Typedef:       return false; 
+                    case clang::Type::TypeClass::Enum:          return false;
+                    case clang::Type::TypeClass::FunctionProto: return false; // TODO: think about this one. The print facility puts an extra set of () around the pointer-to-member-function case, for unknown reasons.
+                    case clang::Type::TypeClass::Paren:         return false;
+                    default: break;
+                    }
 
-            if (!NeedsManualSerialization(contextItems, qualType))
+                    if (NeedsManualSerialization(contextItems, qualType))
+                        return false;
+
+                    return true;
+                }
+            };
+
+
+            if (
+             // false &&
+                Can::Print(contextItems, qualType))
             {
                 std::string str;
                 llvm::raw_string_ostream os(str);
@@ -85,12 +98,13 @@ namespace OdrCop3
                 return str;
             }
 
+            using TypeSerializer = Serialize::Type<SerializeDecl, &Types<SerializeDecl, SerializeExpr>, SerializeExpr>;
             switch (qualType.getTypePtr()->getTypeClass())
             {
-         // case clang::Type::TypeClass::Typedef:                if (const                TypedefType*                typedefType = dyn_cast<               TypedefType>(qualType.getTypePtr())) return TypeSerializer::SerializeTypedefType               (contextItems, qualType,                typedefType); break;
-         // case clang::Type::TypeClass::Enum:                   if (const                   EnumType*                   enumType = dyn_cast<                  EnumType>(qualType.getTypePtr())) return TypeSerializer::SerializeEnumType                  (contextItems, qualType,                   enumType); break;
-         // case clang::Type::TypeClass::FunctionProto:          if (const          FunctionProtoType*          functionProtoType = dyn_cast<         FunctionProtoType>(qualType.getTypePtr())) return TypeSerializer::SerializeFunctionProtoType         (contextItems, qualType,          functionProtoType); break;
-         // case clang::Type::TypeClass::Paren:                  if (const                  ParenType*                  parenType = dyn_cast<                 ParenType>(qualType.getTypePtr())) return TypeSerializer::SerializeParenType                 (contextItems, qualType,                  parenType); break;
+            case clang::Type::TypeClass::Typedef:                if (const                TypedefType*                typedefType = dyn_cast<               TypedefType>(qualType.getTypePtr())) return TypeSerializer::SerializeTypedefType               (contextItems, qualType,                typedefType); break;
+            case clang::Type::TypeClass::Enum:                   if (const                   EnumType*                   enumType = dyn_cast<                  EnumType>(qualType.getTypePtr())) return TypeSerializer::SerializeEnumType                  (contextItems, qualType,                   enumType); break;
+            case clang::Type::TypeClass::FunctionProto:          if (const          FunctionProtoType*          functionProtoType = dyn_cast<         FunctionProtoType>(qualType.getTypePtr())) return TypeSerializer::SerializeFunctionProtoType         (contextItems, qualType,          functionProtoType); break;
+            case clang::Type::TypeClass::Paren:                  if (const                  ParenType*                  parenType = dyn_cast<                 ParenType>(qualType.getTypePtr())) return TypeSerializer::SerializeParenType                 (contextItems, qualType,                  parenType); break;
             case clang::Type::TypeClass::Record:                 if (const                 RecordType*                 recordType = dyn_cast<                RecordType>(qualType.getTypePtr())) return TypeSerializer::SerializeRecordType                (contextItems, qualType,                 recordType); break;
             case clang::Type::TypeClass::TemplateTypeParm:       if (const       TemplateTypeParmType*       templateTypeParmType = dyn_cast<      TemplateTypeParmType>(qualType.getTypePtr())) return TypeSerializer::SerializeTemplateTypeParmType      (contextItems, qualType,       templateTypeParmType); break;
             case clang::Type::TypeClass::DependentName:          if (const          DependentNameType*          dependentNameType = dyn_cast<         DependentNameType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentNameType         (contextItems, qualType,          dependentNameType); break;
