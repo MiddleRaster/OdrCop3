@@ -68,10 +68,10 @@ namespace OdrCop3
         std::string get_Extern()          const { return funcDecl->getStorageClass() == SC_Extern          ? "extern "       : ""; }
         std::string get_Register()        const { return funcDecl->getStorageClass() == SC_Register        ? "extern "       : ""; }
         std::string get_Static()          const { return funcDecl->isStatic()                              ? "static "       : ""; }
-        std::string get_Friend()          const { return funcDecl->getFriendObjectKind() != Decl::FOK_None ? "friend "       : ""; }
+        std::string get_Friend()          const { return contextItems.needsFriend                          ? "friend "       : ""; }
         std::string get_Defaulted()       const { return funcDecl->isDefaulted()                           ? "= default "    : ""; }
         std::string get_Deleted()         const { return funcDecl->isDeleted()                             ? "= delete "     : ""; }
-        std::string get_Variadic()        const { return funcDecl->isVariadic() ? (funcDecl->param_empty() ? "..." : ",...") : ""; }
+        std::string get_Variadic()        const { return funcDecl->isVariadic()                            ? "..."           : ""; }
         std::string get_Constexpr()       const
         {
                                                  // this matches Decl::Print()'s behavior
@@ -187,38 +187,12 @@ namespace OdrCop3
             os.flush();
             return body;
         }
-    public:
-        FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}
 
-    protected:
-        std::string get_FunctionName() const
-        {
-            std::string name = funcDecl->getNameAsString();
-            if (auto *  args = funcDecl->getTemplateSpecializationArgs())
-            {   // explicit specialization
-                std::string out;
-                llvm::raw_string_ostream os(out);
-                os << "<";
-                for (unsigned i=0; i<args->size(); ++i)
-                {
-                    if (i > 0)
-                        os << ", ";
-                    args->get(i).print(contextItems.printPolicy, os, false);
-                }
-                os << ">";
-                os.flush();
-                name += out;
-            }
-            return name;
-        }
-        std::string Serialize(auto returnType, auto functionName) const
+        std::string SerializePastFriend(auto returnType, auto functionName) const
         {
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
 
             std::string fqn;
-            fqn += get_TemplateSpecializationHeader();
-            fqn += get_LeadingAttributes();
-            fqn += get_Friend();
             fqn += get_Register();
             fqn += get_Static();
             fqn += get_Extern();
@@ -242,8 +216,8 @@ namespace OdrCop3
                 fqn += TrimRightIf(IndentBlock(SerializeDecl(contextItems, param), LengthOfLastLine(fqn)), ";");
                 fqn += ", ";
             }
-            fqn  = TrimRightIf(fqn, ", ");
             fqn += get_Variadic();
+            fqn  = TrimRightIf(fqn, ", ");
             fqn += ") ";
             fqn += method.get_Const();
             fqn += get_TrailingRequiresClause();
@@ -260,6 +234,77 @@ namespace OdrCop3
                 fqn = TrimRightIf(fqn, " ") + ";"; // no body:  end prototype with ';'
             else
                 fqn += TrimRightIf(get_Body(), "\n");
+            return fqn + "\n";
+        }
+        std::string SerializeUpToFriend() const
+        {
+            std::string fqn;
+            fqn += get_TemplateSpecializationHeader();
+            fqn += get_LeadingAttributes();
+            fqn += get_Friend();
+            return fqn;
+        }
+    public:
+        FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}
+    protected:
+        std::string get_FunctionName() const
+        {
+            std::string name = funcDecl->getNameAsString();
+            if (auto *  args = funcDecl->getTemplateSpecializationArgs())
+            {   // explicit specialization
+                std::string out = "<";
+
+                for (unsigned i=0; i<args->size(); ++i)
+                {
+                    if (i > 0)
+                        out += ", ";
+
+                    std::string str;
+                    {
+                        llvm::raw_string_ostream os(str);
+                        args->get(i).print(contextItems.printPolicy, os, false);
+                        os.flush();
+
+                        // strip off <> from template packs, if any
+                        if (str.starts_with("<")) str = str.substr(1);
+                        str = TrimRightIf(str, ">");
+                    }
+                    out += str;
+                }
+                out += ">";
+                name += out;
+            }
+            return name;
+        }
+
+        static size_t GetIndentation(const std::string& prefix, const std::string& block)
+        {   // similar to function of same name in SerializationUtils
+
+            auto pos = block.find("\n");
+            if (pos != std::string::npos)
+                if (block.size() > pos + 1 + 5) // 1 to get past "\n" and 5 for 5 spaces
+                    if (0 == block.compare(pos + 1, 5, "     "))
+                        return prefix.size();
+
+            // if returning a type defined in an anonymous namespace the check above doesn't work.
+            if (block.find("(anonymous namespace)::") != std::string::npos)
+                return prefix.size();
+            // N.B.: NOTE: TODO: REVIEW:  the 2 lines above are NOT in SerializationUtils. Figure out why they're different.
+
+            return 0;
+        }
+
+        std::string Serialize(auto returnType, auto functionName) const
+        {
+            std::string fqn;
+            fqn += SerializeUpToFriend();
+
+            // turn off ContextItems::needsFriend so that Can::Print() can return true
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, contextItems.aux);
+            ci2.needsFriend   = false;
+            std::string block = FunctionDeclSerializer(ci2, funcDecl).SerializePastFriend(returnType, functionName);
+
+            fqn += IndentBlock(block, GetIndentation(fqn, block));
             return fqn + "\n";
         }
 

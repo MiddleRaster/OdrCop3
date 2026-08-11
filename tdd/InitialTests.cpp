@@ -45,8 +45,8 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("[[maybe_unused]] struct (anonymous namespace)::Anonymous {\n"
                                  "                 } ReturnAnonymous() {\n"
-                                 "    return Anonymous{};\n"
-                                 "}\n"
+                                 "                     return Anonymous{};\n"
+                                 "                 }\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> int add<int, short>(int t, short u) {\n"
                                  "    return t - u;\n"
@@ -727,7 +727,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct B {\n"
-                                 "    friend void f(B &);\n"
+                                 "    friend void f(B &) {\n"
+                                 "    }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct C {\n"
@@ -813,7 +814,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("void f(B &) {\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("friend void f(C &) {\n"
+                Assert::AreEqual("void f(C &) {\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
             }
@@ -1082,7 +1083,8 @@ Test ExploratoryTestsOfClangAST[] =
     },
     {"3. Nested namespaces and qualified names and keys", []
         {
-            std::string code = "namespace A {  namespace B { struct STwoDeep {};               namespace C { struct SThreeDeep {};                      namespace { struct SInvisible {};     } } }}\n"
+            std::string code = 
+                               "namespace A {  namespace B { struct STwoDeep {};               namespace C { struct SThreeDeep {};                      namespace { struct SInvisible {};     } } }}\n"
                                "namespace A {  namespace B { void FTwoDeep() {}                namespace C { int FThreeDeep() { return 0; }                  static void FInvisible() {}        } }}\n"
                                "namespace A {  namespace B { enum ETwoDeep { One, Two=2 };     namespace C { enum EThreeDeep { One, Two, Three=3};      namespace { enum EInvisible { Zero }; } } }}\n"
                                "namespace A {  namespace B { typedef A::B::STwoDeep MyTwoDeep; namespace C { using MyThreeDeep = A::B::C::SThreeDeep; } typedef A::B::C::EInvisible MyInvisible;  }}\n"
@@ -1127,11 +1129,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("VariadicFunction(int,...)"                                                                                  , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("void VariadicFunction(int count,...) {\n}\n"                                                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void VariadicFunction(int count, ...) {\n}\n"                                                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("operator new(unsigned long long)"                                                                           , (*it  ).first, "should have gotten proper key");
                 Assert::AreEqual("void *operator new(size_t size) {\n    return (void *)7;\n}\n"                                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("templateyFunction<int,42,Wrapper,<char, double>>(int,Wrapper<int>,char,double)"                             , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("template<> void templateyFunction<int, 42, Wrapper, <char, double>>(int, Wrapper<int>, char, double) {\n"
+                Assert::AreEqual("template<> void templateyFunction<int, 42, Wrapper, char, double>(int, Wrapper<int>, char, double) {\n"
                                  "}\n"                                                                                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("templateyFunction<typename T,int N,template <typename> class TT,typename ...Args>(T,TT<T>,Args...)"         , (*it  ).first, "should have gotten proper key");
                 Assert::AreEqual("template <typename T, int N, template <typename> class TT, typename ...Args> void templateyFunction(T value, TT<T> tt, Args ...args) {\n"

@@ -70,28 +70,30 @@ namespace OdrCop3
 
         class Can
         {
-            static bool IsStaticInline(const clang::Decl* decl)
+            const ContextItems& contextItems;
+
+            bool IsStaticInline(const clang::Decl* decl) const
             {   // print() drops "inline" from "static inline" vars
                 if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
                     if (varDecl->isInlineSpecified())
                         return true;
                 return false;
             }
-            static bool IsUnnamedUnion(const clang::Decl* decl)
+            bool IsUnnamedUnion(const clang::Decl* decl) const
             {
                 if (const auto* nestedUnion = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
                     if (nestedUnion->isUnion() && nestedUnion->getName().empty())
                         return true;
                 return false;
             }
-            static bool IsUnnamedEnum(const clang::Decl* decl)
+            bool IsUnnamedEnum(const clang::Decl* decl) const
             {
                 if (const auto* nestedEnum = llvm::dyn_cast<clang::EnumDecl>(decl))
                     if (nestedEnum->getName().empty())
                         return true;
                 return false;
             }
-            static bool IsTypedefOfUnnamedEnum(const clang::Decl* decl)
+            bool IsTypedefOfUnnamedEnum(const clang::Decl* decl) const
             {
                 if (const auto* typedefDecl = llvm::dyn_cast<clang::TypedefDecl>(decl))
                     if (const auto* enumType = typedefDecl->getUnderlyingType()->getAs<clang::EnumType>())
@@ -99,13 +101,13 @@ namespace OdrCop3
                             return true;
                 return false;
             }
-            static bool IsTemplateMethod(const clang::Decl* decl)
+            bool IsTemplateMethod(const clang::Decl* decl) const
             {
                 if (llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
                     return true;
                 return false;
             }
-            static bool IsTemplateClass(const clang::Decl* decl)
+            bool IsTemplateClass(const clang::Decl* decl) const
             {
                 if (llvm::dyn_cast<clang::ClassTemplateDecl>(decl))
                     return true;
@@ -113,7 +115,7 @@ namespace OdrCop3
                     return true;
                 return false;
             }
-            static bool IsVarLambda(const clang::Decl* decl)
+            bool IsVarLambda(const clang::Decl* decl) const
             {
                 if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
                     if (const auto* recordType = varDecl->getType().getNonReferenceType()->getAs<clang::RecordType>())
@@ -122,26 +124,33 @@ namespace OdrCop3
                                 return true;
                 return false;
             }
-            static bool IsVarTemplate(const clang::Decl* decl)
+            bool IsVarTemplate(const clang::Decl* decl) const
             {
                 if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
                     if (const auto* varTemplateDecl = varDecl->getDescribedVarTemplate())
                         return true;
+
+                // Decl::print() prints these wrong
+                if (dyn_cast<VarTemplateSpecializationDecl>(decl))
+                    return true;
+                if (dyn_cast<VarTemplatePartialSpecializationDecl>(decl))
+                    return true;
+
                 return false;
             }
-            static bool IsVarOutOfLine(const clang::Decl* decl)
+            bool IsVarOutOfLine(const clang::Decl* decl) const
             {
                 if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
                     return varDecl->isOutOfLine();
                 return false;
             }
-            static bool IsFriendDecl(const clang::Decl* decl)
+            bool IsFriendDecl(const clang::Decl* decl) const
             {
                 if (const auto* FriendDecl = llvm::dyn_cast<clang::FriendDecl>(decl))
                     return true;
                 return false;
             }
-            static bool IsConversionOperatorReturnTypeInAnonymousNamespace(const ContextItems& contextItems, const clang::Decl* decl)
+            bool IsConversionOperatorReturnTypeInAnonymousNamespace(const clang::Decl* decl) const
             {
                 if (const CXXConversionDecl* cxxConversion = dyn_cast<CXXConversionDecl>(decl))
                     if (NeedsManualSerialization(contextItems, cxxConversion->getReturnType()))
@@ -149,16 +158,37 @@ namespace OdrCop3
                 return false;
             }
 
-            template <typename Type> static bool PrintType(const ContextItems& contextItems, clang::QualType qualType)
+            template <typename Type> bool PrintType(clang::QualType qualType) const
             {
                 if (const auto* type = qualType->getAs<Type>())
-                    if (false == Can::Print(contextItems, type->getDecl()))
+                    if (false == Can::Print(type->getDecl()))
                         return false;
                 return true;
             }
 
+            bool PrintReturnTypeAndArgs(const clang::Decl* decl) const
+            {
+                if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(decl))
+                {
+                    QualType returnType = functionDecl->getReturnType();
+                    if (false == Can::PrintType<clang::TypedefType>(returnType))
+                        return false;
+                    if (false == Can::PrintType<clang::RecordType >(returnType))
+                        return false;
+                    if (false == Can::PrintType<clang::EnumType   >(returnType))
+                        return false;
+
+                    // for each arg
+                    for (const ParmVarDecl* parmVarDecl : functionDecl->parameters())
+                        if (false == Can::Print(parmVarDecl))
+                            return false;
+                }
+                return true;
+            }
+
         public:
-            static bool Print(const ContextItems& contextItems, const clang::Decl* decl)
+            Can(const ContextItems& contextItems) : contextItems(contextItems) {}
+            bool Print(const clang::Decl* decl) const
             {
                 if (contextItems.needsFriend == true)
                     return false;
@@ -173,16 +203,26 @@ namespace OdrCop3
                 if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
                     for (const clang::Decl* childDecl : cxxRecordDecl->decls())
                         if (!childDecl->isImplicit())
-                            if (false == Can::Print(contextItems, childDecl))
+                            if (false == Can::Print(childDecl))
                                 return false;
+                // ditto class template
+                if (const auto* classTemplateDecl = llvm::dyn_cast<clang::ClassTemplateDecl>(decl))
+                    if (false == Can::Print(classTemplateDecl->getTemplatedDecl()))
+                        return false;
+                // check function's return type and args
+                if (false == Can::PrintReturnTypeAndArgs(decl))
+                    return false;
 
                 // after recursion, see if field is printable (1 level deep)
                 if (const auto* fieldDecl = llvm::dyn_cast<clang::FieldDecl>(decl))
                 {
                     const clang::QualType fieldType = fieldDecl->getType();
-                    if (false == Can::PrintType<clang::TypedefType>(contextItems, fieldType)) return false;
-                    if (false == Can::PrintType<clang:: RecordType>(contextItems, fieldType)) return false;
-                    if (false == Can::PrintType<clang::   EnumType>(contextItems, fieldType)) return false;
+                    if (false == Can::PrintType<clang::TypedefType>(fieldType))
+                        return false;
+                    if (false == Can::PrintType<clang:: RecordType>(fieldType))
+                        return false;
+                    if (false == Can::PrintType<clang::   EnumType>(fieldType))
+                        return false;
                     return true;
                 }
 
@@ -195,10 +235,6 @@ namespace OdrCop3
                     return false;
                 if (true == IsTypedefOfUnnamedEnum(decl))
                     return false;
-                if (true == IsTemplateMethod(decl))
-                    return false;
-                if (true == IsTemplateClass(decl))
-                    return false;
                 if (true == IsVarLambda(decl))
                     return false;
                 if (true == IsVarTemplate(decl))
@@ -207,15 +243,18 @@ namespace OdrCop3
                     return false;
                 if (true == IsVarOutOfLine(decl))
                     return false;
-                if (true == IsConversionOperatorReturnTypeInAnonymousNamespace(contextItems, decl))
+                if (true == IsConversionOperatorReturnTypeInAnonymousNamespace(decl))
                     return false;
 
                 if (const auto* parmVarDecl = llvm::dyn_cast<clang::ParmVarDecl>(decl))
                 {
                     const clang::QualType parmType = parmVarDecl->getType();
-                    if (false == Can::PrintType<clang::TypedefType>(contextItems, parmType)) return false;
-                    if (false == Can::PrintType<clang:: RecordType>(contextItems, parmType)) return false;
-                    if (false == Can::PrintType<clang::   EnumType>(contextItems, parmType)) return false;
+                    if (false == Can::PrintType<clang::TypedefType>(parmType))
+                        return false;
+                    if (false == Can::PrintType<clang:: RecordType>(parmType))
+                        return false;
+                    if (false == Can::PrintType<clang::   EnumType>(parmType))
+                        return false;
                 }
 
                 return true;
@@ -257,28 +296,13 @@ namespace OdrCop3
                 return qualType.getAsString();
             }
 
-            using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>;
-
-            // Decl*s that must be serialized (e.g., for indenting)
-            switch(decl->getKind())
-            {
-            case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
-            case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
-            case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
-            case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
-            case clang::Decl::Kind::Function:                           if (const FunctionDecl*                    functionDecl = dyn_cast<FunctionDecl                          >(decl)) return DeclSerializer::SerializeFunctionDecl                          (contextItems, functionDecl);       break;
-            case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;
-            case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);              break;
-            default: break;
-            }
-
             if (
              // false &&
-                Can::Print(contextItems, decl))
+                Can(contextItems).Print(decl))
             {
                 struct Semicolon
                 {
-                    static std::string IfNeeded(const clang::Decl* decl)
+                    static std::string IfNeeded(const std::string& str, const clang::Decl* decl)
                     {
                         switch (decl->getKind())
                         {
@@ -286,8 +310,17 @@ namespace OdrCop3
                         case clang::Decl::CXXConstructor:
                         case clang::Decl::CXXConversion:
                         case clang::Decl::CXXDestructor:
-                        case clang::Decl::CXXMethod:        return cast<clang::FunctionDecl>(decl)->hasBody() ? "" : ";";
-                        default:                            break;
+                        case clang::Decl::CXXMethod:
+                        case clang::Decl::Function:
+                            if (cast<clang::FunctionDecl>(decl)->hasBody())
+                                return "";
+                            if (str.ends_with("}"))
+                                return "";
+                            if (str.ends_with("}\n"))
+                                return "";
+                            return ";\n";
+                        default:
+                            break;
                         }
                         return ";\n"; // everything else needs this
                     }
@@ -297,21 +330,19 @@ namespace OdrCop3
                 llvm::raw_string_ostream os(str);
                 decl->print(os, contextItems.printPolicy);
                 os.flush();
-                return str + Semicolon::IfNeeded(decl);
+                return str + Semicolon::IfNeeded(str, decl);
             }
 
+            using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>;
             switch(decl->getKind())
             {
-         // these are already handled, above
-         // case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
-         // case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
-         // case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
-         // case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
-         // case clang::Decl::Kind::Function in both switch statements, as it's also used for CXXMethod and CXXDestructor
-         // case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;
-         // case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);              break;
-
-            case clang::Decl::Kind::CXXMethod:                          // is a subclass of FunctionDecl
+            case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;
+            case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);              break;
+            case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
+            case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
+            case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
+            case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
+            case clang::Decl::Kind::CXXMethod: // is a subclass of FunctionDecl
             case clang::Decl::Kind::Function:                           if (const FunctionDecl*                    functionDecl = dyn_cast<FunctionDecl                          >(decl)) return DeclSerializer::SerializeFunctionDecl                          (contextItems, functionDecl);       break;
             case clang::Decl::Kind::CXXConversion:                      if (const CXXConversionDecl*          cxxConversionDecl = dyn_cast<CXXConversionDecl                     >(decl)) return DeclSerializer::SerializeCXXConversionDecl                     (contextItems, cxxConversionDecl);  break;
             case clang::Decl::Kind::CXXConstructor:                     if (const CXXConstructorDecl*        cxxConstructorDecl = dyn_cast<CXXConstructorDecl                    >(decl)) return DeclSerializer::SerializeCXXConstructorDecl                    (contextItems, cxxConstructorDecl); break;
