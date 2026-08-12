@@ -55,8 +55,8 @@ namespace OdrCop3
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, get_Name()); // let appropriate type serializer put in the (*blah) part
 
                 QualType qualType;
-                if (fieldDecl->getType()->isFunctionPointerType()) // getCanonicalType() sees right through the ParenType which totally hoses the pointer-to-function case.
-                    qualType = fieldDecl->getType();               // TODO: REVIEW
+                if (fieldDecl->getType()->isFunctionPointerType() || fieldDecl->getType()->isMemberPointerType()) // getCanonicalType() sees right through the ParenType which totally hoses the pointer-to-function case.
+                    qualType = fieldDecl->getType();
                 else
                     qualType = fieldDecl->getType().getCanonicalType();
                 out += IndentBlock(SerializeType(ci2, qualType), LengthOfLastLine(out));

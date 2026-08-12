@@ -64,32 +64,22 @@ namespace OdrCop3
         template<auto SerializeDecl, auto SerializeExpr>
         static std::string Types(const ContextItems& contextItems, clang::QualType qualType)
         {
-
             struct Can
             {
                 static bool Print(const ContextItems& contextItems, QualType qualType)
                 {
-                    // some types must be manually serialized, no matter what. E.g., typedefs
                     switch (qualType.getTypePtr()->getTypeClass())
-                    {
-                    case clang::Type::TypeClass::Typedef:       return false; 
-                    case clang::Type::TypeClass::Enum:          return false;
-                    case clang::Type::TypeClass::FunctionProto: return false; // TODO: think about this one. The print facility puts an extra set of () around the pointer-to-member-function case, for unknown reasons.
-                    case clang::Type::TypeClass::Paren:         return false;
+                    { // some types must be manually serialized, no matter what. E.g., typedefs
+                    case clang::Type::TypeClass::Typedef: return false;
+                    case clang::Type::TypeClass::Enum:    return false;
                     default: break;
                     }
-
                     if (NeedsManualSerialization(contextItems, qualType))
                         return false;
-
                     return true;
                 }
             };
-
-
-            if (
-             // false &&
-                Can::Print(contextItems, qualType))
+            if (Can::Print(contextItems, qualType))
             {
                 std::string str;
                 llvm::raw_string_ostream os(str);

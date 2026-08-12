@@ -87,7 +87,8 @@ namespace OdrCop3
             out += get_ReturnType();
             out  = TrimRightIf(out, "\n");
             out  = TrimRightIf(out, ";");
-            out += contextItems.aux; // I like this design quite a bit:  this is how I insert (*callback2) or (S::*mp)
+            out  = TrimRightIf(out, " ");
+            out += " " + contextItems.aux; // I like this design quite a bit:  this is how I insert (*callback2) or (S::*mp)
             out += "(";
             out += IndentBlock(get_Parameters(), LengthOfLastLine(out));
             out += get_Variadic();

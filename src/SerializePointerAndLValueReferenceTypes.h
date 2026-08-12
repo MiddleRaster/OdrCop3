@@ -18,22 +18,18 @@ namespace OdrCop3
 {
     template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class PointerAndLValueReferenceTypesSerializer
     {
-        const ContextItems       & contextItems;
+        const ContextItems& contextItems;
         QualType qt;
     public:
         PointerAndLValueReferenceTypesSerializer(const ContextItems& contextItems, QualType qt) : contextItems(contextItems), qt(qt) {}
         std::string Serialize(const std::string& starOrAmpersand) const
         {
-            if (qt->getPointeeType()->isFunctionProtoType())
-            {   // pointers-to-functions and references-to-functions have atypical syntax
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (" + starOrAmpersand + contextItems.aux + ")"); // pointer/reference-to-function syntax
+            if (qt->getPointeeType()->isFunctionProtoType() || // pointers-to-functions and references-to-functions have atypical syntax
+                qt->getPointeeType()->isArrayType        () )  // references/pointers-to-arrays have atypical syntax: base (&aux)[N]
+            {
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, starOrAmpersand + contextItems.aux); // pointer/reference-to-function syntax
                 std::string out = SerializeType(ci2, qt->getPointeeType());
                 return out;
-            }
-            if (qt->getPointeeType()->isArrayType())
-            {   // references/pointers-to-arrays have atypical syntax: base (&aux)[N]
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, "(" + starOrAmpersand + contextItems.aux + ")"); // pointer/reference to array
-                return SerializeType(ci2, qt->getPointeeType());
             }
 
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);

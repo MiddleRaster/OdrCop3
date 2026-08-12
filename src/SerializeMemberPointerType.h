@@ -48,13 +48,13 @@ namespace OdrCop3
         {
             int indentation = 0;
             std::string qualifierName;
-            std::string anonQualifier = GetQualifierIfAnonymousNamespace();
+            std::string anonQualifier   = GetQualifierIfAnonymousNamespace();
             if (anonQualifier.find("\n") != std::string::npos)
             {   // if multiline, do this twice: first to figure out what the indentation needs to be; then again with the right indentation
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (::*?????)");
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, "::*?????");
                 std::string placeHolder = SerializeType(ci2, memberPointerType->getPointeeType());
-                indentation   = static_cast<int>(placeHolder.find("::*?????"));
-                qualifierName = anonQualifier;
+                indentation             = static_cast<int>(placeHolder.find("::*?????"));
+                qualifierName           = anonQualifier;
             }
             else
             {
@@ -64,7 +64,7 @@ namespace OdrCop3
                 os.flush();
                 qualifierName = TrimRightIf(s, "::");
             }
-            ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, " (" + qualifierName + "::*" + contextItems.aux + ")");
+            ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, qualifierName + "::*" + contextItems.aux);
             return IndentBlock(SerializeType(ci, memberPointerType->getPointeeType()), indentation);
         }
     };
