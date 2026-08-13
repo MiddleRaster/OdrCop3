@@ -285,72 +285,71 @@ namespace OdrCop3
                 return qualType.getAsString();
             }
 
-            if (
-             // false &&
-                Can(contextItems).Print(decl))
+            if (Can(contextItems).Print(decl) == false)
             {
-                struct Semicolon
+                using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>;
+                switch(decl->getKind())
                 {
-                    static std::string IfNeeded(const std::string& str, const clang::Decl* decl)
-                    {
-                        switch (decl->getKind())
-                        {
-                        case clang::Decl::FunctionTemplate: return cast<clang::FunctionTemplateDecl>(decl)->getTemplatedDecl()->hasBody() ? "" : ";";
-                        case clang::Decl::CXXConstructor:
-                        case clang::Decl::CXXConversion:
-                        case clang::Decl::CXXDestructor:
-                        case clang::Decl::CXXMethod:
-                        case clang::Decl::Function:
-                            if (cast<clang::FunctionDecl>(decl)->hasBody())
-                                return "";
-                            if (str.ends_with("}"))
-                                return "";
-                            if (str.ends_with("}\n"))
-                                return "";
-                            return ";\n";
-                        default:
-                            break;
-                        }
-                        return ";\n"; // everything else needs this
-                    }
-                };
-
-                std::string str;
-                llvm::raw_string_ostream os(str);
-                decl->print(os, contextItems.printPolicy);
-                os.flush();
-                return str + Semicolon::IfNeeded(str, decl);
+                case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;
+                case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);              break;
+                case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
+                case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
+                case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
+                case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
+                case clang::Decl::Kind::CXXMethod: // is a subclass of FunctionDecl
+                case clang::Decl::Kind::Function:                           if (const FunctionDecl*                    functionDecl = dyn_cast<FunctionDecl                          >(decl)) return DeclSerializer::SerializeFunctionDecl                          (contextItems, functionDecl);       break;
+                case clang::Decl::Kind::CXXConversion:                      if (const CXXConversionDecl*          cxxConversionDecl = dyn_cast<CXXConversionDecl                     >(decl)) return DeclSerializer::SerializeCXXConversionDecl                     (contextItems, cxxConversionDecl);  break;
+                case clang::Decl::Kind::CXXConstructor:                     if (const CXXConstructorDecl*        cxxConstructorDecl = dyn_cast<CXXConstructorDecl                    >(decl)) return DeclSerializer::SerializeCXXConstructorDecl                    (contextItems, cxxConstructorDecl); break;
+                case clang::Decl::Kind::CXXDestructor:                      if (const CXXDestructorDecl*          cxxDestructorDecl = dyn_cast<CXXDestructorDecl                     >(decl)) return DeclSerializer::SerializeCXXDestructorDecl                     (contextItems, cxxDestructorDecl);  break;
+                case clang::Decl::Kind::ParmVar:                            if (const ParmVarDecl *                             pvd = dyn_cast<ParmVarDecl                           >(decl)) return DeclSerializer::SerializeParmVarDecl                           (contextItems, pvd);                break;
+                case clang::Decl::Kind::CXXRecord:                          if (const CXXRecordDecl *                           cxx = dyn_cast<CXXRecordDecl                         >(decl)) return DeclSerializer::SerializeCXXRecordDecl                         (contextItems, cxx);                break;
+                case clang::Decl::Kind::Field:                              if (const FieldDecl *                         fieldDecl = dyn_cast<FieldDecl                             >(decl)) return DeclSerializer::SerializeFieldDecl                             (contextItems, fieldDecl);          break;
+                case clang::Decl::Kind::AccessSpec:                         if (const AccessSpecDecl *                   accessDecl = dyn_cast<AccessSpecDecl                        >(decl)) return DeclSerializer::SerializeAccessSpecDecl                        (contextItems, accessDecl);         break;
+                case clang::Decl::Kind::Var:                                if (const VarDecl *                             varDecl = dyn_cast<VarDecl                               >(decl)) return DeclSerializer::SerializeVarDecl                               (contextItems, varDecl);            break;
+                case clang::Decl::Kind::Enum:                               if (const EnumDecl*                            enumDecl = dyn_cast<EnumDecl                              >(decl)) return DeclSerializer::SerializeEnumDecl                              (contextItems, enumDecl);           break;
+                case clang::Decl::Kind::Typedef:                            if (const TypedefDecl *                     typedefDecl = dyn_cast<TypedefDecl                           >(decl)) return DeclSerializer::SerializeTypedefDecl                           (contextItems, typedefDecl);        break;
+                case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<TypeAliasDecl                         >(decl)) return DeclSerializer::SerializeTypeAliasDecl                         (contextItems, tad);                break;
+                case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<TypeAliasTemplateDecl                 >(decl)) return DeclSerializer::SerializeTypeAliasTemplateDecl                 (contextItems, tatd);               break;
+                case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<FriendDecl                            >(decl)) return DeclSerializer::SerializeFriendDecl                            (contextItems, friendDecl);         break;
+                case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<ConceptDecl                           >(decl)) return DeclSerializer::SerializeConceptDecl                           (contextItems, conceptDecl);        break;
+                default: break;
+                }
+                // when this is released, comment out the next two lines, so that it won't throw but will print something
+                decl->dump();
+                throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));
             }
 
-            using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>;
-            switch(decl->getKind())
+            struct Semicolon
             {
-            case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;
-            case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);              break;
-            case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
-            case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
-            case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
-            case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
-            case clang::Decl::Kind::CXXMethod: // is a subclass of FunctionDecl
-            case clang::Decl::Kind::Function:                           if (const FunctionDecl*                    functionDecl = dyn_cast<FunctionDecl                          >(decl)) return DeclSerializer::SerializeFunctionDecl                          (contextItems, functionDecl);       break;
-            case clang::Decl::Kind::CXXConversion:                      if (const CXXConversionDecl*          cxxConversionDecl = dyn_cast<CXXConversionDecl                     >(decl)) return DeclSerializer::SerializeCXXConversionDecl                     (contextItems, cxxConversionDecl);  break;
-            case clang::Decl::Kind::CXXConstructor:                     if (const CXXConstructorDecl*        cxxConstructorDecl = dyn_cast<CXXConstructorDecl                    >(decl)) return DeclSerializer::SerializeCXXConstructorDecl                    (contextItems, cxxConstructorDecl); break;
-            case clang::Decl::Kind::CXXDestructor:                      if (const CXXDestructorDecl*          cxxDestructorDecl = dyn_cast<CXXDestructorDecl                     >(decl)) return DeclSerializer::SerializeCXXDestructorDecl                     (contextItems, cxxDestructorDecl);  break;
-            case clang::Decl::Kind::ParmVar:                            if (const ParmVarDecl *                             pvd = dyn_cast<ParmVarDecl                           >(decl)) return DeclSerializer::SerializeParmVarDecl                           (contextItems, pvd);                break;
-            case clang::Decl::Kind::CXXRecord:                          if (const CXXRecordDecl *                           cxx = dyn_cast<CXXRecordDecl                         >(decl)) return DeclSerializer::SerializeCXXRecordDecl                         (contextItems, cxx);                break;
-            case clang::Decl::Kind::Field:                              if (const FieldDecl *                         fieldDecl = dyn_cast<FieldDecl                             >(decl)) return DeclSerializer::SerializeFieldDecl                             (contextItems, fieldDecl);          break;
-            case clang::Decl::Kind::AccessSpec:                         if (const AccessSpecDecl *                   accessDecl = dyn_cast<AccessSpecDecl                        >(decl)) return DeclSerializer::SerializeAccessSpecDecl                        (contextItems, accessDecl);         break;
-            case clang::Decl::Kind::Var:                                if (const VarDecl *                             varDecl = dyn_cast<VarDecl                               >(decl)) return DeclSerializer::SerializeVarDecl                               (contextItems, varDecl);            break;
-            case clang::Decl::Kind::Enum:                               if (const EnumDecl*                            enumDecl = dyn_cast<EnumDecl                              >(decl)) return DeclSerializer::SerializeEnumDecl                              (contextItems, enumDecl);           break;
-            case clang::Decl::Kind::Typedef:                            if (const TypedefDecl *                     typedefDecl = dyn_cast<TypedefDecl                           >(decl)) return DeclSerializer::SerializeTypedefDecl                           (contextItems, typedefDecl);        break;
-            case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<TypeAliasDecl                         >(decl)) return DeclSerializer::SerializeTypeAliasDecl                         (contextItems, tad);                break;
-            case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<TypeAliasTemplateDecl                 >(decl)) return DeclSerializer::SerializeTypeAliasTemplateDecl                 (contextItems, tatd);               break;
-            case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<FriendDecl                            >(decl)) return DeclSerializer::SerializeFriendDecl                            (contextItems, friendDecl);         break;
-            case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<ConceptDecl                           >(decl)) return DeclSerializer::SerializeConceptDecl                           (contextItems, conceptDecl);        break;
-            default: break;
-            }
-            decl->dump();
-            throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));
+                static std::string IfNeeded(const std::string& str, const clang::Decl* decl)
+                {
+                    switch (decl->getKind())
+                    {
+                    case clang::Decl::FunctionTemplate: return cast<clang::FunctionTemplateDecl>(decl)->getTemplatedDecl()->hasBody() ? "" : ";";
+                    case clang::Decl::CXXConstructor:
+                    case clang::Decl::CXXConversion:
+                    case clang::Decl::CXXDestructor:
+                    case clang::Decl::CXXMethod:
+                    case clang::Decl::Function:
+                        if (cast<clang::FunctionDecl>(decl)->hasBody())
+                            return "";
+                        if (str.ends_with("}"))
+                            return "";
+                        if (str.ends_with("}\n"))
+                            return "";
+                        return ";\n";
+                    default:
+                        break;
+                    }
+                    return ";\n"; // everything else needs this
+                }
+            };
+
+            std::string str;
+            llvm::raw_string_ostream os(str);
+            decl->print(os, contextItems.printPolicy);
+            os.flush();
+            return str + Semicolon::IfNeeded(str, decl);
         }
     }
 }
