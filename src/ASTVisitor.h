@@ -175,7 +175,7 @@ namespace OdrCop3
             if (llvm::isa<clang::RecordDecl>(enumDecl->getDeclContext()))
                 return true; // enums local to UDTs     are covered by the  UDT; no need to duplicate it here
 
-            std::string  key = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey<&SerializeDecls, &SerializeTypes, &SerializeExprs>(contextItems, enumDecl) : enumDecl->getQualifiedNameAsString();
+            std::string  key = enumDecl->getNameAsString() == "" ? MakeUnnamedEnumKey(contextItems, enumDecl) : enumDecl->getQualifiedNameAsString();
             maps.enumMap[key].push_back({TU, SerializeDecls(contextItems, enumDecl)});
             return true;
         }
