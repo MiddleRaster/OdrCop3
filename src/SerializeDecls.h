@@ -79,26 +79,16 @@ namespace OdrCop3
                         return true;
                 return false;
             }
-            bool IsUnnamedUnion(const clang::Decl* decl) const
+            bool IsUnnamedUnionClassOrStruct(const clang::Decl* decl) const
             {
-                if (const auto* nestedUnion = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
-                    if (nestedUnion->isUnion() && nestedUnion->getName().empty())
-                        return true;
+                if (const auto* record = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
+                    return record->getName().empty();
                 return false;
             }
             bool IsUnnamedEnum(const clang::Decl* decl) const
             {
-                if (const auto* nestedEnum = llvm::dyn_cast<clang::EnumDecl>(decl))
-                    if (nestedEnum->getName().empty())
-                        return true;
-                return false;
-            }
-            bool IsTypedefOfUnnamedEnum(const clang::Decl* decl) const
-            {
-                if (const auto* typedefDecl = llvm::dyn_cast<clang::TypedefDecl>(decl))
-                    if (const auto* enumType = typedefDecl->getUnderlyingType()->getAs<clang::EnumType>())
-                        if (enumType->getDecl()->getName().empty())
-                            return true;
+                if (const auto* enumDecl = llvm::dyn_cast<clang::EnumDecl>(decl))
+                    return enumDecl->getName().empty();
                 return false;
             }
             bool IsTemplateMethod(const clang::Decl* decl) const
@@ -157,22 +147,25 @@ namespace OdrCop3
                     return Can::Print(type->getDecl());
                 return true;
             }
+            bool PrintAnyOf(clang::QualType qualType) const
+            {
+                if (false == Can::PrintType<clang::TypedefType>(qualType))
+                    return false;
+                if (false == Can::PrintType<clang::RecordType >(qualType))
+                    return false;
+                if (false == Can::PrintType<clang::EnumType   >(qualType))
+                    return false;
+                return true;
+            }
 
             bool PrintReturnTypeAndArgs(const clang::Decl* decl) const
             {
                 if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(decl))
-                {
-                    QualType returnType = functionDecl->getReturnType();
-                    if (false == Can::PrintType<clang::TypedefType>(returnType))
+                {   // return type, then args
+                    if (false == Can::PrintAnyOf(functionDecl->getReturnType()))
                         return false;
-                    if (false == Can::PrintType<clang::RecordType >(returnType))
-                        return false;
-                    if (false == Can::PrintType<clang::EnumType   >(returnType))
-                        return false;
-
-                    // for each arg
                     for (const ParmVarDecl* parmVarDecl : functionDecl->parameters())
-                        if (false == Can::Print(parmVarDecl))
+                        if (false == Can::PrintAnyOf(parmVarDecl->getType()))
                             return false;
                 }
                 return true;
@@ -201,30 +194,21 @@ namespace OdrCop3
                 if (const auto* classTemplateDecl = llvm::dyn_cast<clang::ClassTemplateDecl>(decl))
                     if (false == Can::Print(classTemplateDecl->getTemplatedDecl()))
                         return false;
-                // check function's return type and args
-                if (false == Can::PrintReturnTypeAndArgs(decl))
+                if (false == Can::PrintReturnTypeAndArgs(decl)) // check function's return type and args
                     return false;
 
-                // after recursion, see if field is printable (1 level deep)
-                if (const auto* fieldDecl = llvm::dyn_cast<clang::FieldDecl>(decl))
-                {
-                    const clang::QualType fieldType = fieldDecl->getType();
-                    if (false == Can::PrintType<clang::TypedefType>(fieldType))
-                        return false;
-                    if (false == Can::PrintType<clang:: RecordType>(fieldType))
-                        return false;
-                    if (false == Can::PrintType<clang::   EnumType>(fieldType))
-                        return false;
-                }
+                // after recursion, check 1 level deep
+                if (const auto*     fieldDecl = llvm::dyn_cast<clang::    FieldDecl>(decl)) if (false == Can::PrintAnyOf(    fieldDecl->getType()))           return false;
+                if (const auto*   typedefDecl = llvm::dyn_cast<clang::  TypedefDecl>(decl)) if (false == Can::PrintAnyOf(  typedefDecl->getUnderlyingType())) return false;
+                if (const auto* typeAliasDecl = llvm::dyn_cast<clang::TypeAliasDecl>(decl)) if (false == Can::PrintAnyOf(typeAliasDecl->getUnderlyingType())) return false;
+                if (const auto*   parmVarDecl = llvm::dyn_cast<clang::  ParmVarDecl>(decl)) if (false == Can::PrintAnyOf(  parmVarDecl->getType()))           return false;
 
                 // after recursion (now top-level)
                 if (true == IsStaticInline(decl))
                     return false;
-                if (true == IsUnnamedUnion(decl))
+                if (true == IsUnnamedUnionClassOrStruct(decl))
                     return false;
                 if (true == IsUnnamedEnum(decl))
-                    return false;
-                if (true == IsTypedefOfUnnamedEnum(decl))
                     return false;
                 if (true == IsVarLambda(decl))
                     return false;
@@ -234,17 +218,6 @@ namespace OdrCop3
                     return false;
                 if (true == IsVarOutOfLine(decl))
                     return false;
-
-                if (const auto* parmVarDecl = llvm::dyn_cast<clang::ParmVarDecl>(decl))
-                {
-                    const clang::QualType parmType = parmVarDecl->getType();
-                    if (false == Can::PrintType<clang::TypedefType>(parmType))
-                        return false;
-                    if (false == Can::PrintType<clang:: RecordType>(parmType))
-                        return false;
-                    if (false == Can::PrintType<clang::   EnumType>(parmType))
-                        return false;
-                }
 
                 return true;
             }

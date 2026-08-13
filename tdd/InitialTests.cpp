@@ -110,7 +110,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                                , (*it++).second[0].fullyQualified, "should have gotten the struct");
                 Assert::AreEqual("struct Foo : Bar {\n"
-                                 "    struct  {\n"
+                                 "    struct {\n"
                                  "        int x;\n"
                                  "    };\n"
                                  "    int i;\n"
@@ -167,7 +167,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual("struct A {\n"
                              "    struct B {\n"
                              "        struct C {\n"
-                             "            union  {\n"
+                             "            union {\n"
                              "                int x;\n"
                              "            };\n"
                              "        };\n"
@@ -1753,6 +1753,114 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("using FunctionPointer = int (*)();\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using FunctionReference = int (&)();\n"  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using IntArrayReference = int (&)[3];\n" , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+        }
+    },
+
+    {"Unnamed enum/class/struct/union tests", []
+        {
+            std::string code = 
+// typedef/using alias around unnamed union/struct/class/enum
+                               "struct TypedefAroundUnnamedUnion  { typedef union  { int i; double d; } MyTypedefedUnnamedUnion ; };\n"
+                               "struct TypedefAroundUnnamedStruct { typedef struct { int i; double d; } MyTypedefedUnnamedStruct; };\n"
+                               "struct TypedefAroundUnnamedClass  { typedef class  { int i; double d; } MyTypedefedUnnamedClass ; };\n"
+                               "struct TypedefAroundUnnamedEnum   { typedef enum   { i=0,          d  } MyTypedefedUnnmaedEnum  ; };\n"
+                               "struct UsingAroundUnnamedUnion    { using MyUsingAliasedUnnamedUnion  = union  { int i; double d; }; };\n"
+                               "struct UsingAroundUnnamedStruct   { using MyUsingAliasedUnnamedStruct = struct { int i; double d; }; };\n"
+                               "struct UsingAroundUnnamedClass    { using MyUsingAliasedUnnamedClass  = class  { int i; double d; }; };\n"
+                               "struct UsingAroundUnnamedEnum     { using MyUsingAliasedUnnmaedEnum   = enum   { i = 0,        d  }; };\n"
+
+
+/*
+nested unnamed union/struct/class with field
+unnamed struct as static/global (var)
+unnamed struct passed as argument:  e.g., int f(struct { int x; } arg) { return arg.x; }
+*/
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual(8, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            //
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct TypedefAroundUnnamedClass {\n"
+                                 "    typedef class (unnamed class at input.cc:3:45) {\n"
+                                 "                int i;\n"
+                                 "                double d;\n"
+                                 "            } MyTypedefedUnnamedClass;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct TypedefAroundUnnamedEnum {\n"
+                                 "    typedef enum (unnamed enum at input.cc:4:45) {\n"
+                                 "                i = 0,\n"
+                                 "                d\n"
+                                 "            } MyTypedefedUnnmaedEnum;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct TypedefAroundUnnamedStruct {\n"
+                                 "    typedef struct (unnamed struct at input.cc:2:45) {\n"
+                                 "                int i;\n"
+                                 "                double d;\n"
+                                 "            } MyTypedefedUnnamedStruct;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct TypedefAroundUnnamedUnion {\n"
+                                 "    typedef union (unnamed union at input.cc:1:45) {\n"
+                                 "                int i;\n"
+                                 "                double d;\n"
+                                 "            } MyTypedefedUnnamedUnion;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct UsingAroundUnnamedClass {\n"
+                                 "    using MyUsingAliasedUnnamedClass = class (unnamed class at input.cc:7:73) {\n"
+                                 "                                           int i;\n"
+                                 "                                           double d;\n"
+                                 "                                       };\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct UsingAroundUnnamedEnum {\n"
+                                 "    using MyUsingAliasedUnnmaedEnum = enum (unnamed enum at input.cc:8:73) {\n"
+                                 "                                          i = 0,\n"
+                                 "                                          d\n"
+                                 "                                      };\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct UsingAroundUnnamedStruct {\n"
+                                 "    using MyUsingAliasedUnnamedStruct = struct (unnamed struct at input.cc:6:73) {\n"
+                                 "                                            int i;\n"
+                                 "                                            double d;\n"
+                                 "                                        };\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct UsingAroundUnnamedUnion {\n"
+                                 "    using MyUsingAliasedUnnamedUnion = union (unnamed union at input.cc:5:73) {\n"
+                                 "                                           int i;\n"
+                                 "                                           double d;\n"
+                                 "                                       };\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
             }
             {
                 auto it = maps.functionMap.begin();

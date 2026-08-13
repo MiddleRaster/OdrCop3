@@ -27,7 +27,9 @@ namespace OdrCop3
         {
             std::string fqtd;
             fqtd = "using " + typeAliasDecl->getNameAsString() + " = ";
-            fqtd += TrimRightIf(IndentBlock(SerializeType(contextItems, typeAliasDecl->getUnderlyingType()), fqtd.size()), ";");
+            fqtd += IndentBlock(SerializeType(contextItems, typeAliasDecl->getUnderlyingType()), fqtd.size());
+            fqtd  = TrimRightIf(fqtd, " ");
+            fqtd  = TrimRightIf(fqtd, ";");
             fqtd += ";\n";
             return fqtd;
         }

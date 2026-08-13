@@ -25,6 +25,15 @@ namespace OdrCop3
         std::string get_Friend()      const { return contextItems.needsFriend ? "friend " : ""; }
         std::string get_Name()        const
         {
+            // is it the C-like syntax case?
+            if (const TypedefNameDecl* typedefNameDecl = cxxRecordDecl->getTypedefNameForAnonDecl())
+            {   // similar to enum case. // TODO: REVIEW: should this be combined with enum case?
+                clang::SourceManager& sourceManager = cxxRecordDecl->getASTContext().getSourceManager();
+                clang::PresumedLoc      presumedLoc = sourceManager.getPresumedLoc(cxxRecordDecl->getLocation());
+                std::string namelessName = std::string("(unnamed ") + get_Kind() + "at " + presumedLoc.getFilename() + ":" + std::to_string(presumedLoc.getLine()) + ":" + std::to_string(presumedLoc.getColumn()) + ")";
+                return namelessName;
+            }
+
             std::string fullyQualifiedName = cxxRecordDecl->getQualifiedNameAsString();
             if((fullyQualifiedName.find("(anonymous struct at ") != std::string::npos) ||
                (fullyQualifiedName.find("(anonymous union at " ) != std::string::npos) ||
@@ -145,6 +154,7 @@ namespace OdrCop3
             out += get_Name() + contextItems.aux; // aux contains <args>
             if (!cxxRecordDecl->isThisDeclarationADefinition())
                 return out + ";\n"; // if it's a declaration, go no farther
+            out = TrimRightIf(out, " "); // certainly don't want two spaces in a row, which happens if it's a nameless class/struct/untion
             out += " ";
             if (hasFinal) // final is treated as an attribute, but it's really a keyword
                 out += "final ";

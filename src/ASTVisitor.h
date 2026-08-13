@@ -194,13 +194,8 @@ namespace OdrCop3
                 if (tad->getDescribedAliasTemplate() != nullptr)
                     return true; // Skip the templated decl inside a TypeAliasTemplateDecl - handled below
 
-            if (typedefDecl->getDeclContext()->isRecord()) {
-                const auto* rd = llvm::cast<CXXRecordDecl>(typedefDecl->getDeclContext());
-                if (rd->getDescribedClassTemplate() != nullptr)
-                    return true; // inside a class template definition
-                if (const auto* spec = llvm::dyn_cast<ClassTemplateSpecializationDecl>(rd))
-                    return true; // inside a class template specialization or partial specialization
-            }
+            if (typedefDecl->getDeclContext()->isRecord())
+                return true; // nested, not a top-level typedef
 
             std::string aliasName = typedefDecl->getQualifiedNameAsString();
             maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, typedefDecl)});
@@ -215,13 +210,7 @@ namespace OdrCop3
                 return true;
 
             if (typeAliasTemplateDecl->getDeclContext()->isRecord())
-            {
-                const auto* cxxRecordDecl = cast<CXXRecordDecl>(typeAliasTemplateDecl->getDeclContext());
-                if (cxxRecordDecl->getDescribedClassTemplate())
-                    return true; // outer class has the alias; no need to put it in again
-                if (isa<ClassTemplateSpecializationDecl>(cxxRecordDecl))
-                    return true;
-            }
+                return true; // nested, not a top-level using alias
 
             std::string     aliasName = typeAliasTemplateDecl->getQualifiedNameAsString();
             maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, typeAliasTemplateDecl)});
