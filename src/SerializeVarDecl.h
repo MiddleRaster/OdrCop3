@@ -157,16 +157,13 @@ namespace OdrCop3
             if (varDecl->isConstexpr())
                 type = type.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const.
             std::string name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
-            if (NeedsManualSerialization(contextItems, type)) {
-                out += TrimRightIf(IndentBlock(SerializeType(contextItems, type), LengthOfLastLine(out)), " ");
-                out += " " + name;
-            } else {
-                std::string varStr;
-                llvm::raw_string_ostream os(varStr);
-                type.print(os, contextItems.printPolicy, name);
-                os.flush();
-                out += varStr;
-            }
+            out += TrimRightIf(IndentBlock(SerializeType(contextItems, type), LengthOfLastLine(out)), " ");
+            // snug up * and &
+            if (!out.ends_with("*")) // e.g., "void *" gets no space
+            if (!out.ends_with("&")) // e.g., ditto &
+            if (!out.ends_with(" ")) // certainly don't want two spaces in a row
+                out += " ";          // e.g., "int" does
+            out += name;
             out += get_TemplateFooter();
             out += IndentBlock(get_Init(), LengthOfLastLine(out));
             out += ";\n";

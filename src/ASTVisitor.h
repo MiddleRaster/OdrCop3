@@ -125,6 +125,9 @@ namespace OdrCop3
             if (cxxRecordDecl->isLambda())
                 return true; // skip lambdas
 
+            if (cxxRecordDecl->getName().empty())
+                return true; // makes no sense to compare unnamed structs in different TUs.
+
             if (cxxRecordDecl->getDescribedClassTemplate())
                 return true; // has its own handler
 

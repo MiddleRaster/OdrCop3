@@ -1775,12 +1775,26 @@ Test ExploratoryTestsOfClangAST[] =
                                "struct UsingAroundUnnamedStruct   { using MyUsingAliasedUnnamedStruct = struct { int i; double d; }; };\n"
                                "struct UsingAroundUnnamedClass    { using MyUsingAliasedUnnamedClass  = class  { int i; double d; }; };\n"
                                "struct UsingAroundUnnamedEnum     { using MyUsingAliasedUnnmaedEnum   = enum   { i = 0,        d  }; };\n"
-
+// nested unnamed union/struct/class/enum with field
+                               "struct NamelessEnumUsedAsAField   { enum   { A,  B,  C } field; };\n"
+                               "struct NamelessStructUsedAsAField { struct { int x, y; } field; };\n"
+                               "struct NamelessClassUsedAsAField  { class  { int x, y; } field; };\n"
+                               "struct NamelessUnionUsedAsAField  { union  { int x, y; } field; };\n"
+                               "struct StructContainingALargeIntegerField\n"
+                               "{\n"
+                               "    typedef union {\n"
+                               "        struct { unsigned long  LowPart; signed long HighPart; } Parts;\n"
+                               "        long long QuadPart;\n"
+                               "    } LARGE_INTEGER;\n"
+                               "    LARGE_INTEGER field;\n"
+                               "};\n"
+                               "struct { int x; double y; } UnnamedStructUsedAsGlobalVar;\n"
 
 /*
-nested unnamed union/struct/class with field
 unnamed struct as static/global (var)
 unnamed struct passed as argument:  e.g., int f(struct { int x; } arg) { return arg.x; }
+typedef of using alias of typedef of using alias.
+template using alias
 */
                                ;
             OdrCop3::AllMaps maps;
@@ -1793,9 +1807,55 @@ unnamed struct passed as argument:  e.g., int f(struct { int x; } arg) { return 
             //Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
             //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             //Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
-            //
+
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct NamelessClassUsedAsAField {\n"
+                                 "    class (unnamed class at input.cc:11:37) {\n"
+                                 "        int x;\n"
+                                 "        int y;\n"
+                                 "    } field;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamelessEnumUsedAsAField {\n"
+                                 "    enum (unnamed enum at input.cc:9:37) {\n"
+                                 "        A,\n"
+                                 "        B,\n"
+                                 "        C\n"
+                                 "    } field;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamelessStructUsedAsAField {\n"
+                                 "    struct (unnamed struct at input.cc:10:37) {\n"
+                                 "        int x;\n"
+                                 "        int y;\n"
+                                 "    } field;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamelessUnionUsedAsAField {\n"
+                                 "    union (unnamed union at input.cc:12:37) {\n"
+                                 "        int x;\n"
+                                 "        int y;\n"
+                                 "    } field;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct StructContainingALargeIntegerField {\n"
+                                 "    typedef union (unnamed union at input.cc:15:13) {\n"
+                                 "                struct (unnamed struct at input.cc:16:9) {\n"
+                                 "                    unsigned long LowPart;\n"
+                                 "                    long HighPart;\n"
+                                 "                } Parts;\n"
+                                 "                long long QuadPart;\n"
+                                 "            } LARGE_INTEGER;\n"
+                                 "    union (unnamed union at input.cc:15:13) {\n"
+                                 "        struct (unnamed struct at input.cc:16:9) {\n"
+                                 "            unsigned long LowPart;\n"
+                                 "            long HighPart;\n"
+                                 "        } Parts;\n"
+                                 "        long long QuadPart;\n"
+                                 "    } field;\n"
+                                 "};\n"                    
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct TypedefAroundUnnamedClass {\n"
                                  "    typedef class (unnamed class at input.cc:3:45) {\n"
                                  "                int i;\n"
@@ -1855,6 +1915,11 @@ unnamed struct passed as argument:  e.g., int f(struct { int x; } arg) { return 
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("struct (unnamed struct at input.cc:21:1) {\n"
+                                 "    int x;\n"
+                                 "    double y;\n"
+                                 "} UnnamedStructUsedAsGlobalVar;\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
