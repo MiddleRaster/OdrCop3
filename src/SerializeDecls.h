@@ -150,19 +150,11 @@ namespace OdrCop3
                     return true;
                 return false;
             }
-            bool IsConversionOperatorReturnTypeInAnonymousNamespace(const clang::Decl* decl) const
-            {
-                if (const CXXConversionDecl* cxxConversion = dyn_cast<CXXConversionDecl>(decl))
-                    if (NeedsManualSerialization(contextItems, cxxConversion->getReturnType()))
-                        return true;
-                return false;
-            }
 
             template <typename Type> bool PrintType(clang::QualType qualType) const
             {
                 if (const auto* type = qualType->getAs<Type>())
-                    if (false == Can::Print(type->getDecl()))
-                        return false;
+                    return Can::Print(type->getDecl());
                 return true;
             }
 
@@ -223,7 +215,6 @@ namespace OdrCop3
                         return false;
                     if (false == Can::PrintType<clang::   EnumType>(fieldType))
                         return false;
-                    return true;
                 }
 
                 // after recursion (now top-level)
@@ -242,8 +233,6 @@ namespace OdrCop3
                 if (true == IsFriendDecl(decl))
                     return false;
                 if (true == IsVarOutOfLine(decl))
-                    return false;
-                if (true == IsConversionOperatorReturnTypeInAnonymousNamespace(decl))
                     return false;
 
                 if (const auto* parmVarDecl = llvm::dyn_cast<clang::ParmVarDecl>(decl))
