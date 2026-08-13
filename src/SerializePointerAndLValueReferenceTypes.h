@@ -39,11 +39,7 @@ namespace OdrCop3
             out  = TrimRightIf(out, ";");
             
             // add space only as appropriate:  we want "Foo **&foo", for example
-            if (out.substr(out.size()-1) != "*")
-            if (out.substr(out.size()-1) != "&")
-            if (out.substr(out.size()-1) != " ")
-                out += " ";
-
+            out += SnugUpPointersAndReferences(out);
             out += starOrAmpersand + contextItems.aux;
             return out;
         }

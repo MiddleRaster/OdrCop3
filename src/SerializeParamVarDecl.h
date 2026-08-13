@@ -37,9 +37,7 @@ namespace OdrCop3
 
             out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
             out  = TrimRightIf(out, ";");
-            if((out.substr(out.size()-1) != "*")&& // e.g., int *i = nullptr (no space between * and i)
-               (out.substr(out.size()-1) != "&") ) // e.g., const T &v       (no space between & and v)
-                out += " ";                        // e.g., T a               (a space between T and a)
+            out += SnugUpPointersAndReferences(out);
 
             if (parmVarDecl->getIdentifier()) // name if any
                 out += parmVarDecl->getName().str();

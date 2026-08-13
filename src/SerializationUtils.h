@@ -167,4 +167,13 @@ namespace OdrCop3
             return prefix + IndentBlock(block, GetIndentation(prefix, block)) + "\n";
         }
     };
+
+    inline std::string SnugUpPointersAndReferences(const std::string& str)
+    {
+        if (!str.ends_with("*")) // e.g., "void *" gets no space
+        if (!str.ends_with("&")) // e.g., ditto &
+        if (!str.ends_with(" ")) // certainly don't want two spaces in a row
+            return " ";          // e.g., "int" does
+        return "";
+    }
 }
