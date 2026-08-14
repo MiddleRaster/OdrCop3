@@ -1762,7 +1762,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
     {"Unnamed enum/class/struct/union tests", []
         {
             std::string code = 
@@ -1992,19 +1991,107 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+    {"Concepts", []
+        {
+            std::string code = 
+                               "namespace std { template<typename T> inline constexpr bool is_integral_v = false; template<typename T, typename U> concept same_as = __is_same(T, U) && __is_same(U, T);}\n"
+                               "template<typename T> concept C1 = sizeof(T) == 4;\n"
+                               "template<typename T> concept C2 = sizeof(T) > 1;\n"
+                               "template<typename T> concept C3 = requires(T t) { t.foo(); };\n"
+                               "template<typename T> concept C4 = requires(T t) { t.foo(); t.bar(); };\n"
+                               "template<typename T> concept C5 = requires { typename T::value_type; };\n"
+                               "template<typename T> concept C6 = std::is_integral_v<T>; \n"
+                               "template<typename T, typename U> concept SameSize    = sizeof(T) == sizeof(U);\n"
+                               "template<typename T, typename U> concept Convertible = requires(T t) { static_cast<U>(t); };\n"
+                               "template<typename T, typename U> concept HasMember   = requires(T t, U u) { t.foo(u); };\n"
+                               "template<typename T> concept C7 = requires(T t) { { t.foo() }; };\n"
+                               "template<typename T> concept C8 = requires(T t) { { t.foo() } -> std::same_as<int>; };\n"
+//template<typename T> concept C9 = requires(T t) { { t.foo() } noexcept; };
+//template<typename T> concept C10 = requires(T t) { { t.foo() } noexcept -> std::same_as<int>; };
+
+//template<typename T> concept C11 = requires(T t) { requires sizeof(T) == 4; };
+//template<typename T> concept C12 = requires(T t) { t.foo(); requires std::is_integral_v<decltype(t.foo())>; };
+
+//template<typename T> concept C13 = requires { typename T::value_type; };
+//template<typename T> concept C14 = requires { typename T::iterator; typename T::const_iterator; };
+
+//"template<typename T> concept C15 = sizeof(T) == 4;\n"
+//template<typename T> concept C2 = C1<T> && requires(T t) { t.foo(); };
+//template<typename T> concept C3 = C1<T> || std::is_pointer_v<T>;
+
+
+//template<typename T> concept HasValueType  = requires { typename T::value_type; };
+//template<typename T> concept HasNestedType = requires { typename T::nested::type; };
+//template<typename T> concept HasAlias      = requires { typename T::alias; };
+
+//namespace N { struct X { static int value; }; } template<typename T> concept C15 = requires { N::X::value; };
+//struct S1 { template<typename T> concept C = sizeof(T) == 4; };
+//template<typename T> struct S2 { template<typename U> concept C = sizeof(T) == sizeof(U); };
+//namespace N { template<typename T> concept C = sizeof(T) == 4; template<typename T> concept D = C<T> && requires(T t) { t.foo(); }; }
+
+//namespace { struct X {}; template<typename T> concept C = requires { typename T::value_type; }; template<typename T> concept D = sizeof(T) == sizeof(X); }
+//namespace { struct InvisibleX {}; } template<typename T> concept C = std::is_same_v<T, InvisibleX>;
+
+//template<typename T> concept C = sizeof(T) == 4; template<C T> void f(T);
+//template<typename T> requires C<T> void g(T);
+//template<typename T> requires (C<T> && sizeof(T) > 1) void h(T);
+
+//template<C T> void f(T x);
+//void g(C auto x);
+//void h(C auto&& x);
+
+//template<typename T> concept HasFoo = requires(T t) { { t.foo() } noexcept -> std::same_as<int>; };
+//template<typename T> concept Valid = HasFoo<T> && requires { typename T::value_type; } && sizeof(T) == 4;
+//template<typename T> requires Valid<T> struct S { T value; template<typename U> requires HasFoo<U> void f(U u) { u.foo(); } };
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual(13, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual( 5, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual(11, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("template <typename T> constexpr bool std::is_integral_v = false;\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                Assert::AreEqual("template <typename T> concept C1 = sizeof(T) == 4;\n"                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C2 = sizeof(T) > 1;\n"                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C3 = requires (T t) { t.foo(); };\n"                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C4 = requires (T t) { t.foo(); t.bar(); };\n"                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C5 = requires { typename T::value_type; };\n"                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C6 = std::is_integral_v<T>;\n"                                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C7 = requires (T t) { { t.foo() }; };\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C8 = requires (T t) { { t.foo() } -> std::same_as<int>; };\n"       , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("template <typename T, typename U> concept Convertible = requires (T t) { static_cast<U>(t); };\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> concept HasMember = requires (T t, U u) { t.foo(u); };\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> concept SameSize = sizeof(T) == sizeof(U);\n"                   , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("template <typename T, typename U> concept std::same_as = __is_same(T, U) && __is_same(U, T);\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 };
 /* some missing test cases
- 
-nested unnamed union with field (see line 141, in test "Testing CXXRecordDeclSerializer on UDTs").
-need to test:
-typedef/using alias around unnamed union/struct/class/enum
-nested unnamed union/struct/class with field
-unnamed struct as static/global (var)
-unnamed struct passed as argument:  e.g., int f(struct { int x; } arg) { return arg.x; }
-
-
-
-
 
 7. Concepts
             template<typename T> concept C = sizeof(T) == 4;

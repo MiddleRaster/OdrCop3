@@ -156,7 +156,7 @@ namespace OdrCop3
             QualType type = varDecl->getType();
             if (varDecl->isConstexpr())
                 type = type.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const.
-            std::string name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
+            std::string name = varDecl->isOutOfLine() || varDecl->getDeclContext()->isNamespace() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
             out += TrimRightIf(IndentBlock(SerializeType(contextItems, type), LengthOfLastLine(out)), " ");
             out += SnugUpPointersAndReferences(out);
             out += name;

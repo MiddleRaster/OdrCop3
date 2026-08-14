@@ -146,6 +146,12 @@ namespace OdrCop3
                     return true;
                 return false;
             }
+            bool IsConceptDefinedInNamespace(const clang::Decl* decl) const
+            {   // Decl::print() doesn't print fully qualified name
+                if (const auto* conceptDecl = llvm::dyn_cast<clang::ConceptDecl>(decl))
+                    return conceptDecl->getDeclContext()->isNamespace();
+                return false;
+            }
 
             template <typename Type> bool PrintType(clang::QualType qualType) const
             {
@@ -226,7 +232,9 @@ namespace OdrCop3
                     return false;
                 if (true == IsVarOutOfLine(decl))
                     return false;
-
+                if (true == IsConceptDefinedInNamespace(decl))
+                    return false;
+                
                 return true;
             }
         };
