@@ -62,7 +62,7 @@ namespace OdrCop3
         };
 
         template<auto SerializeDecl, auto SerializeExpr>
-        static std::string Types(const ContextItems& contextItems, clang::QualType qualType)
+        inline std::string Types(const ContextItems& contextItems, clang::QualType qualType)
         {
             struct Can
             {
@@ -76,6 +76,13 @@ namespace OdrCop3
                         if (const RecordType* recordType = dyn_cast<RecordType>(qualType.getTypePtr()))
                             if (recordType->getDecl()->getName().empty())
                                 return false;
+                        break;
+                    case clang::Type::TypeClass::TemplateSpecialization:
+                        if (const auto* templateSpecializationType = qualType->getAs<clang::TemplateSpecializationType>())
+                            for (const auto& arg : templateSpecializationType->template_arguments())
+                                if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                                    if (false == Can::Print(contextItems, arg.getAsType()))
+                                        return false;
                         break;
                     default: break;
                     }

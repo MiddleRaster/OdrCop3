@@ -48,7 +48,7 @@ namespace OdrCop3
         };
 
         template<auto SerializeDecl, auto SerializeType>
-        static std::string Exprs(const ContextItems& contextItems, const clang::Expr* expr)
+        inline std::string Exprs(const ContextItems& contextItems, const clang::Expr* expr)
         {
             struct Can
             {

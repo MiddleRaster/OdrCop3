@@ -1794,21 +1794,21 @@ Test ExploratoryTestsOfClangAST[] =
 // typedef of using alias of typedef of using alias.
                                "typedef int A; using B = A; typedef B C; using D = C;\n"
                                "typedef struct { int x; } E; using F = E; typedef F G; using H = G;\n"
-
-/*
-template using alias
-*/
+// template using alias
+                               "typedef struct { int x; } UnnamedStruct; template <typename T> using UnnamedStructAlias = T; UnnamedStructAlias<UnnamedStruct> GlobalVariableUnnamedStruct;\n"
+                               "namespace { struct Invisible {}; } UnnamedStructAlias<Invisible> GlobalVariableInvisibleStruct;\n"
+                               "typedef enum { One, Two } UnnamedEnum; UnnamedStructAlias<UnnamedEnum> GlobalVariableUnnamedEnum;\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual(8, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(13, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 5, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(11, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -1923,6 +1923,18 @@ template using alias
                                  "    } inner;\n"
                                  "} DoubleNestedUnnamedStructUsedAsGlobalVar;\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("UnnamedStructAlias<struct (anonymous namespace)::Invisible {\n"
+                                 "                   }> GlobalVariableInvisibleStruct;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("UnnamedStructAlias<typedef enum (unnamed enum at input.cc:27:9) {\n"
+                                 "                               One,\n"
+                                 "                               Two\n"
+                                 "                           } UnnamedEnum> GlobalVariableUnnamedEnum;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("UnnamedStructAlias<typedef struct (unnamed struct at input.cc:25:9) {\n"
+                                 "                               int x;\n"
+                                 "                           } UnnamedStruct> GlobalVariableUnnamedStruct;\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (unnamed struct at input.cc:21:1) {\n"
                                  "    int x;\n"
                                  "    double y;\n"
@@ -1931,6 +1943,11 @@ template using alias
             }
             {
                 auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum (unnamed enum at input.cc:27:9) {\n"
+                                 "    One,\n"
+                                 "    Two\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
@@ -1953,6 +1970,17 @@ template using alias
                 Assert::AreEqual("using H = typedef struct (unnamed struct at input.cc:24:9) {\n"
                                  "                      int x;\n"
                                  "                  } G;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (unnamed enum at input.cc:27:9) {\n"
+                                 "            One,\n"
+                                 "            Two\n"
+                                 "        } UnnamedEnum;\n"
+                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (unnamed struct at input.cc:25:9) {\n"
+                                 "            int x;\n"
+                                 "        } UnnamedStruct;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> using UnnamedStructAlias = T;\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
