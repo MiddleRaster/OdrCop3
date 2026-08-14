@@ -1788,12 +1788,14 @@ Test ExploratoryTestsOfClangAST[] =
                                "    } LARGE_INTEGER;\n"
                                "    LARGE_INTEGER field;\n"
                                "};\n"
-                               "struct { int x; double y; } UnnamedStructUsedAsGlobalVar;\n"
+// unnamed struct as static / global(var)
+                               "struct { int x; double y;         }             UnnamedStructUsedAsGlobalVar;\n"
+                               "struct { struct { int x; } inner; } DoubleNestedUnnamedStructUsedAsGlobalVar;\n"
+// typedef of using alias of typedef of using alias.
+                               "typedef int A; using B = A; typedef B C; using D = C;\n"
+                               "typedef struct { int x; } E; using F = E; typedef F G; using H = G;\n"
 
 /*
-unnamed struct as static/global (var)
-unnamed struct passed as argument:  e.g., int f(struct { int x; } arg) { return arg.x; }
-typedef of using alias of typedef of using alias.
 template using alias
 */
                                ;
@@ -1915,6 +1917,12 @@ template using alias
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("struct (unnamed struct at input.cc:22:1) {\n"
+                                 "    struct (unnamed struct at input.cc:22:10) {\n"
+                                 "        int x;\n"
+                                 "    } inner;\n"
+                                 "} DoubleNestedUnnamedStructUsedAsGlobalVar;\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (unnamed struct at input.cc:21:1) {\n"
                                  "    int x;\n"
                                  "    double y;\n"
@@ -1926,6 +1934,26 @@ template using alias
             }
             {
                 auto it = maps.typedefMap.begin();
+                Assert::AreEqual("typedef int A;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual(  "using B = A;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual(  "typedef B C;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual(  "using D = C;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (unnamed struct at input.cc:24:9) {\n"
+                                 "            int x;\n"
+                                 "        } E;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using F = typedef struct (unnamed struct at input.cc:24:9) {\n"
+                                 "                      int x;\n"
+                                 "                  } E;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (unnamed struct at input.cc:24:9) {\n"
+                                 "            int x;\n"
+                                 "        } G;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using H = typedef struct (unnamed struct at input.cc:24:9) {\n"
+                                 "                      int x;\n"
+                                 "                  } G;\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
