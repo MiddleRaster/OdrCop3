@@ -316,8 +316,9 @@ namespace OdrCop3
 
             // turn off ContextItems::needsFriend so that Can::Print() can return true
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, contextItems.aux);
-            ci2.needsFriend   = false;
-            std::string block = FunctionDeclSerializer(ci2, funcDecl).SerializePastFriend(returnType, functionName);
+            ci2.needsFriend      = false;
+            ci2.wantFunctionBody = contextItems.wantFunctionBody;
+            std::string block    = FunctionDeclSerializer(ci2, funcDecl).SerializePastFriend(returnType, functionName);
 
             fqn += IndentBlock(block, GetIndentation(fqn, block));
             return fqn + "\n";

@@ -732,8 +732,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct B {\n"
-                                 "    friend void f(B &) {\n"
-                                 "    }\n"
+                                 "    friend void f(B &);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct C {\n"
@@ -2231,7 +2230,39 @@ Test ExploratoryTestsOfClangAST[] =
                                "    inline constexpr strong_ordering strong_ordering::equivalent{0};\n"
                                "    inline constexpr strong_ordering strong_ordering::greater{1};\n"
                                "}\n"
-                               "struct Point { int x; int y;  auto operator<=>(const Point&) const = default; };\n"
+                               "namespace { struct Hidden1 { int value; }; } struct Public1 { int value;     friend auto operator<=>(const Public1& lhs, const Hidden1& rhs) { return lhs.value <=> rhs.value; } };\n"
+                               "namespace { struct Ordering {}; }            struct Public2 { int value; friend Ordering operator<=>(const Public2&    , const Public2&    ) { return Ordering{}; } };\n"
+                                                                            "struct Public3 { int value; };         auto operator<=>(const Public3& lhs, const Hidden1& rhs) { return lhs.value <=> rhs.value; }\n"
+                                                                            "struct Public4 { int value; };     Ordering operator<=>(const Public4&    , const Public4&    ) { return {}; }\n"
+                                                                            "struct Public5 { int value; };     Ordering operator<=>(const Public5    &, const Hidden1&    ) { return {}; }\n"
+                                                                            "struct Public6 { int value; template<typename T> auto operator<=>(const T& rhs) const { return value <=> rhs.value; } };\n"
+                                                                            "struct Public7 { int value; friend auto operator<=>(const Public7&, const Hidden1&); }; auto operator<=>(const Public7& lhs, const Hidden1& rhs) { return lhs.value <=> rhs.value; }\n"
+
+                               "struct Point  { int x; int y; auto operator<=>(const Point&) const = default; };\n"
+                               "struct Point2 { int x; int y; std::strong_ordering operator<=>(const Point2& other) const { return x < other.x ? std::strong_ordering::less : x > other.x ? std::strong_ordering::greater : y < other.y ? std::strong_ordering::less : y > other.y ? std::strong_ordering::greater : std::strong_ordering::equal; } };\n"
+                               "struct Point3 { int value; auto operator<=>(const Point3&) const& = default; };\n"
+                               "struct Point4 { int value; auto operator<=>(const Point4& rhs) const&&        { return value <=> rhs.value; } };\n"
+                               "struct Point5 { int value; auto operator<=>(const Point5& rhs) const noexcept { return value <=> rhs.value; } };\n"
+
+
+//9. Friend <=> with an anonymous type in a nested namespace
+//namespace Outer
+//{
+//    namespace
+//    {
+//        struct Hidden8
+//        {
+//            int value;
+//        };
+//    }
+//    struct Public8
+//    {
+//        friend auto operator<=>(const Public8&, const Hidden8&)
+//        {
+//            return 0 <=> 0;
+//        }
+//    };
+//}
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -2252,6 +2283,78 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    std::strong_ordering operator<=>(const Point &) const = default;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Point2 {\n"
+                                 "    int x;\n"
+                                 "    int y;\n"
+                                 "    std::strong_ordering operator<=>(const Point2 &other) const {\n"
+                                 "        return this->x < other.x ? std::strong_ordering::less : this->x > other.x ? std::strong_ordering::greater : this->y < other.y ? std::strong_ordering::less : this->y > other.y ? std::strong_ordering::greater : std::strong_ordering::equal;\n"
+                                 "    }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Point3 {\n"
+                                 "    int value;\n"
+                                 "    std::strong_ordering operator<=>(const Point3 &) const & = default;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Point4 {\n"
+                                 "    int value;\n"
+                                 "    std::strong_ordering operator<=>(const Point4 &rhs) const && {\n"
+                                 "        return this->value <=> rhs.value;\n"
+                                 "    }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Point5 {\n"
+                                 "    int value;\n"
+                                 "    std::strong_ordering operator<=>(const Point5 &rhs) const noexcept {\n"
+                                 "        return this->value <=> rhs.value;\n"
+                                 "    }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Public1 {\n"
+                                 "    int value;\n"
+                                 "    friend std::strong_ordering operator<=>(const Public1 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                                                          int value;\n"
+                                 "                                                                      } &rhs) {\n"
+                                 "               return lhs.value <=> rhs.value;\n"
+                                 "           }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Public2 {\n"
+                                 "    int value;\n"
+                                 "    friend struct (anonymous namespace)::Ordering {\n"
+                                 "           } operator<=>(const Public2 &, const Public2 &) {\n"
+                                 "               return Ordering{};\n"
+                                 "           }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Public3 {\n"
+                                 "    int value;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Public4 {\n"
+                                 "    int value;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Public5 {\n"
+                                 "    int value;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Public6 {\n"
+                                 "    int value;\n"
+                                 "    template <typename T> auto operator<=>(const T &rhs) const {\n"
+                                 "        return this->value <=> rhs.value;\n"
+                                 "    }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("struct Public7 {\n"
+                                 "    int value;\n"
+                                 "    friend std::strong_ordering operator<=>(const Public7 &, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                                                       int value;\n"
+                                 "                                                                   } &);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
                 Assert::AreEqual("struct strong_ordering {\n"
                                  "    int value;\n"
                                  "    friend bool operator==(strong_ordering, strong_ordering) = default;\n"
@@ -2261,6 +2364,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    static const strong_ordering greater;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -2285,7 +2391,44 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("std::strong_ordering operator<=>(const Public1 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                                               int value;\n"
+                                 "                                                           } &rhs) {\n"
+                                 "    return lhs.value <=> rhs.value;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::Ordering {\n"
+                                 "} operator<=>(const Public2 &, const Public2 &) {\n"
+                                 "    return Ordering{};\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("std::strong_ordering operator<=>(const Public3 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                                               int value;\n"
+                                 "                                                           } &rhs) {\n"
+                                 "    return lhs.value <=> rhs.value;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::Ordering {\n"
+                                 "} operator<=>(const Public4 &, const Public4 &) {\n"
+                                 "    return {};\n"
+                                 "}\n"
+                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::Ordering {\n"
+                                 "} operator<=>(const Public5 &, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                         int value;\n"
+                                 "                                     } &) {\n"
+                                 "    return {};\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("std::strong_ordering operator<=>(const Public7 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                                               int value;\n"
+                                 "                                                           } &rhs) {\n"
+                                 "    return lhs.value <=> rhs.value;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("bool operator==(strong_ordering, strong_ordering) = default;\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
