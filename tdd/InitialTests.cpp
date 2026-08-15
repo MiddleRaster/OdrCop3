@@ -188,7 +188,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual("struct [[deprecated(\"use Bar instead\")]] alignas(32) Foo final : Baz, virtual private Bar, protected Qux {\n"
                              "public:\n"
                              "    [[deprecated(\"use y instead\")]] static constexpr int x = 0;\n"
-                             "    inline static int y{0};\n" // Decl::print() improperly drops the "inline"; my serializer is more correct than print()
+                             "    static int y{0};\n" // Decl::print() drops the "inline"; my serializer is does the same
                              "    int b : 3 = 1;\n"
                              "    unsigned int c : 2 {3};\n"
                              "};\n"
@@ -1014,9 +1014,9 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("static const int Outer::Inner::counter = 0;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("static int Soo::counter = 0;\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("static const char *Soo::name = \"soo\";\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("const int Outer::Inner::counter = 0;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int Soo::counter = 0;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("const char *Soo::name = \"soo\";\n"    , (*it++).second[0].fullyQualified);
             }
         }
     },
@@ -1049,8 +1049,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct LambdaHolder {\n"
-                                 "    inline static LambdaHolder::(lambda at input.cc:5:54) LambdaField{[](int, double) {\n"
-                                 "                                                                      }};\n"
+                                 "    static LambdaHolder::(lambda at input.cc:5:54) LambdaField{[](int, double) {\n"
+                                 "                                                               }};\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
             }
@@ -1296,17 +1296,17 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("int global = 0;\n"                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<42> h1;\n"                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<true> h2;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<Color::Red> h3;\n"                      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<&global> h4;\n"                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<nullptr> h5;\n"                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Holder<&Function<int>> h6;\n"                  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance;\n"        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual( "Outer2<HasFoo, int> outer2Instance;\n"        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> inline int v = 0;\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> inline int v<T *> = 1;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int global = 0;\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<42> h1;\n"                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<true> h2;\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<Color::Red> h3;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<&global> h4;\n"                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<nullptr> h5;\n"                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Holder<&Function<int>> h6;\n"           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Outer1<Wrapped, int> outer1Instance;\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual( "Outer2<HasFoo, int> outer2Instance;\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> int v = 0;\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> int v<T *> = 1;\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -2135,7 +2135,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
     {"User-defined literals", []
         {
             std::string code = 
@@ -2213,12 +2212,91 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Spaceship operators", []
+        {
+            std::string code =
+                               "namespace std\n" // mock up STL
+                               "{\n"
+                               "    struct strong_ordering\n"
+                               "    {\n"
+                               "        int value;\n"
+                               "        friend constexpr bool operator==(strong_ordering, strong_ordering) = default;\n"
+                               "        static const strong_ordering less;\n"
+                               "        static const strong_ordering equal;\n"
+                               "        static const strong_ordering equivalent;\n"
+                               "        static const strong_ordering greater;\n"
+                               "    };\n"
+                               "    inline constexpr strong_ordering strong_ordering::less{-1};\n"
+                               "    inline constexpr strong_ordering strong_ordering::equal{0};\n"
+                               "    inline constexpr strong_ordering strong_ordering::equivalent{0};\n"
+                               "    inline constexpr strong_ordering strong_ordering::greater{1};\n"
+                               "}\n"
+                               "struct Point { int x; int y;  auto operator<=>(const Point&) const = default; };\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual(4, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual(1, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Point {\n"
+                                 "    int x;\n"
+                                 "    int y;\n"
+                                 "    std::strong_ordering operator<=>(const Point &) const = default;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct strong_ordering {\n"
+                                 "    int value;\n"
+                                 "    friend bool operator==(strong_ordering, strong_ordering) = default;\n"
+                                 "    static const strong_ordering less;\n"
+                                 "    static const strong_ordering equal;\n"
+                                 "    static const strong_ordering equivalent;\n"
+                                 "    static const strong_ordering greater;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("constexpr strong_ordering std::strong_ordering::equal{0};\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr strong_ordering std::strong_ordering::equivalent{0};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr strong_ordering std::strong_ordering::greater{1};\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr strong_ordering std::strong_ordering::less{-1};\n"     , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("bool operator==(strong_ordering, strong_ordering) = default;\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
 
 };
 /* some missing test cases
-
-12. Literal operators
-            operator ""_x
 
 13. Three-way comparison
             auto operator<=>(...) = default;

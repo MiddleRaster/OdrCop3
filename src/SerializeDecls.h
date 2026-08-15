@@ -72,13 +72,6 @@ namespace OdrCop3
         {
             const ContextItems& contextItems;
 
-            bool IsStaticInline(const clang::Decl* decl) const
-            {   // print() drops "inline" from "static inline" vars
-                if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
-                    if (varDecl->isInlineSpecified())
-                        return true;
-                return false;
-            }
             bool IsUnnamedUnionClassOrStruct(const clang::Decl* decl) const
             {
                 if (const auto* record = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
@@ -210,8 +203,6 @@ namespace OdrCop3
                 if (const auto*     fieldDecl = llvm::dyn_cast<clang::    FieldDecl>(decl)) if (false == Can::PrintAnyOf(    fieldDecl->getType()))           return false;
 
                 // after recursion (now top-level)
-                if (true == IsStaticInline(decl))
-                    return false;
                 if (true == IsUnnamedUnionClassOrStruct(decl))
                     return false;
                 if (true == IsUnnamedEnum(decl))

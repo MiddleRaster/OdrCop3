@@ -39,17 +39,6 @@ namespace OdrCop3
                 out += SerializeAttr(contextItems, attr);
             return out;
         }
-        std::string get_ConstexprAndInline() const { return varDecl->isConstexpr() ? "constexpr " : ""; }
-        std::string get_Static()             const { return varDecl->isStaticDataMember() ? "static " : ""; }
-        std::string get_Inline() const
-        {
-            std::string out;
-            if (varDecl->isInline()) // constexpr is inline; don't print both
-                if (false == varDecl->isConstexpr())
-                    out += "inline ";
-            return out;
-        }
-        
         const LambdaExpr* FindLambdaExpr(const Expr* expr) const
         {
             if (!expr)
@@ -142,6 +131,27 @@ namespace OdrCop3
             else
                 return " = " + e;
         }
+
+        std::string GetInlineStaticConstAndConstexpr() const
+        {
+            // duplicating what DeclPrinter::VisitVarDecl(VarDecl *D) does exactly.  Notably, "inline" is ignored completely
+            std::string out;
+
+            StorageClass storageClass = varDecl->getStorageClass();
+            switch(storageClass)
+            {
+            case StorageClass::SC_None  :
+            default:                                        break;
+            case StorageClass::SC_Extern: out += "extern "; break;
+            case StorageClass::SC_Static: out += "static "; break;
+            }
+
+            if (varDecl->isConstexpr())
+                out += "constexpr "; // there is code to strip off const in Serialize(), just like DeclPrinter does
+
+            return out;
+        }
+
     public:
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
         std::string Serialize() const
@@ -149,13 +159,11 @@ namespace OdrCop3
             std::string out;
             out += get_TemplateHeader();
             out += get_Attributes();
-            out += get_Inline();
-            out += get_Static();
-            out += get_ConstexprAndInline();
+            out += GetInlineStaticConstAndConstexpr();
 
             QualType type = varDecl->getType();
             if (varDecl->isConstexpr())
-                type = type.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const.
+                type = type.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const. Just like DeclPrinter does.
             std::string name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
             out += TrimRightIf(IndentBlock(SerializeType(contextItems, type), LengthOfLastLine(out)), " ");
             out += SnugUpPointersAndReferences(out);
