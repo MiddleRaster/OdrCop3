@@ -2135,6 +2135,85 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+
+    {"User-defined literals", []
+        {
+            std::string code = 
+                                             "constexpr int operator\"\"_km(unsigned long long value) { return static_cast<int>(value * 1000); }\n"
+"namespace { struct Distance { int feet; }; } constexpr Distance operator\"\"_miles(unsigned long long value) { return Distance{static_cast<int>(value * 5280)}; }\n"
+                             "namespace Foo { constexpr int operator\"\"_yards(unsigned long long value) { return static_cast<int>(value * 3); } }\n"
+                                             "constexpr int operator\"\"_text(const char* str, size_t length) { return static_cast<int>(length); }\n"
+                                             "constexpr int operator\"\"_rawtext(const char* str) { return 42; }\n"
+                                             "constexpr double operator\"\"_feet(long double value) { return static_cast<double>(value); }\n"
+                                             "constexpr int operator\"\"_letter(char value) { return value; }\n"
+                                                       "int operator\"\"_count(unsigned long long value) { return static_cast<int>(value); }\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(8, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("constexpr int operator\"\"_yards(unsigned long long value) {\n"
+                                 "    return static_cast<int>(value * 3);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int operator\"\"_count(unsigned long long value) {\n"
+                                 "    return static_cast<int>(value);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr double operator\"\"_feet(long double value) {\n"
+                                 "    return static_cast<double>(value);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int operator\"\"_km(unsigned long long value) {\n"
+                                 "    return static_cast<int>(value * 1000);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int operator\"\"_letter(char value) {\n"
+                                 "    return value;\n"
+                                 "}\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr struct (anonymous namespace)::Distance {\n"
+                                 "              int feet;\n"
+                                 "          } operator\"\"_miles(unsigned long long value) {\n"
+                                 "    return Distance{static_cast<int>(value * 5280)};\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int operator\"\"_rawtext(const char *str) {\n"
+                                 "    return 42;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int operator\"\"_text(const char *str, size_t length) {\n"
+                                 "    return static_cast<int>(length);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
 };
 /* some missing test cases
 
