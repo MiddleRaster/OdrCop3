@@ -2237,46 +2237,34 @@ Test ExploratoryTestsOfClangAST[] =
                                                                             "struct Public5 { int value; };     Ordering operator<=>(const Public5    &, const Hidden1&    ) { return {}; }\n"
                                                                             "struct Public6 { int value; template<typename T> auto operator<=>(const T& rhs) const { return value <=> rhs.value; } };\n"
                                                                             "struct Public7 { int value; friend auto operator<=>(const Public7&, const Hidden1&); }; auto operator<=>(const Public7& lhs, const Hidden1& rhs) { return lhs.value <=> rhs.value; }\n"
-
+             "namespace Outer { namespace { struct Hidden8 { int value; }; } struct Public8 {            friend auto operator<=>(const Public8&, const Hidden8&) { return 0 <=> 0; } }; }\n"
                                "struct Point  { int x; int y; auto operator<=>(const Point&) const = default; };\n"
                                "struct Point2 { int x; int y; std::strong_ordering operator<=>(const Point2& other) const { return x < other.x ? std::strong_ordering::less : x > other.x ? std::strong_ordering::greater : y < other.y ? std::strong_ordering::less : y > other.y ? std::strong_ordering::greater : std::strong_ordering::equal; } };\n"
                                "struct Point3 { int value; auto operator<=>(const Point3&) const& = default; };\n"
                                "struct Point4 { int value; auto operator<=>(const Point4& rhs) const&&        { return value <=> rhs.value; } };\n"
                                "struct Point5 { int value; auto operator<=>(const Point5& rhs) const noexcept { return value <=> rhs.value; } };\n"
-
-
-//9. Friend <=> with an anonymous type in a nested namespace
-//namespace Outer
-//{
-//    namespace
-//    {
-//        struct Hidden8
-//        {
-//            int value;
-//        };
-//    }
-//    struct Public8
-//    {
-//        friend auto operator<=>(const Public8&, const Hidden8&)
-//        {
-//            return 0 <=> 0;
-//        }
-//    };
-//}
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual(4, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual(1, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(14, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 4, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 8, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Public8 {\n"
+                                 "    friend std::strong_ordering operator<=>(const Public8 &, const struct Outer::(anonymous namespace)::Hidden8 {\n"
+                                 "                                                                       int value;\n"
+                                 "                                                                   } &) {\n"
+                                 "               return 0 <=> 0;\n"
+                                 "           }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Point {\n"
                                  "    int x;\n"
                                  "    int y;\n"
@@ -2346,7 +2334,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-
                 Assert::AreEqual("struct Public7 {\n"
                                  "    int value;\n"
                                  "    friend std::strong_ordering operator<=>(const Public7 &, const struct (anonymous namespace)::Hidden1 {\n"
@@ -2354,7 +2341,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                                                   } &);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-
                 Assert::AreEqual("struct strong_ordering {\n"
                                  "    int value;\n"
                                  "    friend bool operator==(strong_ordering, strong_ordering) = default;\n"
@@ -2364,13 +2350,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    static const strong_ordering greater;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -2378,7 +2357,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("constexpr strong_ordering std::strong_ordering::equivalent{0};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constexpr strong_ordering std::strong_ordering::greater{1};\n"   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constexpr strong_ordering std::strong_ordering::less{-1};\n"     , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -2391,6 +2369,12 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("std::strong_ordering operator<=>(const Public8 &, const struct Outer::(anonymous namespace)::Hidden8 {\n"
+                                 "                                                            int value;\n"
+                                 "                                                        } &) {\n"
+                                 "    return 0 <=> 0;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("std::strong_ordering operator<=>(const Public1 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
                                  "                                                               int value;\n"
                                  "                                                           } &rhs) {\n"
@@ -2427,35 +2411,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("bool operator==(strong_ordering, strong_ordering) = default;\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },
 
-
 };
 /* some missing test cases
-
-13. Three-way comparison
-            auto operator<=>(...) = default;
-        or
-            struct Point
-            {
-                int x, y;
-                int <=>(const Point& other) const
-                {
-                    if (x < other.x)
-                        return -1;
-                    if (x > other.x)
-                        return 1;
-                    return 0;
-                }
-            };
 
 14. Deduction guides
             A(int)->A<int>;
