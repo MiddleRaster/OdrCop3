@@ -26,7 +26,7 @@ namespace OdrCop3
         {
             std::string out;
             out += GetTemplateHeader<SerializeDecl, SerializeType, SerializeExpr>(contextItems, conceptDecl->getTemplateParameters());
-            out += "concept " + conceptDecl->getQualifiedNameAsString() + " = ";
+            out += "concept " + conceptDecl->getNameAsString() + " = ";
             out += IndentBlock(SerializeExpr(contextItems, conceptDecl->getConstraintExpr()), LengthOfLastLine(out));
             return out + ";\n";
         }

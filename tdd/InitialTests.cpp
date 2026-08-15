@@ -1994,43 +1994,39 @@ Test ExploratoryTestsOfClangAST[] =
     {"Concepts", []
         {
             std::string code = 
-                               "namespace std { template<typename T> inline constexpr bool is_integral_v = false; template<typename T, typename U> concept same_as = __is_same(T, U) && __is_same(U, T);}\n"
-                               "template<typename T> concept C1 = sizeof(T) == 4;\n"
-                               "template<typename T> concept C2 = sizeof(T) > 1;\n"
-                               "template<typename T> concept C3 = requires(T t) { t.foo(); };\n"
-                               "template<typename T> concept C4 = requires(T t) { t.foo(); t.bar(); };\n"
-                               "template<typename T> concept C5 = requires { typename T::value_type; };\n"
-                               "template<typename T> concept C6 = std::is_integral_v<T>; \n"
+                               "namespace std {"
+                                   "template<typename T> inline constexpr bool is_integral_v = false;"
+                                   "template<typename T, typename U> concept same_as = __is_same(T, U) && __is_same(U, T);"
+                                   "template<typename T> inline constexpr bool is_pointer_v = __is_pointer(T);"
+                                   "template<class T, class U> inline constexpr bool is_same_v = false;"
+                               "}\n"
+                               "template<typename T> concept C01 = sizeof(T) == 4;\n"
+                               "template<typename T> concept C02 = sizeof(T) > 1;\n"
+                               "template<typename T> concept C03 = requires(T t) { t.foo(); };\n"
+                               "template<typename T> concept C04 = requires(T t) { t.foo(); t.bar(); };\n"
+                               "template<typename T> concept C05 = requires { typename T::value_type; };\n"
+                               "template<typename T> concept C06 = std::is_integral_v<T>; \n"
                                "template<typename T, typename U> concept SameSize    = sizeof(T) == sizeof(U);\n"
                                "template<typename T, typename U> concept Convertible = requires(T t) { static_cast<U>(t); };\n"
                                "template<typename T, typename U> concept HasMember   = requires(T t, U u) { t.foo(u); };\n"
-                               "template<typename T> concept C7 = requires(T t) { { t.foo() }; };\n"
-                               "template<typename T> concept C8 = requires(T t) { { t.foo() } -> std::same_as<int>; };\n"
-//template<typename T> concept C9 = requires(T t) { { t.foo() } noexcept; };
-//template<typename T> concept C10 = requires(T t) { { t.foo() } noexcept -> std::same_as<int>; };
-
-//template<typename T> concept C11 = requires(T t) { requires sizeof(T) == 4; };
-//template<typename T> concept C12 = requires(T t) { t.foo(); requires std::is_integral_v<decltype(t.foo())>; };
-
-//template<typename T> concept C13 = requires { typename T::value_type; };
-//template<typename T> concept C14 = requires { typename T::iterator; typename T::const_iterator; };
-
-//"template<typename T> concept C15 = sizeof(T) == 4;\n"
-//template<typename T> concept C2 = C1<T> && requires(T t) { t.foo(); };
-//template<typename T> concept C3 = C1<T> || std::is_pointer_v<T>;
-
-
-//template<typename T> concept HasValueType  = requires { typename T::value_type; };
-//template<typename T> concept HasNestedType = requires { typename T::nested::type; };
-//template<typename T> concept HasAlias      = requires { typename T::alias; };
-
-//namespace N { struct X { static int value; }; } template<typename T> concept C15 = requires { N::X::value; };
-//struct S1 { template<typename T> concept C = sizeof(T) == 4; };
-//template<typename T> struct S2 { template<typename U> concept C = sizeof(T) == sizeof(U); };
-//namespace N { template<typename T> concept C = sizeof(T) == 4; template<typename T> concept D = C<T> && requires(T t) { t.foo(); }; }
-
-//namespace { struct X {}; template<typename T> concept C = requires { typename T::value_type; }; template<typename T> concept D = sizeof(T) == sizeof(X); }
-//namespace { struct InvisibleX {}; } template<typename T> concept C = std::is_same_v<T, InvisibleX>;
+                               "template<typename T> concept C07 = requires(T t) { { t.foo() }; };\n"
+                               "template<typename T> concept C08 = requires(T t) { { t.foo() } -> std::same_as<int>; };\n"
+                               "template<typename T> concept C09 = requires(T t) { { t.foo() } noexcept; };\n"
+                               "template<typename T> concept C10 = requires(T t) { { t.foo() } noexcept -> std::same_as<int>; };\n"
+                               "template<typename T> concept C11 = requires(T t) { requires sizeof(T) == 4; };\n"
+                               "template<typename T> concept C12 = requires(T t) { t.foo(); requires std::is_integral_v<decltype(t.foo())>; };\n"
+                               "template<typename T> concept C13 = requires { typename T::value_type; };\n"
+                               "template<typename T> concept C14 = requires { typename T::iterator; typename T::const_iterator; };\n"
+                               "template<typename T> concept C15 = sizeof(T) == 4;\n"
+                               "template<typename T> concept C16 = C15<T> && requires(T t) { t.foo(); };\n"
+                               "template<typename T> concept C17 = C15<T> || std::is_pointer_v<T>;\n"
+                               "template<typename T> concept HasValueType  = requires { typename T::value_type; };\n"
+                               "template<typename T> concept HasNestedType = requires { typename T::nested::type; };\n"
+                               "template<typename T> concept HasAlias      = requires { typename T::alias; };\n"
+                               "namespace N { struct X18 { static int value; }; } template<typename T> concept C18 = requires { N::X18::value; };\n"
+                               "namespace N { template<typename T> concept C19 = sizeof(T) == 4; template<typename T> concept D19 = C19<T> && requires(T t) { t.foo(); }; }\n"
+                               "namespace { struct InvisibleX1 {};   template<typename T> concept C20 = requires { typename T::value_type; }; template<typename T> concept D20 = sizeof(T) == sizeof(InvisibleX1); }\n"
+                               "namespace { struct InvisibleX2 {}; } template<typename T> concept C21 = std::is_same_v<T, InvisibleX2>;\n"
 
 //template<typename T> concept C = sizeof(T) == 4; template<C T> void f(T);
 //template<typename T> requires C<T> void g(T);
@@ -2052,15 +2048,20 @@ Test ExploratoryTestsOfClangAST[] =
             //Assert::AreEqual( 5, maps.varMap.size(),  "wrong number of vars in map");
             //Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
             //Assert::AreEqual(11, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual(27, maps.conceptMap.size(), "wrong number of comcepts in map");
             //Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct X18 {\n"
+                                 "    static int value;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("template <typename T> constexpr bool std::is_integral_v = false;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> constexpr bool is_integral_v = false;\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> constexpr bool is_pointer_v = __is_pointer(T);\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -2073,20 +2074,39 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.conceptMap.begin();
-                Assert::AreEqual("template <typename T> concept C1 = sizeof(T) == 4;\n"                                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept C2 = sizeof(T) > 1;\n"                                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept C3 = requires (T t) { t.foo(); };\n"                                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept C4 = requires (T t) { t.foo(); t.bar(); };\n"                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept C5 = requires { typename T::value_type; };\n"                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept C6 = std::is_integral_v<T>;\n"                                      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept C7 = requires (T t) { { t.foo() }; };\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept C8 = requires (T t) { { t.foo() } -> std::same_as<int>; };\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C01 = sizeof(T) == 4;\n"                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C02 = sizeof(T) > 1;\n"                                                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C03 = requires (T t) { t.foo(); };\n"                                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C04 = requires (T t) { t.foo(); t.bar(); };\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C05 = requires { typename T::value_type; };\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C06 = std::is_integral_v<T>;\n"                                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C07 = requires (T t) { { t.foo() }; };\n"                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C08 = requires (T t) { { t.foo() } -> std::same_as<int>; };\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C09 = requires (T t) { { t.foo() } noexcept; };\n"                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C10 = requires (T t) { { t.foo() } noexcept -> std::same_as<int>; };\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C11 = requires (T t) { requires sizeof(T) == 4; };\n"                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C12 = requires (T t) { t.foo(); requires std::is_integral_v<decltype(t.foo())>; };\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C13 = requires { typename T::value_type; };\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C14 = requires { typename T::iterator; typename T::const_iterator; };\n"              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C15 = sizeof(T) == 4;\n"                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C16 = C15<T> && requires (T t) { t.foo(); };\n"                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C17 = C15<T> || std::is_pointer_v<T>;\n"                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C18 = requires { N::X18::value; };\n"                                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C21 = is_same_v<T, struct (anonymous namespace)::InvisibleX2 {\n"
+                                 "                                                 }>;\n"                                                             , (*it++).second[0].fullyQualified);
 
-                Assert::AreEqual("template <typename T, typename U> concept Convertible = requires (T t) { static_cast<U>(t); };\n" , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T, typename U> concept HasMember = requires (T t, U u) { t.foo(u); };\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T, typename U> concept SameSize = sizeof(T) == sizeof(U);\n"                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> concept Convertible = requires (T t) { static_cast<U>(t); };\n"                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept HasAlias = requires { typename T::alias; };\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> concept HasMember = requires (T t, U u) { t.foo(u); };\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept HasNestedType = requires { typename T::nested::type; };\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept HasValueType = requires { typename T::value_type; };\n"                               , (*it++).second[0].fullyQualified);
 
-                Assert::AreEqual("template <typename T, typename U> concept std::same_as = __is_same(T, U) && __is_same(U, T);\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C19 = sizeof(T) == 4;\n"                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept D19 = C19<T> && requires (T t) { t.foo(); };\n"                                       , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("template <typename T, typename U> concept SameSize = sizeof(T) == sizeof(U);\n"                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> concept same_as = __is_same(T, U) && __is_same(U, T);\n"                          , (*it++).second[0].fullyQualified);
+
             }
         }
     },

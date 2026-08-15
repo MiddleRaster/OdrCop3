@@ -176,4 +176,22 @@ namespace OdrCop3
             return " ";          // e.g., "int" does
         return "";
     }
+
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> inline std::string SerializeTemplateArgument(const ContextItems& contextItems, const TemplateArgument& arg, size_t indent)
+    {
+        switch (arg.getKind())
+        {
+        case clang::TemplateArgument::Type       : return TrimRightIf(IndentBlock(SerializeType(contextItems, arg.getAsType()), indent), ";");
+        case clang::TemplateArgument::Expression : return             IndentBlock(SerializeExpr(contextItems, arg.getAsExpr()), indent);
+        case clang::TemplateArgument::Declaration: return             IndentBlock(SerializeDecl(contextItems, arg.getAsDecl()), indent);
+        default:
+            break;
+        }
+
+        std::string argStr;
+        llvm::raw_string_ostream os(argStr);
+        arg.print(contextItems.printPolicy, os, true);
+        os.flush();
+        return argStr;
+    }
 }

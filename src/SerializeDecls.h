@@ -146,12 +146,6 @@ namespace OdrCop3
                     return true;
                 return false;
             }
-            bool IsConceptDefinedInNamespace(const clang::Decl* decl) const
-            {   // Decl::print() doesn't print fully qualified name
-                if (const auto* conceptDecl = llvm::dyn_cast<clang::ConceptDecl>(decl))
-                    return conceptDecl->getDeclContext()->isNamespace();
-                return false;
-            }
 
             template <typename Type> bool PrintType(clang::QualType qualType) const
             {
@@ -210,10 +204,10 @@ namespace OdrCop3
                     return false;
 
                 // after recursion, check 1 level deep
-                if (const auto*     fieldDecl = llvm::dyn_cast<clang::    FieldDecl>(decl)) if (false == Can::PrintAnyOf(    fieldDecl->getType()))           return false;
-                if (const auto*   typedefDecl = llvm::dyn_cast<clang::  TypedefDecl>(decl)) if (false == Can::PrintAnyOf(  typedefDecl->getUnderlyingType())) return false;
                 if (const auto* typeAliasDecl = llvm::dyn_cast<clang::TypeAliasDecl>(decl)) if (false == Can::PrintAnyOf(typeAliasDecl->getUnderlyingType())) return false;
+                if (const auto*   typedefDecl = llvm::dyn_cast<clang::  TypedefDecl>(decl)) if (false == Can::PrintAnyOf(  typedefDecl->getUnderlyingType())) return false;
                 if (const auto*   parmVarDecl = llvm::dyn_cast<clang::  ParmVarDecl>(decl)) if (false == Can::PrintAnyOf(  parmVarDecl->getType()))           return false;
+                if (const auto*     fieldDecl = llvm::dyn_cast<clang::    FieldDecl>(decl)) if (false == Can::PrintAnyOf(    fieldDecl->getType()))           return false;
 
                 // after recursion (now top-level)
                 if (true == IsStaticInline(decl))
@@ -231,8 +225,6 @@ namespace OdrCop3
                 if (true == IsFriendDecl(decl))
                     return false;
                 if (true == IsVarOutOfLine(decl))
-                    return false;
-                if (true == IsConceptDefinedInNamespace(decl))
                     return false;
                 
                 return true;

@@ -30,37 +30,7 @@ namespace OdrCop3
 
             for (const TemplateArgumentLoc& argLoc : conceptSpecializationExpr->getTemplateArgsAsWritten()->arguments())
             {
-                const TemplateArgument& arg = argLoc.getArgument();
-                switch (arg.getKind())
-                {
-                case clang::TemplateArgument::Type: out += TrimRightIf(IndentBlock(SerializeType(contextItems, arg.getAsType()), LengthOfLastLine(out)), ";"); break;
-                case clang::TemplateArgument::Expression: out += IndentBlock(SerializeExpr(contextItems, arg.getAsExpr()), LengthOfLastLine(out)); break;
-                case clang::TemplateArgument::Declaration:
-                {
-                    if (const clang::Expr* expr = arg.getAsExpr())
-                        out += IndentBlock(SerializeExpr(contextItems, expr), LengthOfLastLine(out));
-                    else
-                        out += arg.getAsDecl()->getQualifiedNameAsString();
-                    break;
-                }
-                case clang::TemplateArgument::Template: out += arg.getAsTemplate().getAsTemplateDecl()->getNameAsString(); break;
-                case clang::TemplateArgument::Integral:
-                {
-                    llvm::SmallString<32> str;
-                    arg.getAsIntegral().toString(str, 10);
-                    out += std::string(str);
-                    break;
-                }
-                default:
-                {
-                    std::string argStr;
-                    llvm::raw_string_ostream os(argStr);
-                    arg.print(contextItems.printPolicy, os, true);
-                    os.flush();
-                    out += argStr;
-                    break;
-                }
-                }
+                out += SerializeTemplateArgument<SerializeDecl, SerializeType, SerializeExpr>(contextItems, argLoc.getArgument(), LengthOfLastLine(out));
                 out += ", ";
             }
             out = TrimRightIf(out, ", ");
