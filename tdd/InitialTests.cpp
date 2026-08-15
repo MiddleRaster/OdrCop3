@@ -2027,29 +2027,26 @@ Test ExploratoryTestsOfClangAST[] =
                                "namespace N { template<typename T> concept C19 = sizeof(T) == 4; template<typename T> concept D19 = C19<T> && requires(T t) { t.foo(); }; }\n"
                                "namespace { struct InvisibleX1 {};   template<typename T> concept C20 = requires { typename T::value_type; }; template<typename T> concept D20 = sizeof(T) == sizeof(InvisibleX1); }\n"
                                "namespace { struct InvisibleX2 {}; } template<typename T> concept C21 = std::is_same_v<T, InvisibleX2>;\n"
-
-//template<typename T> concept C = sizeof(T) == 4; template<C T> void f(T);
-//template<typename T> requires C<T> void g(T);
-//template<typename T> requires (C<T> && sizeof(T) > 1) void h(T);
-
-//template<C T> void f(T x);
-//void g(C auto x);
-//void h(C auto&& x);
-
-//template<typename T> concept HasFoo = requires(T t) { { t.foo() } noexcept -> std::same_as<int>; };
-//template<typename T> concept Valid = HasFoo<T> && requires { typename T::value_type; } && sizeof(T) == 4;
-//template<typename T> requires Valid<T> struct S { T value; template<typename U> requires HasFoo<U> void f(U u) { u.foo(); } };
+                               "template<typename T> concept C = sizeof(T) == 4; template<C T> void f1(T) {}\n"
+                               "template<typename T> requires C<T> void g1(T) {}\n"
+                               "template<typename T> requires (C<T> && sizeof(T) > 1) void h1(T) {}\n"
+                               "template<C T> void f2(T x) {}\n"
+                               "void g2(C auto x) {}\n"
+                               "void h2(C auto&& x) {}\n"
+                               "template<typename T> concept HasFoo = requires(T t) { { t.foo() } noexcept -> std::same_as<int>; };\n"
+                               "template<typename T> concept Valid = HasFoo<T> && requires { typename T::value_type; } && sizeof(T) == 4;\n"
+                               "template<typename T> requires Valid<T> struct S { T value; template<typename U> requires HasFoo<U> void f(U u) { u.foo(); } };\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual(13, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual( 5, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual(11, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual(27, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual( 2, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 3, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(31, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 6, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -2057,11 +2054,20 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    static int value;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires Valid<T> struct S {\n"
+                                 "    T value;\n"
+                                 "    template <typename U> requires HasFoo<U> void f(U u) {\n"
+                                 "        u.foo();\n"
+                                 "    }\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+
             }
             {
                 auto it = maps.varMap.begin();
                 Assert::AreEqual("template <typename T> constexpr bool is_integral_v = false;\n"         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> constexpr bool is_pointer_v = __is_pointer(T);\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <class T, class U> constexpr bool is_same_v = false;\n"       , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -2070,10 +2076,8 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.typedefMap.begin();
             }
             {
-                auto it = maps.functionMap.begin();
-            }
-            {
                 auto it = maps.conceptMap.begin();
+                Assert::AreEqual("template <typename T> concept C = sizeof(T) == 4;\n"                                                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept C01 = sizeof(T) == 4;\n"                                                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept C02 = sizeof(T) > 1;\n"                                                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept C03 = requires (T t) { t.foo(); };\n"                                                 , (*it++).second[0].fullyQualified);
@@ -2097,6 +2101,7 @@ Test ExploratoryTestsOfClangAST[] =
 
                 Assert::AreEqual("template <typename T, typename U> concept Convertible = requires (T t) { static_cast<U>(t); };\n"                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept HasAlias = requires { typename T::alias; };\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept HasFoo = requires (T t) { { t.foo() } noexcept -> std::same_as<int>; };\n"            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T, typename U> concept HasMember = requires (T t, U u) { t.foo(u); };\n"                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept HasNestedType = requires { typename T::nested::type; };\n"                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept HasValueType = requires { typename T::value_type; };\n"                               , (*it++).second[0].fullyQualified);
@@ -2105,22 +2110,23 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> concept D19 = C19<T> && requires (T t) { t.foo(); };\n"                                       , (*it++).second[0].fullyQualified);
 
                 Assert::AreEqual("template <typename T, typename U> concept SameSize = sizeof(T) == sizeof(U);\n"                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept Valid = HasFoo<T> && requires { typename T::value_type; } && sizeof(T) == 4;\n"       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T, typename U> concept same_as = __is_same(T, U) && __is_same(U, T);\n"                          , (*it++).second[0].fullyQualified);
-
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("template <C T> void f1(T) {\n}\n"                                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <C T> void f2(T x) {\n}\n"                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires C<T> void g1(T) {\n}\n"                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void g2(C auto x) {\n}\n"                                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires (C<T> && sizeof(T) > 1) void h1(T) {\n}\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void h2(C auto &&x) {\n}\n"                                               , (*it++).second[0].fullyQualified);
             }
         }
     },
 };
 /* some missing test cases
-
-7. Concepts
-            template<typename T> concept C = sizeof(T) == 4;
-         and
-            template<C T> void f(); 
-
-10. Constrained auto
-            C auto x = ...
-
+anonymous namespace as trailing return type
 
 12. Literal operators
             operator ""_x
