@@ -187,6 +187,12 @@ namespace OdrCop3
             os.flush();
             return body;
         }
+        bool hasTrailingReturn() const
+        {
+            if (const auto* fpt = funcDecl->getType()->getAs<clang::FunctionProtoType>())
+                return fpt->hasTrailingReturn();
+            return false; // K&R, pre-C99, etc.
+        }
 
         std::string SerializePastFriend(auto returnType, auto functionName) const
         {
@@ -201,7 +207,10 @@ namespace OdrCop3
             fqn += get_InlineSpecified();
             fqn += get_Constexpr();
             fqn += get_ConstEval();
-            fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
+            if (true == hasTrailingReturn())
+                fqn += "auto "; // has trailing-return syntax
+            else
+                fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
             if (fqn.empty() == false)
             if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
             if (fqn.substr(fqn.size()-1) != "&") // e.g., ditto &
@@ -220,11 +229,17 @@ namespace OdrCop3
             fqn  = TrimRightIf(fqn, ", ");
             fqn += ") ";
             fqn += method.get_Const();
-            fqn += get_TrailingRequiresClause();
             fqn += method.get_Volatile();
             fqn += method.get_RefQualifier();
             fqn += IndentBlock(get_ExceptionSpecifier(), LengthOfLastLine(fqn));
             fqn += get_TrailingAttributes();
+            if (true == hasTrailingReturn())
+            {
+                fqn += "-> ";
+                fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
+                fqn += " ";
+            }
+            fqn += get_TrailingRequiresClause();
             fqn += method.get_PureVirtual();
             fqn += get_Defaulted();
             fqn += get_Deleted();

@@ -17,8 +17,8 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T, typename U> T    add            (T   t, U     u) { return t + u; }\n"
                                "template<                      > int  add<int, short>(int t, short u) { return t - u; }\n"
                                "namespace { struct Anonymous {}; } [[maybe_unused]] Anonymous ReturnAnonymous() { return Anonymous{}; }\n"
+                               "auto FunctionWithTrailingAnonymousNamespaceReturnType() noexcept -> Anonymous { return {}; }\n"
                                ;
-
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -28,7 +28,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
-            Assert::AreEqual(6, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(7, maps.functionMap.size(), "wrong number of functions in map");
 
             const auto& vec = maps.functionMap.begin()->second;
             Assert::AreEqual("input.cc", vec[0].TU, "should have gotten the TU name");
@@ -43,6 +43,11 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("auto FunctionWithTrailingAnonymousNamespaceReturnType() noexcept -> struct (anonymous namespace)::Anonymous {\n"
+                                 "                                                                    } {\n"
+                                 "    return {};\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("[[maybe_unused]] struct (anonymous namespace)::Anonymous {\n"
                                  "                 } ReturnAnonymous() {\n"
                                  "                     return Anonymous{};\n"
@@ -2036,6 +2041,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "template<typename T> concept HasFoo = requires(T t) { { t.foo() } noexcept -> std::same_as<int>; };\n"
                                "template<typename T> concept Valid = HasFoo<T> && requires { typename T::value_type; } && sizeof(T) == 4;\n"
                                "template<typename T> requires Valid<T> struct S { T value; template<typename U> requires HasFoo<U> void f(U u) { u.foo(); } };\n"
+                               "template<typename T> auto FunctionWithTrailingAnonymousNamespaceReturnType(T) -> InvisibleX2 requires HasFoo<T> { return {}; }\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -2046,7 +2052,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
             Assert::AreEqual(31, maps.conceptMap.size(), "wrong number of comcepts in map");
-            Assert::AreEqual( 6, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual( 7, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -2115,6 +2121,11 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("template <typename T> auto FunctionWithTrailingAnonymousNamespaceReturnType(T) -> struct (anonymous namespace)::InvisibleX2 {\n"
+                                 "                                                                                  } requires HasFoo<T> {\n"
+                                 "                          return {};\n"
+                                 "                      }\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <C T> void f1(T) {\n}\n"                                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <C T> void f2(T x) {\n}\n"                                       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> requires C<T> void g1(T) {\n}\n"                    , (*it++).second[0].fullyQualified);
@@ -2126,7 +2137,6 @@ Test ExploratoryTestsOfClangAST[] =
     },
 };
 /* some missing test cases
-anonymous namespace as trailing return type
 
 12. Literal operators
             operator ""_x
