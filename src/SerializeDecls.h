@@ -161,10 +161,10 @@ namespace OdrCop3
             {
                 if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(decl))
                 {   // return type, then args
-                    if (false == Can::PrintAnyOf(functionDecl->getReturnType()))
+                    if (false == Can::PrintAnyOf(functionDecl->getReturnType().getNonReferenceType()))
                         return false;
                     for (const ParmVarDecl* parmVarDecl : functionDecl->parameters())
-                        if (false == Can::PrintAnyOf(parmVarDecl->getType()))
+                        if (false == Can::PrintAnyOf(parmVarDecl->getOriginalType()))
                             return false;
                 }
                 return true;
@@ -199,7 +199,7 @@ namespace OdrCop3
                 // after recursion, check 1 level deep
                 if (const auto* typeAliasDecl = llvm::dyn_cast<clang::TypeAliasDecl>(decl)) if (false == Can::PrintAnyOf(typeAliasDecl->getUnderlyingType())) return false;
                 if (const auto*   typedefDecl = llvm::dyn_cast<clang::  TypedefDecl>(decl)) if (false == Can::PrintAnyOf(  typedefDecl->getUnderlyingType())) return false;
-                if (const auto*   parmVarDecl = llvm::dyn_cast<clang::  ParmVarDecl>(decl)) if (false == Can::PrintAnyOf(  parmVarDecl->getType()))           return false;
+                if (const auto*   parmVarDecl = llvm::dyn_cast<clang::  ParmVarDecl>(decl)) if (false == Can::PrintAnyOf(  parmVarDecl->getOriginalType()))   return false;
                 if (const auto*     fieldDecl = llvm::dyn_cast<clang::    FieldDecl>(decl)) if (false == Can::PrintAnyOf(    fieldDecl->getType()))           return false;
 
                 // after recursion (now top-level)

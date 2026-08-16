@@ -24,22 +24,23 @@ namespace OdrCop3
         PointerAndLValueReferenceTypesSerializer(const ContextItems& contextItems, QualType qt) : contextItems(contextItems), qt(qt) {}
         std::string Serialize(const std::string& starOrAmpersand) const
         {
-            if (qt->getPointeeType()->isFunctionProtoType() || // pointers-to-functions and references-to-functions have atypical syntax
-                qt->getPointeeType()->isArrayType        () )  // references/pointers-to-arrays have atypical syntax: base (&aux)[N]
-            {
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, starOrAmpersand + contextItems.aux); // pointer/reference-to-function syntax
-                std::string out = SerializeType(ci2, qt->getPointeeType());
-                return out;
-            }
-
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
             std::string out;
-            out += SerializeType(ci2, qt->getPointeeType());
-            out  = TrimRightIf(out, "\n");
-            out  = TrimRightIf(out, ";");
-            
-            // add space only as appropriate:  we want "Foo **&foo", for example
-            out += SnugUpPointersAndReferences(out);
+
+            bool pointerToFunctionOrArraySyntax = qt->getPointeeType()->isFunctionProtoType() || // pointers-to-functions and references-to-functions have atypical syntax
+                                                  qt->getPointeeType()->isArrayType        ();   // references/pointers-to-arrays have atypical syntax: base (&aux)[N]
+            ContextItems ci2(&contextItems.context,
+                             contextItems.printPolicy,
+                             contextItems.TU,
+                             contextItems.recursingDecls, 
+                             pointerToFunctionOrArraySyntax ? starOrAmpersand + contextItems.aux : "");
+            out = SerializeType(ci2, qt->getPointeeType());
+            out = TrimRightIf(out, "\n");
+            out = TrimRightIf(out, ";");
+            if (true == pointerToFunctionOrArraySyntax)
+                return out; // name is already added
+
+            // add name (and pointer/ampersand)
+            out += SnugUpPointersAndReferences(out); // add space only as appropriate:  we want "Foo **&foo", for example
             out += starOrAmpersand + contextItems.aux;
             return out;
         }

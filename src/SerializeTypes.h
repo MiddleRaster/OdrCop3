@@ -68,6 +68,8 @@ namespace OdrCop3
             {
                 static bool Print(const ContextItems& contextItems, QualType qualType)
                 {
+                    qualType = qualType.getNonReferenceType(); // strips off references only
+
                     switch (qualType.getTypePtr()->getTypeClass())
                     { // some types must be manually serialized, no matter what. E.g., typedefs
                     case clang::Type::TypeClass::Typedef: return false;

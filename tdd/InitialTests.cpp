@@ -2584,20 +2584,22 @@ Test ExploratoryTestsOfClangAST[] =
                                "Foo(&Function2())[2][3] { static Foo array[2][3]; return array; }\n"
                                "namespace { struct FooAnon { int value; }; }\n"
                                "void Function3(FooAnon array[2][3]) {}\n"
-//"typedef FooAnon ArrayType3[2][3];\n"
-//"using ArrayType4 = FooAnon[2][3];\n"
-//"FooAnon(&Function4())[2][3] { static FooAnon array[2][3]; return array; }\n"
+                               "typedef FooAnon ArrayType3[2][3];\n"
+                               "using ArrayType4 = FooAnon[2][3];\n"
+                               "FooAnon(&Function4())[2][3] { static FooAnon array[2][3]; return array; }\n"
+                               "void Function5(ArrayType3 array) {}\n"
+                               "ArrayType4& Function6() { static ArrayType4 array{}; return array; }\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual( 1, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual( 7, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual(10, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(6, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -2605,25 +2607,28 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    int value;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
                 Assert::AreEqual("typedef Foo ArrayType1[2][3];\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using ArrayType2 = Foo[2][3];\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (anonymous namespace)::FooAnon {\n"
+                                 "            int value;\n"
+                                 "        } ArrayType3[2][3];\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ArrayType4 = struct (anonymous namespace)::FooAnon {\n"
+                                 "                       int value;\n"
+                                 "                   } [2][3];\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -2640,7 +2645,25 @@ Test ExploratoryTestsOfClangAST[] =
                                  "               } array[2][3]) {\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::FooAnon {\n"
+                                 "    int value;\n"
+                                 "} (&)[2][3] Function4() {\n"
+                                 "    static FooAnon array[2][3];\n"
+                                 "    return array;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void Function5(typedef struct (anonymous namespace)::FooAnon {\n"
+                                 "                           int value;\n"
+                                 "                       } ArrayType3[2][3]) {\n"
+                                 "}\n"
+                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ArrayType4 = struct (anonymous namespace)::FooAnon {\n"
+                                 "                       int value;\n"
+                                 "                   } &[2][3] Function6() {\n"
+                                 "    static ArrayType4 array{};\n"
+                                 "    return array;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
             }
         }
     },
