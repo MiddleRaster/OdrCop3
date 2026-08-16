@@ -2414,6 +2414,166 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Pointer-to-member functions", []
+        {
+            std::string code =
+                               "struct Foo { int member(double); } foo;\n"
+                               "typedef int (Foo::* FooMemberPtr)(double);\n"
+                               "using FooMemberPtr2 = int (Foo::*)(double);\n"
+
+                // no typedef or using alias
+                               "int Take(Foo& foo, int (Foo::* pmf)(double)) { return (foo.*pmf)(3.14); }\n"
+                               "int globalInt = Take(foo, &Foo::member);\n"
+                               "int (Foo::* FunctionReturningPointerToMember())(double) { return &Foo::member; }\n"
+                               "int (Foo::* var)(double) = &Foo::member;\n"
+
+                // typedef and using
+                               "int Take2(Foo& foo, FooMemberPtr  pmf) { return (foo.*pmf)(3.14); }\n"
+                               "int Take3(Foo& foo, FooMemberPtr2 pmf) { return (foo.*pmf)(3.14); }\n"
+                               "FooMemberPtr  FunctionReturningPointerToMember2() { return &Foo::member; }\n"
+                               "FooMemberPtr2 FunctionReturningPointerToMember3() { return &Foo::member; }\n"
+                               "FooMemberPtr var2 = &Foo::member; FooMemberPtr2 var3 = &Foo::member;\n"
+                // anonymous namespace 
+                               "namespace { struct FooAnon { int member(double) { return 42; } } fooAnon; }\n"
+                               "typedef int (FooAnon::*FooAnonMemberPtr)(double);\n"
+                               "using FooAnonMemberPtr2 = int (FooAnon::*)(double);\n"
+                               "int Take4(FooAnon& foo, FooAnonMemberPtr pmf) { return (foo.*pmf)(3.14); }\n"
+                               "int Take5(FooAnon& foo, FooAnonMemberPtr2 pmf) { return (foo.*pmf)(3.14); }\n"
+                               "FooAnonMemberPtr FunctionReturningPointerToMember4() { return &FooAnon::member; }\n"
+                               "FooAnonMemberPtr2 FunctionReturningPointerToMember5() { return &FooAnon::member; }\n"
+                               "FooAnonMemberPtr var4 = &FooAnon::member;\n"
+                               "FooAnonMemberPtr2 var5 = &FooAnon::member;\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual( 1, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 7, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(10, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Foo {\n"
+                                 "    int member(double);\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("struct Foo foo;\n"                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int globalInt = Take(foo, &Foo::member);\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int (Foo::*var)(double) = &Foo::member;\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FooMemberPtr var2 = &Foo::member;\n"        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FooMemberPtr2 var3 = &Foo::member;\n"        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                 int member(double) {\n"
+                                 "                     return 42;\n"
+                                 "                 }\n"
+                                 "             }::*FooAnonMemberPtr)(double); var4 = &FooAnon::member;\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FooAnonMemberPtr2 = int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                                   int member(double) {\n"
+                                 "                                       return 42;\n"
+                                 "                                   }\n"
+                                 "                               }::*)(double); var5 = &FooAnon::member;\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("typedef int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                 int member(double) {\n"
+                                 "                     return 42;\n"
+                                 "                 }\n"
+                                 "             }::*FooAnonMemberPtr)(double);\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FooAnonMemberPtr2 = int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                                   int member(double) {\n"
+                                 "                                       return 42;\n"
+                                 "                                   }\n"
+                                 "                               }::*)(double);\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef int (Foo::*FooMemberPtr)(double);\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FooMemberPtr2 = int (Foo::*)(double);\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("int (Foo::*FunctionReturningPointerToMember())(double) {\n"
+                                 "    return &Foo::member;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FooMemberPtr FunctionReturningPointerToMember2() {\n"
+                                 "    return &Foo::member;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FooMemberPtr2 FunctionReturningPointerToMember3() {\n"
+                                 "    return &Foo::member;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                 int member(double) {\n"
+                                 "                     return 42;\n"
+                                 "                 }\n"
+                                 "             }::*FooAnonMemberPtr)(double); FunctionReturningPointerToMember4() {\n"
+                                 "    return &FooAnon::member;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FooAnonMemberPtr2 = int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                                   int member(double) {\n"
+                                 "                                       return 42;\n"
+                                 "                                   }\n"
+                                 "                               }::*)(double); FunctionReturningPointerToMember5() {\n"
+                                 "    return &FooAnon::member;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int Take(Foo &foo, int (Foo::*pmf)(double)) {\n"
+                                 "    return (foo .* pmf)(3.1400000000000001);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int Take2(Foo &foo, FooMemberPtr pmf) {\n"
+                                 "    return (foo .* pmf)(3.1400000000000001);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int Take3(Foo &foo, FooMemberPtr2 pmf) {\n"
+                                 "    return (foo .* pmf)(3.1400000000000001);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int Take4(struct (anonymous namespace)::FooAnon {\n"
+                                 "              int member(double) {\n"
+                                 "                  return 42;\n"
+                                 "              }\n"
+                                 "          } &foo, typedef int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                                   int member(double) {\n"
+                                 "                                       return 42;\n"
+                                 "                                   }\n"
+                                 "                               }::*FooAnonMemberPtr)(double) pmf) {\n"
+                                 "    return (foo .* pmf)(3.1400000000000001);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int Take5(struct (anonymous namespace)::FooAnon {\n"
+                                 "              int member(double) {\n"
+                                 "                  return 42;\n"
+                                 "              }\n"
+                                 "          } &foo, using FooAnonMemberPtr2 = int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                                                     int member(double) {\n"
+                                 "                                                         return 42;\n"
+                                 "                                                     }\n"
+                                 "                                                 }::*)(double) pmf) {\n"
+                                 "    return (foo .* pmf)(3.1400000000000001);\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 };
 /* some missing test cases
@@ -2424,8 +2584,6 @@ Test ExploratoryTestsOfClangAST[] =
 15. using enum
             using enum Color; // it looks like these don't CAUSE ODR violations, though they might expose them
 
-16. Pointer-to-member function
-            int (A::*p)();
 
 17. Multi-dimensional arrays
             int x[3][4];
