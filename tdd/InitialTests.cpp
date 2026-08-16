@@ -789,7 +789,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct R {\n"
                                  "    friend void fr(struct (anonymous namespace)::Hidden {\n"
-                                 "                   }[10]);\n"
+                                 "                   } [10]);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct S {\n"
@@ -2574,6 +2574,76 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Multi-dimensional arrays", []
+        {
+            std::string code =
+                               "struct Foo { int value; };\n"
+                               "void Function1(Foo array[2][3]) {}\n"
+                               "typedef Foo ArrayType1[2][3];\n"
+                               "using ArrayType2 = Foo[2][3];\n"
+                               "Foo(&Function2())[2][3] { static Foo array[2][3]; return array; }\n"
+                               "namespace { struct FooAnon { int value; }; }\n"
+                               "void Function3(FooAnon array[2][3]) {}\n"
+//"typedef FooAnon ArrayType3[2][3];\n"
+//"using ArrayType4 = FooAnon[2][3];\n"
+//"FooAnon(&Function4())[2][3] { static FooAnon array[2][3]; return array; }\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual( 1, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual( 7, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual(10, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Foo {\n"
+                                 "    int value;\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("typedef Foo ArrayType1[2][3];\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ArrayType2 = Foo[2][3];\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("void Function1(Foo array[2][3]) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Foo (&Function2())[2][3] {\n"
+                                 "    static Foo array[2][3];\n"
+                                 "    return array;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void Function3(struct (anonymous namespace)::FooAnon {\n"
+                                 "                   int value;\n"
+                                 "               } array[2][3]) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 };
 /* some missing test cases
@@ -2585,8 +2655,6 @@ Test ExploratoryTestsOfClangAST[] =
             using enum Color; // it looks like these don't CAUSE ODR violations, though they might expose them
 
 
-17. Multi-dimensional arrays
-            int x[3][4];
 
 18. References to arrays
             int (&r)[3];

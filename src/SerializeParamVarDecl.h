@@ -35,14 +35,20 @@ namespace OdrCop3
             }
             auto startOfParm = out.size();
 
-            out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
-            out  = TrimRightIf(out, ";");
-            out += SnugUpPointersAndReferences(out);
-
-            if (parmVarDecl->getIdentifier()) // name if any
-                out += parmVarDecl->getName().str();
-            else
-                out = TrimRightIf(out, " "); // don't want the space if nameless
+            if (parmVarDecl->getOriginalType()->isArrayType() && (nullptr != parmVarDecl->getIdentifier()))
+            {
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
+                ci2.aux = parmVarDecl->getName().str();
+                out += IndentBlock(SerializeType(ci2,          parmVarDecl->getType()), LengthOfLastLine(out));
+            } else {
+                out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
+                out  = TrimRightIf(out, ";");
+                out += SnugUpPointersAndReferences(out);
+                if (parmVarDecl->getIdentifier()) // name if any
+                    out += parmVarDecl->getName().str();
+                else
+                    out = TrimRightIf(out, " "); // don't want the space if nameless
+            }
 
             // slighly hilarious special case:  Decl::print() prints ellipsis one way, while Type::print() prints it the other. I'm going with "SomeType ...args". 
             if (parmVarDecl->isParameterPack())
