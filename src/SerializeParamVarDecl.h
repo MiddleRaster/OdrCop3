@@ -21,22 +21,6 @@ namespace OdrCop3
         const ContextItems& contextItems;
         const ParmVarDecl* parmVarDecl;
 
-        bool IsEventuallyArrayOrFunctionProtoType(QualType qt) const
-        {
-            if (const auto* pointerType = qt->getAs<PointerType>())
-                return IsEventuallyArrayOrFunctionProtoType(pointerType->getPointeeType());
-
-            if (const auto* referenceType = qt->getAs<ReferenceType>())
-                return IsEventuallyArrayOrFunctionProtoType(referenceType->getPointeeType());
-
-            if (qt->isArrayType())
-                return true;
-            if (qt->isFunctionProtoType())
-                return true;
-
-            return false;
-        }
-
     public:
         ParmVarDeclSerializer(const ContextItems& contextItems, const ParmVarDecl* parmVarDecl) : contextItems(contextItems), parmVarDecl(parmVarDecl) {}
 

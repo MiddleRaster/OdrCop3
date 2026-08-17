@@ -21,22 +21,6 @@ namespace OdrCop3
         const ContextItems& contextItems;
         QualType qt;
 
-        bool IsEventuallyArrayOrFunctionProtoType(QualType qt) const
-        {
-            if (const auto* pointerType = qt->getAs<PointerType>())
-                return IsEventuallyArrayOrFunctionProtoType(pointerType->getPointeeType());
-
-            if (const auto* referenceType = qt->getAs<ReferenceType>())
-                return IsEventuallyArrayOrFunctionProtoType(referenceType->getPointeeType());
-
-            if (qt->isArrayType())
-                return true;
-            if (qt->isFunctionProtoType())
-                return true;
-
-            return false;
-        }
-
     public:
         PointerAndLValueReferenceTypesSerializer(const ContextItems& contextItems, QualType qt) : contextItems(contextItems), qt(qt) {}
         std::string Serialize(const std::string& starOrAmpersand) const

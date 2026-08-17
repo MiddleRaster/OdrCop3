@@ -194,4 +194,20 @@ namespace OdrCop3
         os.flush();
         return argStr;
     }
+
+    inline bool IsEventuallyArrayOrFunctionProtoType(QualType qt)
+    {
+        if (const auto* pointerType = qt->getAs<PointerType>())
+            return IsEventuallyArrayOrFunctionProtoType(pointerType->getPointeeType());
+
+        if (const auto* referenceType = qt->getAs<ReferenceType>())
+            return IsEventuallyArrayOrFunctionProtoType(referenceType->getPointeeType());
+
+        if (qt->isArrayType())
+            return true;
+        if (qt->isFunctionProtoType())
+            return true;
+
+        return false;
+    }
 }
