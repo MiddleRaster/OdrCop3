@@ -20,19 +20,30 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         QualType qt;
+
+        bool IsEventuallyArrayOfFunctionProtoType(QualType qt) const
+        {
+            if (const auto* pointerType = qt->getAs<PointerType>())
+                return IsEventuallyArrayOfFunctionProtoType(pointerType->getPointeeType());
+
+            if (const auto* referenceType = qt->getAs<ReferenceType>())
+                return IsEventuallyArrayOfFunctionProtoType(referenceType->getPointeeType());
+
+            if (qt->isArrayType())
+                return true;
+            if (qt->isFunctionProtoType())
+                return true;
+
+            return false;
+        }
+
     public:
         PointerAndLValueReferenceTypesSerializer(const ContextItems& contextItems, QualType qt) : contextItems(contextItems), qt(qt) {}
         std::string Serialize(const std::string& starOrAmpersand) const
         {
+            bool pointerToFunctionOrArraySyntax = IsEventuallyArrayOfFunctionProtoType(qt->getPointeeType());
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls,  pointerToFunctionOrArraySyntax ? starOrAmpersand + contextItems.aux : "");
             std::string out;
-
-            bool pointerToFunctionOrArraySyntax = qt->getPointeeType()->isFunctionProtoType() || // pointers-to-functions and references-to-functions have atypical syntax
-                                                  qt->getPointeeType()->isArrayType        ();   // references/pointers-to-arrays have atypical syntax: base (&aux)[N]
-            ContextItems ci2(&contextItems.context,
-                             contextItems.printPolicy,
-                             contextItems.TU,
-                             contextItems.recursingDecls, 
-                             pointerToFunctionOrArraySyntax ? starOrAmpersand + contextItems.aux : "");
             out = SerializeType(ci2, qt->getPointeeType());
             out = TrimRightIf(out, "\n");
             out = TrimRightIf(out, ";");

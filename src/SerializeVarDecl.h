@@ -152,6 +152,20 @@ namespace OdrCop3
             return out;
         }
 
+        std::string GetAux(QualType qt, const std::string& name, const std::string& aux) const
+        {
+            if (const auto* pointerType = qt->getAs<PointerType>())
+                return GetAux(pointerType->getPointeeType(), name, aux);
+
+            if (const auto* referenceType = qt->getAs<ReferenceType>())
+                return GetAux(referenceType->getPointeeType(), name, aux);
+
+            if (qt->isArrayType())
+                return name;
+
+            return aux;
+        }
+
     public:
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
         std::string Serialize() const
@@ -160,14 +174,16 @@ namespace OdrCop3
             QualType qualType = varDecl->getType();
             if (varDecl->isConstexpr())
                 qualType = qualType.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const. Just like DeclPrinter does.
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, qualType->isArrayType() ? name : contextItems.aux);
+
+            std::string aux = GetAux(qualType, name, contextItems.aux);
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, aux);
 
             std::string out;
             out += get_TemplateHeader();
             out += get_Attributes();
             out += GetInlineStaticConstAndConstexpr();
             out += TrimRightIf(IndentBlock(SerializeType(ci2, qualType), LengthOfLastLine(out)), " ");
-            if (false == qualType->isArrayType())
+            if (true == aux.empty())
             {
                 out += SnugUpPointersAndReferences(out);
                 out += name;
