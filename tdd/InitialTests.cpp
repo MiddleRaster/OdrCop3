@@ -2697,7 +2697,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "InvisibleColor (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"
                                "InvisibleColor (&ReturnInvisibleArray1D(int,double) noexcept)[3] { return invisibleColorArray1D; }\n"
                                "template<typename T> InvisibleColor (&ReturnInvisibleArray2D(int&))[2][3] requires (sizeof(T) == 4) { return invisibleColorArray2D; }\n"
-//"void ArgumentInvisibleArray1D(InvisibleColor (&arg)[3]) {}\n"
+                               "void ArgumentInvisibleArray1D(InvisibleColor (&arg)[3]) {}\n"
 //"void ArgumentInvisibleArray2D(InvisibleColor (&arg)[2][3]) {}\n"
 //"using InvisibleColorArray1D = InvisibleColor[3];\n"
 //"typedef InvisibleColorArray1D InvisibleColorArray1DTypedef;\n"
@@ -2806,6 +2806,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void ArgumentArray2D(Color (&arg)[2][3]) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void ArgumentInvisibleArray1D(enum (anonymous namespace)::InvisibleColor {\n"
+                                 "                                  InvisibleRed,\n"
+                                 "                                  InvisibleGreen,\n"
+                                 "                                  InvisibleBlue\n"
+                                 "                              } (&arg)[3]) {\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("Color (&ReturnArray1D())[3] {\n"
