@@ -156,19 +156,23 @@ namespace OdrCop3
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
         std::string Serialize() const
         {
+            std::string  name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
+            QualType qualType = varDecl->getType();
+            if (varDecl->isConstexpr())
+                qualType = qualType.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const. Just like DeclPrinter does.
+            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, qualType->isArrayType() ? name : contextItems.aux);
+
             std::string out;
             out += get_TemplateHeader();
             out += get_Attributes();
             out += GetInlineStaticConstAndConstexpr();
-
-            QualType type = varDecl->getType();
-            if (varDecl->isConstexpr())
-                type = type.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const. Just like DeclPrinter does.
-            std::string name = varDecl->isOutOfLine() ? varDecl->getQualifiedNameAsString() : varDecl->getNameAsString();
-            out += TrimRightIf(IndentBlock(SerializeType(contextItems, type), LengthOfLastLine(out)), " ");
-            out += SnugUpPointersAndReferences(out);
-            out += name;
-            out += get_TemplateFooter();
+            out += TrimRightIf(IndentBlock(SerializeType(ci2, qualType), LengthOfLastLine(out)), " ");
+            if (false == qualType->isArrayType())
+            {
+                out += SnugUpPointersAndReferences(out);
+                out += name;
+                out += get_TemplateFooter();
+            }
             out += IndentBlock(get_Init(), LengthOfLastLine(out));
             out += ";\n";
             return out;

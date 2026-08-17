@@ -2667,6 +2667,127 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"references to arrays", []
+        {
+            //18. References to arrays
+            //            int(&r)[3];
+
+            std::string code =
+                               "enum Color { Red, Green, Blue };\n"
+                               "Color colorArray1D[3];\n"
+                               "Color colorArray2D[2][3];\n"
+                               "Color (&referenceToGlobalArray1D)[3]    = colorArray1D;\n"
+                               "Color (&referenceToGlobalArray2D)[2][3] = colorArray2D;\n"
+                               "Color (&ReturnArray1D())[3] { return colorArray1D; }\n"
+                               "Color (&ReturnArray2D())[2][3] { return colorArray2D; }\n"
+                               "void ArgumentArray1D(Color (&arg)[3]) {}\n"
+                               "void ArgumentArray2D(Color (&arg)[2][3]) {}\n"
+                               "using ColorArray1D = Color[3];\n"
+                               "typedef ColorArray1D ColorArray1DTypedef;\n"
+                               "typedef Color ColorArray2DTypedef[2][3];\n"
+                               "using ColorArray2D = ColorArray2DTypedef;\n"
+                               "ColorArray1D& referenceUsingArray1D = colorArray1D;\n"
+                               "ColorArray2D& referenceUsingArray2D = colorArray2D;\n"
+                               "ColorArray1DTypedef& referenceTypedefArray1D = colorArray1D;\n"
+                               "ColorArray2DTypedef& referenceTypedefArray2D = colorArray2D;\n"
+                               "namespace { enum InvisibleColor { InvisibleRed, InvisibleGreen, InvisibleBlue }; }\n"
+                               "InvisibleColor invisibleColorArray1D[3];\n"
+//"InvisibleColor invisibleColorArray2D[2][3];\n"
+//"InvisibleColor (&referenceToInvisibleGlobalArray1D)[3]    = invisibleColorArray1D;\n"
+//"InvisibleColor (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"
+//"InvisibleColor (&ReturnInvisibleArray1D())[3] { return invisibleColorArray1D; }\n"
+//"InvisibleColor (&ReturnInvisibleArray2D())[2][3] { return invisibleColorArray2D; }\n"
+//"void ArgumentInvisibleArray1D(InvisibleColor (&arg)[3]) {}\n"
+//"void ArgumentInvisibleArray2D(InvisibleColor (&arg)[2][3]) {}\n"
+//"using InvisibleColorArray1D = InvisibleColor[3];\n"
+//"typedef InvisibleColorArray1D InvisibleColorArray1DTypedef;\n"
+//"typedef InvisibleColor InvisibleColorArray2DTypedef[2][3];\n"
+//"using InvisibleColorArray2D = InvisibleColorArray2DTypedef;\n"
+//"InvisibleColorArray1D& referenceUsingInvisibleArray1D = invisibleColorArray1D;\n"
+//"InvisibleColorArray2D& referenceUsingInvisibleArray2D = invisibleColorArray2D;\n"
+//"InvisibleColorArray1DTypedef& referenceTypedefInvisibleArray1D = invisibleColorArray1D;\n"
+//"InvisibleColorArray2DTypedef& referenceTypedefInvisibleArray2D = invisibleColorArray2D;\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual(8, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual(1, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual(4, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+             // Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("Color colorArray1D[3];\n"                                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color colorArray2D[2][3];\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
+                                 "    InvisibleRed,\n"
+                                 "    InvisibleGreen,\n"
+                                 "    InvisibleBlue\n"
+                                 "} invisibleColorArray1D[3];\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color (&referenceToGlobalArray1D)[3] = colorArray1D;\n"        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color (&referenceToGlobalArray2D)[2][3] = colorArray2D;\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray1DTypedef &referenceTypedefArray1D = colorArray1D;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray2DTypedef &referenceTypedefArray2D = colorArray2D;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray1D &referenceUsingArray1D = colorArray1D;\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray2D &referenceUsingArray2D = colorArray2D;\n"         , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum Color {\n"
+                                 "    Red,\n"
+                                 "    Green,\n"
+                                 "    Blue\n"
+                                 "};\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("using ColorArray1D = Color[3];\n"           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef ColorArray1D ColorArray1DTypedef;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ColorArray2D = ColorArray2DTypedef;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef Color ColorArray2DTypedef[2][3];\n" , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("void ArgumentArray1D(Color (&arg)[3]) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void ArgumentArray2D(Color (&arg)[2][3]) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color (&ReturnArray1D())[3] {\n"
+                                 "    return colorArray1D;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color (&ReturnArray2D())[2][3] {\n"
+                                 "    return colorArray2D;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 };
 /* some missing test cases
@@ -2679,8 +2800,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 
 
-18. References to arrays
-            int (&r)[3];
 
 19. Function references
             void (&f)();
