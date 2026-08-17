@@ -21,13 +21,13 @@ namespace OdrCop3
         const ContextItems& contextItems;
         QualType qt;
 
-        bool IsEventuallyArrayOfFunctionProtoType(QualType qt) const
+        bool IsEventuallyArrayOrFunctionProtoType(QualType qt) const
         {
             if (const auto* pointerType = qt->getAs<PointerType>())
-                return IsEventuallyArrayOfFunctionProtoType(pointerType->getPointeeType());
+                return IsEventuallyArrayOrFunctionProtoType(pointerType->getPointeeType());
 
             if (const auto* referenceType = qt->getAs<ReferenceType>())
-                return IsEventuallyArrayOfFunctionProtoType(referenceType->getPointeeType());
+                return IsEventuallyArrayOrFunctionProtoType(referenceType->getPointeeType());
 
             if (qt->isArrayType())
                 return true;
@@ -41,7 +41,7 @@ namespace OdrCop3
         PointerAndLValueReferenceTypesSerializer(const ContextItems& contextItems, QualType qt) : contextItems(contextItems), qt(qt) {}
         std::string Serialize(const std::string& starOrAmpersand) const
         {
-            bool pointerToFunctionOrArraySyntax = IsEventuallyArrayOfFunctionProtoType(qt->getPointeeType());
+            bool pointerToFunctionOrArraySyntax = IsEventuallyArrayOrFunctionProtoType(qt->getPointeeType());
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls,  pointerToFunctionOrArraySyntax ? starOrAmpersand + contextItems.aux : "");
             std::string out;
             out = SerializeType(ci2, qt->getPointeeType());

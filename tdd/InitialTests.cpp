@@ -2647,7 +2647,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::FooAnon {\n"
                                  "    int value;\n"
-                                 "} (&)[2][3] Function4() {\n"
+                                 "} (&Function4())[2][3] {\n"
                                  "    static FooAnon array[2][3];\n"
                                  "    return array;\n"
                                  "}\n"
@@ -2659,7 +2659,7 @@ Test ExploratoryTestsOfClangAST[] =
                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using ArrayType4 = struct (anonymous namespace)::FooAnon {\n"
                                  "                       int value;\n"
-                                 "                   } &[2][3] Function6() {\n"
+                                 "                   } &Function6()[2][3] {\n"
                                  "    static ArrayType4 array{};\n"
                                  "    return array;\n"
                                  "}\n"
@@ -2694,8 +2694,8 @@ Test ExploratoryTestsOfClangAST[] =
                                "InvisibleColor invisibleColorArray1D[3];\n"
                                "InvisibleColor invisibleColorArray2D[2][3];\n"
                                "InvisibleColor (&referenceToInvisibleGlobalArray1D)[3]    = invisibleColorArray1D;\n"
-//"InvisibleColor (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"
-//"InvisibleColor (&ReturnInvisibleArray1D())[3] { return invisibleColorArray1D; }\n"
+                               "InvisibleColor (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"
+                               "InvisibleColor (&ReturnInvisibleArray1D(int,double) noexcept)[3] { return invisibleColorArray1D; }\n"
 //"InvisibleColor (&ReturnInvisibleArray2D())[2][3] { return invisibleColorArray2D; }\n"
 //"void ArgumentInvisibleArray1D(InvisibleColor (&arg)[3]) {}\n"
 //"void ArgumentInvisibleArray2D(InvisibleColor (&arg)[2][3]) {}\n"
@@ -2761,6 +2761,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    InvisibleBlue\n"
                                  "} (&referenceToInvisibleGlobalArray1D)[3] = invisibleColorArray1D;\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
+                                 "    InvisibleRed,\n"
+                                 "    InvisibleGreen,\n"
+                                 "    InvisibleBlue\n"
+                                 "} (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("ColorArray1DTypedef &referenceTypedefArray1D = colorArray1D;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("ColorArray2DTypedef &referenceTypedefArray2D = colorArray2D;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("ColorArray1D &referenceUsingArray1D = colorArray1D;\n"         , (*it++).second[0].fullyQualified);
@@ -2810,6 +2816,17 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return colorArray2D;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
+                                 "    InvisibleRed,\n"
+                                 "    InvisibleGreen,\n"
+                                 "    InvisibleBlue\n"
+                                 "} (&ReturnInvisibleArray1D(int, double) noexcept)[3] {\n"
+                                 "    return invisibleColorArray1D;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }

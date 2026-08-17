@@ -61,7 +61,39 @@ namespace OdrCop3
             }
             return "";
         }
-        std::string get_ReturnType()      const { return TrimRightIf(SerializeType(contextItems, funcDecl->getReturnType()), " "); }
+
+        struct IsReturnType
+        {
+            static bool EventuallyArray(QualType qt)
+            {
+                if (const auto* pointerType = qt->getAs<PointerType>())
+                    return EventuallyArray(pointerType->getPointeeType());
+
+                if (const auto* referenceType = qt->getAs<ReferenceType>())
+                    return EventuallyArray(referenceType->getPointeeType());
+
+                if (qt->isArrayType())
+                    return true;
+
+                return false;
+            }
+        };
+
+        std::string get_ReturnType()      const
+        {
+            if (IsReturnType::EventuallyArray(funcDecl->getReturnType()))
+            {
+                // if a function returning a reference to an array, the syntax is tricky:
+                // int (&ReturningReferenceTo1DArrayOfInts(int,double) noexcept)[3] { return blah; }
+                // Everything from the "int" to the closing ) before the "[3]" goes into aux.
+
+                std::string aux = SerializeFromCallingConventionToTrailingRequiresClause([&]() { return ""; }, [&]() { return get_FunctionName(); });
+                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, TrimRightIf(aux, " "));
+                std::string out = SerializeType(ci2, funcDecl->getReturnType());
+                return TrimRightIf(out, " ");
+            }
+            return TrimRightIf(SerializeType(contextItems, funcDecl->getReturnType()), " ");
+        }
         std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval "    : ""; }
         std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "       : ""; }
         std::string get_Virtual()         const { return funcDecl->isVirtualAsWritten()                    ? "virtual "      : ""; }
@@ -194,29 +226,11 @@ namespace OdrCop3
             return false; // K&R, pre-C99, etc.
         }
 
-        std::string SerializePastFriend(auto returnType, auto functionName) const
+
+        std::string SerializeFromCallingConventionToTrailingRequiresClause(auto returnType, auto functionName) const
         {
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
-
             std::string fqn;
-            fqn += get_Register();
-            fqn += get_Static();
-            fqn += get_Extern();
-            fqn += get_Virtual();
-            fqn += IndentBlock(get_Explicit(), LengthOfLastLine(fqn));
-            fqn += get_InlineSpecified();
-            fqn += get_Constexpr();
-            fqn += get_ConstEval();
-            if (true == hasTrailingReturn())
-                fqn += "auto "; // has trailing-return syntax
-            else
-                fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
-            if (fqn.empty() == false)
-            if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
-            if (fqn.substr(fqn.size()-1) != "&") // e.g., ditto &
-            if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row
-                fqn += " ";                      // e.g., "int" does
-
             fqn += get_CallingConvention();
             fqn += IndentBlock(functionName(), LengthOfLastLine(fqn));
             fqn += '(';
@@ -240,6 +254,36 @@ namespace OdrCop3
                 fqn += " ";
             }
             fqn += get_TrailingRequiresClause();
+            return fqn;
+        }
+
+        std::string SerializePastFriend(auto returnType, auto functionName) const
+        {
+            CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
+
+            std::string fqn;
+            fqn += get_Register();
+            fqn += get_Static();
+            fqn += get_Extern();
+            fqn += get_Virtual();
+            fqn += IndentBlock(get_Explicit(), LengthOfLastLine(fqn));
+            fqn += get_InlineSpecified();
+            fqn += get_Constexpr();
+            fqn += get_ConstEval();
+
+            if (true == hasTrailingReturn())
+                fqn += "auto "; // has trailing-return syntax
+            else
+                fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
+            if (fqn.empty() == false)
+            if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
+            if (fqn.substr(fqn.size()-1) != "&") // e.g., ditto &
+            if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row
+                fqn += " ";                      // e.g., "int" does
+
+            if (false == IsReturnType::EventuallyArray(funcDecl->getReturnType())) // if not that returning-reference-to-array syntax
+                fqn += IndentBlock(SerializeFromCallingConventionToTrailingRequiresClause(returnType, functionName), LengthOfLastLine(fqn));
+
             fqn += method.get_PureVirtual();
             fqn += get_Defaulted();
             fqn += get_Deleted();
