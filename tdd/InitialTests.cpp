@@ -2696,7 +2696,7 @@ Test ExploratoryTestsOfClangAST[] =
                                "InvisibleColor (&referenceToInvisibleGlobalArray1D)[3]    = invisibleColorArray1D;\n"
                                "InvisibleColor (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"
                                "InvisibleColor (&ReturnInvisibleArray1D(int,double) noexcept)[3] { return invisibleColorArray1D; }\n"
-//"InvisibleColor (&ReturnInvisibleArray2D())[2][3] { return invisibleColorArray2D; }\n"
+                               "template<typename T> InvisibleColor (&ReturnInvisibleArray2D(int&))[2][3] requires (sizeof(T) == 4) { return invisibleColorArray2D; }\n"
 //"void ArgumentInvisibleArray1D(InvisibleColor (&arg)[3]) {}\n"
 //"void ArgumentInvisibleArray2D(InvisibleColor (&arg)[2][3]) {}\n"
 //"using InvisibleColorArray1D = InvisibleColor[3];\n"
@@ -2824,7 +2824,14 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return invisibleColorArray1D;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> enum (anonymous namespace)::InvisibleColor {\n"
+                                 "    InvisibleRed,\n"
+                                 "    InvisibleGreen,\n"
+                                 "    InvisibleBlue\n"
+                                 "} (&ReturnInvisibleArray2D(int &))[2][3] requires (sizeof(T) == 4) {\n"
+                                 "    return invisibleColorArray2D;\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

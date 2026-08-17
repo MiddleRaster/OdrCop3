@@ -87,7 +87,7 @@ namespace OdrCop3
                 // int (&ReturningReferenceTo1DArrayOfInts(int,double) noexcept)[3] { return blah; }
                 // Everything from the "int" to the closing ) before the "[3]" goes into aux.
 
-                std::string aux = SerializeFromCallingConventionToTrailingRequiresClause([&]() { return ""; }, [&]() { return get_FunctionName(); });
+                std::string aux = SerializeFromCallingConventionToTrailingReturn([&]() { return ""; }, [&]() { return get_FunctionName(); });
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, TrimRightIf(aux, " "));
                 std::string out = SerializeType(ci2, funcDecl->getReturnType());
                 return TrimRightIf(out, " ");
@@ -227,7 +227,7 @@ namespace OdrCop3
         }
 
 
-        std::string SerializeFromCallingConventionToTrailingRequiresClause(auto returnType, auto functionName) const
+        std::string SerializeFromCallingConventionToTrailingReturn(auto returnType, auto functionName) const
         {
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
             std::string fqn;
@@ -253,7 +253,6 @@ namespace OdrCop3
                 fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
                 fqn += " ";
             }
-            fqn += get_TrailingRequiresClause();
             return fqn;
         }
 
@@ -282,8 +281,9 @@ namespace OdrCop3
                 fqn += " ";                      // e.g., "int" does
 
             if (false == IsReturnType::EventuallyArray(funcDecl->getReturnType())) // if not that returning-reference-to-array syntax
-                fqn += IndentBlock(SerializeFromCallingConventionToTrailingRequiresClause(returnType, functionName), LengthOfLastLine(fqn));
+                fqn += IndentBlock(SerializeFromCallingConventionToTrailingReturn(returnType, functionName), LengthOfLastLine(fqn));
 
+            fqn += get_TrailingRequiresClause();
             fqn += method.get_PureVirtual();
             fqn += get_Defaulted();
             fqn += get_Deleted();
