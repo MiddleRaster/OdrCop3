@@ -32,9 +32,9 @@ namespace OdrCop3
         std::string Serialize() const
         {
             std::string fqtd;
-            fqtd += "typedef ";
             if (true == contextItems.aux.empty())
             {
+                fqtd += "typedef ";
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, typedefDecl->getNameAsString());
                 fqtd += IndentBlock(SerializeType(ci2,          typedefDecl->getUnderlyingType().getCanonicalType()), LengthOfLastLine(fqtd));
             } else
