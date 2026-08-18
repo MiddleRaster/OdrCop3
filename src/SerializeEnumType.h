@@ -29,7 +29,7 @@ namespace OdrCop3
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
             out += SerializeDecl(ci2, enumType->getDecl());
             out  = TrimRightIf(out, ";\n");
-            out += " " + contextItems.aux;
+            out += (contextItems.aux.starts_with("[") ? "" : " ") + contextItems.aux; // if not array, add space
             return out;
         }
     };

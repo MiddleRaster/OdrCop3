@@ -2698,8 +2698,8 @@ Test ExploratoryTestsOfClangAST[] =
                                "InvisibleColor (&ReturnInvisibleArray1D(int,double) noexcept)[3] { return invisibleColorArray1D; }\n"
                                "template<typename T> InvisibleColor (&ReturnInvisibleArray2D(int&))[2][3] requires (sizeof(T) == 4) { return invisibleColorArray2D; }\n"
                                "void ArgumentInvisibleArray1D(InvisibleColor (&arg)[3]) {}\n"
-//"void ArgumentInvisibleArray2D(InvisibleColor (&arg)[2][3]) {}\n"
-//"using InvisibleColorArray1D = InvisibleColor[3];\n"
+                               "void ArgumentInvisibleArray2D(InvisibleColor (&arg)[2][3]) {}\n"
+                               "using InvisibleColorArray1D = InvisibleColor[3];\n"
 //"typedef InvisibleColorArray1D InvisibleColorArray1DTypedef;\n"
 //"typedef InvisibleColor InvisibleColorArray2DTypedef[2][3];\n"
 //"using InvisibleColorArray2D = InvisibleColorArray2DTypedef;\n"
@@ -2790,6 +2790,14 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("typedef ColorArray1D ColorArray1DTypedef;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using ColorArray2D = ColorArray2DTypedef;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef Color ColorArray2DTypedef[2][3];\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using InvisibleColorArray1D = enum (anonymous namespace)::InvisibleColor {\n"
+                                 "                                  InvisibleRed,\n"
+                                 "                                  InvisibleGreen,\n"
+                                 "                                  InvisibleBlue\n"
+                                 "                              }[3];\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -2813,6 +2821,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                  InvisibleGreen,\n"
                                  "                                  InvisibleBlue\n"
                                  "                              } (&arg)[3]) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void ArgumentInvisibleArray2D(enum (anonymous namespace)::InvisibleColor {\n"
+                                 "                                  InvisibleRed,\n"
+                                 "                                  InvisibleGreen,\n"
+                                 "                                  InvisibleBlue\n"
+                                 "                              } (&arg)[2][3]) {\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("Color (&ReturnArray1D())[3] {\n"
