@@ -2654,7 +2654,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void Function5(typedef struct (anonymous namespace)::FooAnon {\n"
                                  "                           int value;\n"
-                                 "                       } ArrayType3[2][3]) {\n"
+                                 "                       } array[2][3]) {\n"
                                  "}\n"
                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using ArrayType4 = struct (anonymous namespace)::FooAnon {\n"
@@ -2723,48 +2723,64 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("Color colorArray1D[3];\n"                                                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Color colorArray2D[2][3];\n"                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color colorArray1D[3];\n"                                                                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color colorArray2D[2][3];\n"                                                                             , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} invisibleColorArray1D[3];\n"                                                            , (*it++).second[0].fullyQualified);
+                                 "} invisibleColorArray1D[3];\n"                                                                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} invisibleColorArray2D[2][3];\n"                                                         , (*it++).second[0].fullyQualified);
+                                 "} invisibleColorArray2D[2][3];\n"                                                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} (*pointerToInvisibleArray1D)[3] = &invisibleColorArray1D;\n"                            , (*it++).second[0].fullyQualified);
+                                 "} (*pointerToInvisibleArray1D)[3] = &invisibleColorArray1D;\n"                                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} (**pointerToPointerToInvisibleArray1D)[3] = &pointerToInvisibleArray1D;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Color (&referenceToGlobalArray1D)[3] = colorArray1D;\n"                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Color (&referenceToGlobalArray2D)[2][3] = colorArray2D;\n"                                , (*it++).second[0].fullyQualified);
+                                 "} (**pointerToPointerToInvisibleArray1D)[3] = &pointerToInvisibleArray1D;\n"                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color (&referenceToGlobalArray1D)[3] = colorArray1D;\n"                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color (&referenceToGlobalArray2D)[2][3] = colorArray2D;\n"                                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} (&referenceToInvisibleGlobalArray1D)[3] = invisibleColorArray1D;\n"                     , (*it++).second[0].fullyQualified);
+                                 "} (&referenceToInvisibleGlobalArray1D)[3] = invisibleColorArray1D;\n"                                    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"                  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("ColorArray1DTypedef &referenceTypedefArray1D = colorArray1D;\n"                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("ColorArray2DTypedef &referenceTypedefArray2D = colorArray2D;\n"                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("InvisibleColorArray1DTypedef &referenceTypedefInvisibleArray1D = invisibleColorArray1D;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("InvisibleColorArray2DTypedef &referenceTypedefInvisibleArray2D = invisibleColorArray2D;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("ColorArray1D &referenceUsingArray1D = colorArray1D;\n"                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("ColorArray2D &referenceUsingArray2D = colorArray2D;\n"                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("InvisibleColorArray1D &referenceUsingInvisibleArray1D = invisibleColorArray1D;\n"         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("InvisibleColorArray2D &referenceUsingInvisibleArray2D = invisibleColorArray2D;\n"         , (*it++).second[0].fullyQualified);
+                                 "} (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray1DTypedef &referenceTypedefArray1D = colorArray1D;\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray2DTypedef &referenceTypedefArray2D = colorArray2D;\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::InvisibleColor {\n"
+                                 "            InvisibleRed,\n"
+                                 "            InvisibleGreen,\n"
+                                 "            InvisibleBlue\n"
+                                 "        } &referenceTypedefInvisibleArray1D[3] = invisibleColorArray1D;\n"                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::InvisibleColor {\n"
+                                 "            InvisibleRed,\n"
+                                 "            InvisibleGreen,\n"
+                                 "            InvisibleBlue\n"
+                                 "        } &referenceTypedefInvisibleArray2D[2][3] = invisibleColorArray2D;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray1D &referenceUsingArray1D = colorArray1D;\n"                                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray2D &referenceUsingArray2D = colorArray2D;\n"                                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using InvisibleColorArray1D = enum (anonymous namespace)::InvisibleColor {\n"
+                                 "                                  InvisibleRed,\n"
+                                 "                                  InvisibleGreen,\n"
+                                 "                                  InvisibleBlue\n"
+                                 "                              } &referenceUsingInvisibleArray1D[3] = invisibleColorArray1D;\n"           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using InvisibleColorArray2D = typedef enum (anonymous namespace)::InvisibleColor {\n"
+                                 "                                          InvisibleRed,\n"
+                                 "                                          InvisibleGreen,\n"
+                                 "                                          InvisibleBlue\n"
+                                 "                                      } &referenceUsingInvisibleArray2D[2][3] = invisibleColorArray2D;\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -2862,10 +2878,26 @@ Test ExploratoryTestsOfClangAST[] =
         {
             std::string code =
                                "void FunctionReferencedByReference() {}\n"
-                               "void(&functionReference)() = FunctionReferencedByReference;\n"
+                               "void (&functionReference)() = FunctionReferencedByReference;\n"
+
                                "namespace { struct AnonymousReturnType {}; struct AnonymousArgumentType {}; }\n"
                                "AnonymousReturnType FunctionWithAnonymousTypes(AnonymousArgumentType) { return {}; }\n"
                                "AnonymousReturnType (&functionReferenceWithAnonymousTypes)(AnonymousArgumentType) = FunctionWithAnonymousTypes;\n"
+
+                               "typedef void FunctionTypedef();\n"
+                               "FunctionTypedef& functionTypedefVariable = FunctionReferencedByReference;\n"
+                               "void FunctionTakingFunctionTypedef(FunctionTypedef) {}\n"
+                               "using FunctionUsing = void();\n"
+                               "FunctionUsing& functionUsingVariable = FunctionReferencedByReference;\n"
+                               "void FunctionTakingFunctionUsing(FunctionUsing) {}\n"
+
+                               "typedef AnonymousReturnType AnonymousFunctionTypedef(AnonymousArgumentType);\n"
+                               "AnonymousFunctionTypedef& functionAnonymousTypedefVariable = FunctionWithAnonymousTypes;\n"
+//"void FunctionTakingAnonymousFunctionTypedef(AnonymousFunctionTypedef) {}\n"
+//"using AnonymousFunctionUsing = AnonymousReturnType(AnonymousArgumentType);\n"
+//"AnonymousFunctionUsing functionAnonymousUsingVariable = FunctionWithAnonymousTypes;\n"
+//"void FunctionTakingAnonymousFunctionUsing(AnonymousFunctionUsing) {}\n"
+
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -2887,13 +2919,15 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("void (&functionReference)() = FunctionReferencedByReference;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousReturnType {\n"
+                                 "        } &functionAnonymousTypedefVariable(struct (anonymous namespace)::AnonymousArgumentType {\n"
+                                 "                                            }) = FunctionWithAnonymousTypes;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void (&functionReference)() = FunctionReferencedByReference;\n"                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousReturnType {\n"
                                  "} (&functionReferenceWithAnonymousTypes)(struct (anonymous namespace)::AnonymousArgumentType {\n"
-                                 "                                         }) = FunctionWithAnonymousTypes;\n"
-                              , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                                 "                                         }) = FunctionWithAnonymousTypes;\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FunctionTypedef &functionTypedefVariable = FunctionReferencedByReference;\n"   , (*it++).second[0].fullyQualified); 
+                Assert::AreEqual("FunctionUsing &functionUsingVariable = FunctionReferencedByReference;\n"       , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
@@ -2908,8 +2942,11 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.typedefMap.begin();
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousReturnType {\n"
+                                 "        } AnonymousFunctionTypedef(struct (anonymous namespace)::AnonymousArgumentType {\n"
+                                 "                                   });\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef void (FunctionTypedef)();\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FunctionUsing = void ();\n"        , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
@@ -2924,14 +2961,16 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("void FunctionReferencedByReference() {\n"
-                                 "}\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void FunctionTakingFunctionTypedef(FunctionTypedef) {\n"
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void FunctionTakingFunctionUsing(FunctionUsing) {\n"
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousReturnType {\n"
                                  "} FunctionWithAnonymousTypes(struct (anonymous namespace)::AnonymousArgumentType {\n"
                                  "                             }) {\n"
                                  "    return {};\n"
-                                 "}\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);

@@ -197,10 +197,11 @@ namespace OdrCop3
                     return false;
 
                 // after recursion, check 1 level deep
-                if (const auto* typeAliasDecl = llvm::dyn_cast<clang::TypeAliasDecl>(decl)) if (false == Can::PrintAnyOf(typeAliasDecl->getUnderlyingType())) return false;
-                if (const auto*   typedefDecl = llvm::dyn_cast<clang::  TypedefDecl>(decl)) if (false == Can::PrintAnyOf(  typedefDecl->getUnderlyingType())) return false;
-                if (const auto*   parmVarDecl = llvm::dyn_cast<clang::  ParmVarDecl>(decl)) if (false == Can::PrintAnyOf(  parmVarDecl->getOriginalType()))   return false;
-                if (const auto*     fieldDecl = llvm::dyn_cast<clang::    FieldDecl>(decl)) if (false == Can::PrintAnyOf(    fieldDecl->getType()))           return false;
+                if (const auto* typeAliasDecl = llvm::dyn_cast<clang::TypeAliasDecl>(decl)) if (false == Can::PrintAnyOf(typeAliasDecl->getUnderlyingType()))             return false;
+                if (const auto*   typedefDecl = llvm::dyn_cast<clang::  TypedefDecl>(decl)) if (false == Can::PrintAnyOf(  typedefDecl->getUnderlyingType()))             return false;
+                if (const auto*   parmVarDecl = llvm::dyn_cast<clang::  ParmVarDecl>(decl)) if (false == Can::PrintAnyOf(  parmVarDecl->getOriginalType()))               return false;
+                if (const auto*     fieldDecl = llvm::dyn_cast<clang::    FieldDecl>(decl)) if (false == Can::PrintAnyOf(    fieldDecl->getType()))                       return false;
+                if (const auto*       varDecl = llvm::dyn_cast<clang::      VarDecl>(decl)) if (false == Can::PrintAnyOf(      varDecl->getType().getNonReferenceType())) return false;
 
                 // after recursion (now top-level)
                 if (true == IsUnnamedUnionClassOrStruct(decl))
@@ -217,7 +218,7 @@ namespace OdrCop3
                     return false;
                 if (true == IsVarOutOfLine(decl))
                     return false;
-                
+
                 return true;
             }
         };
