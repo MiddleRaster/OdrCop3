@@ -2858,17 +2858,97 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"References to functions", []
+        {
+            std::string code =
+                               "void FunctionReferencedByReference() {}\n"
+                               "void(&functionReference)() = FunctionReferencedByReference;\n"
+                               "namespace { struct AnonymousReturnType {}; struct AnonymousArgumentType {}; }\n"
+                               "AnonymousReturnType FunctionWithAnonymousTypes(AnonymousArgumentType) { return {}; }\n"
+                               "AnonymousReturnType (&functionReferenceWithAnonymousTypes)(AnonymousArgumentType) = FunctionWithAnonymousTypes;\n"
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual(18, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual( 8, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual( 8, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("void (&functionReference)() = FunctionReferencedByReference;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousReturnType {\n"
+                                 "} (&functionReferenceWithAnonymousTypes)(struct (anonymous namespace)::AnonymousArgumentType {\n"
+                                 "                                         }) = FunctionWithAnonymousTypes;\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("void FunctionReferencedByReference() {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousReturnType {\n"
+                                 "} FunctionWithAnonymousTypes(struct (anonymous namespace)::AnonymousArgumentType {\n"
+                                 "                             }) {\n"
+                                 "    return {};\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
 
 };
 /* some missing test cases
 
 14. Deduction guides
             A(int)->A<int>;
-
-15. using enum
-            using enum Color; // it looks like these don't CAUSE ODR violations, though they might expose them
-
-
 
 
 19. Function references

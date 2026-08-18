@@ -152,20 +152,6 @@ namespace OdrCop3
             return out;
         }
 
-        std::string GetAux(QualType qt, const std::string& name, const std::string& aux) const
-        {
-            if (const auto* pointerType = qt->getAs<PointerType>())
-                return GetAux(pointerType->getPointeeType(), name, aux);
-
-            if (const auto* referenceType = qt->getAs<ReferenceType>())
-                return GetAux(referenceType->getPointeeType(), name, aux);
-
-            if (qt->isArrayType())
-                return name;
-
-            return aux;
-        }
-
     public:
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
         std::string Serialize() const
@@ -175,7 +161,7 @@ namespace OdrCop3
             if (varDecl->isConstexpr())
                 qualType = qualType.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const. Just like DeclPrinter does.
 
-            std::string aux = GetAux(qualType, name, contextItems.aux);
+            std::string aux = IsEventuallyArrayOrFunctionProtoType(qualType) ? name : aux;
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, aux);
 
             std::string out;
