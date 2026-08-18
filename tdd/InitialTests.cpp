@@ -2669,9 +2669,6 @@ Test ExploratoryTestsOfClangAST[] =
     },
     {"References to arrays", []
         {
-            //18. References to arrays
-            //            int(&r)[3];
-
             std::string code =
                                "enum Color { Red, Green, Blue };\n"
                                "Color colorArray1D[3];\n"
@@ -2700,13 +2697,13 @@ Test ExploratoryTestsOfClangAST[] =
                                "void ArgumentInvisibleArray1D(InvisibleColor (&arg)[3]) {}\n"
                                "void ArgumentInvisibleArray2D(InvisibleColor (&arg)[2][3]) {}\n"
                                "using InvisibleColorArray1D = InvisibleColor[3];\n"
-//"typedef InvisibleColorArray1D InvisibleColorArray1DTypedef;\n"
-//"typedef InvisibleColor InvisibleColorArray2DTypedef[2][3];\n"
-//"using InvisibleColorArray2D = InvisibleColorArray2DTypedef;\n"
-//"InvisibleColorArray1D& referenceUsingInvisibleArray1D = invisibleColorArray1D;\n"
-//"InvisibleColorArray2D& referenceUsingInvisibleArray2D = invisibleColorArray2D;\n"
-//"InvisibleColorArray1DTypedef& referenceTypedefInvisibleArray1D = invisibleColorArray1D;\n"
-//"InvisibleColorArray2DTypedef& referenceTypedefInvisibleArray2D = invisibleColorArray2D;\n"
+                               "typedef InvisibleColorArray1D InvisibleColorArray1DTypedef;\n"
+                               "typedef InvisibleColor InvisibleColorArray2DTypedef[2][3];\n"
+                               "using InvisibleColorArray2D = InvisibleColorArray2DTypedef;\n"
+                               "InvisibleColorArray1D& referenceUsingInvisibleArray1D = invisibleColorArray1D;\n"
+                               "InvisibleColorArray2D& referenceUsingInvisibleArray2D = invisibleColorArray2D;\n"
+                               "InvisibleColorArray1DTypedef& referenceTypedefInvisibleArray1D = invisibleColorArray1D;\n"
+                               "InvisibleColorArray2DTypedef& referenceTypedefInvisibleArray2D = invisibleColorArray2D;\n"
                                "InvisibleColor (*pointerToInvisibleArray1D)[3] = &invisibleColorArray1D;\n"
                                "InvisibleColor (**pointerToPointerToInvisibleArray1D)[3] = &pointerToInvisibleArray1D;\n"
                                ;
@@ -2714,65 +2711,60 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual(8, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual(1, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual(4, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(18, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 8, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 8, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
-             // Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("Color colorArray1D[3];\n"                                      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Color colorArray2D[2][3];\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color colorArray1D[3];\n"                                                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color colorArray2D[2][3];\n"                                                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} invisibleColorArray1D[3];\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "} invisibleColorArray1D[3];\n"                                                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} invisibleColorArray2D[2][3];\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "} invisibleColorArray2D[2][3];\n"                                                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} (*pointerToInvisibleArray1D)[3] = &invisibleColorArray1D;\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "} (*pointerToInvisibleArray1D)[3] = &invisibleColorArray1D;\n"                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} (**pointerToPointerToInvisibleArray1D)[3] = &pointerToInvisibleArray1D;\n"
-                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Color (&referenceToGlobalArray1D)[3] = colorArray1D;\n"        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("Color (&referenceToGlobalArray2D)[2][3] = colorArray2D;\n"     , (*it++).second[0].fullyQualified);
+                                 "} (**pointerToPointerToInvisibleArray1D)[3] = &pointerToInvisibleArray1D;\n"              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color (&referenceToGlobalArray1D)[3] = colorArray1D;\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Color (&referenceToGlobalArray2D)[2][3] = colorArray2D;\n"                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} (&referenceToInvisibleGlobalArray1D)[3] = invisibleColorArray1D;\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "} (&referenceToInvisibleGlobalArray1D)[3] = invisibleColorArray1D;\n"                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
                                  "    InvisibleGreen,\n"
                                  "    InvisibleBlue\n"
-                                 "} (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("ColorArray1DTypedef &referenceTypedefArray1D = colorArray1D;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("ColorArray2DTypedef &referenceTypedefArray2D = colorArray2D;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("ColorArray1D &referenceUsingArray1D = colorArray1D;\n"         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("ColorArray2D &referenceUsingArray2D = colorArray2D;\n"         , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                                 "} (&referenceToInvisibleGlobalArray2D)[2][3] = invisibleColorArray2D;\n"                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray1DTypedef &referenceTypedefArray1D = colorArray1D;\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray2DTypedef &referenceTypedefArray2D = colorArray2D;\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InvisibleColorArray1DTypedef &referenceTypedefInvisibleArray1D = invisibleColorArray1D;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InvisibleColorArray2DTypedef &referenceTypedefInvisibleArray2D = invisibleColorArray2D;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray1D &referenceUsingArray1D = colorArray1D;\n"                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ColorArray2D &referenceUsingArray2D = colorArray2D;\n"                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InvisibleColorArray1D &referenceUsingInvisibleArray1D = invisibleColorArray1D;\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InvisibleColorArray2D &referenceUsingInvisibleArray2D = invisibleColorArray2D;\n"         , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -2782,7 +2774,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    Blue\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
@@ -2796,17 +2787,27 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                  InvisibleBlue\n"
                                  "                              }[3];\n"
                               , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::InvisibleColor {\n"
+                                 "            InvisibleRed,\n"
+                                 "            InvisibleGreen,\n"
+                                 "            InvisibleBlue\n"
+                                 "        } InvisibleColorArray1DTypedef[3];\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using InvisibleColorArray2D = typedef enum (anonymous namespace)::InvisibleColor {\n"
+                                 "                                          InvisibleRed,\n"
+                                 "                                          InvisibleGreen,\n"
+                                 "                                          InvisibleBlue\n"
+                                 "                                      } InvisibleColorArray2DTypedef[2][3];\n"
+                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::InvisibleColor {\n"
+                                 "            InvisibleRed,\n"
+                                 "            InvisibleGreen,\n"
+                                 "            InvisibleBlue\n"
+                                 "        } InvisibleColorArray2DTypedef[2][3];\n"
+                              , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -2854,9 +2855,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return invisibleColorArray2D;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },
