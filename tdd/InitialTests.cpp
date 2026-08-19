@@ -2894,10 +2894,52 @@ Test ExploratoryTestsOfClangAST[] =
                                "typedef AnonymousReturnType AnonymousFunctionTypedef(AnonymousArgumentType);\n"
                                "AnonymousFunctionTypedef& functionAnonymousTypedefVariable = FunctionWithAnonymousTypes;\n"
                                "void FunctionTakingAnonymousFunctionTypedef(AnonymousFunctionTypedef) {}\n"
-                            //"using AnonymousFunctionUsing = AnonymousReturnType(AnonymousArgumentType);\n"
-                            //"AnonymousFunctionUsing functionAnonymousUsingVariable = FunctionWithAnonymousTypes;\n"
-                            //"void FunctionTakingAnonymousFunctionUsing(AnonymousFunctionUsing) {}\n"
+                               "using AnonymousFunctionUsing = AnonymousReturnType(&)(AnonymousArgumentType);\n"
+                               "AnonymousFunctionUsing functionAnonymousUsingVariable = FunctionWithAnonymousTypes;\n"
+                               "void FunctionTakingAnonymousFunctionUsing(AnonymousFunctionUsing) {}\n"
 
+                               "void (&& functionRvalueReference)() = FunctionReferencedByReference;\n"
+                               "void NoexceptFunction() noexcept {}\n"
+                               "void (&noexceptFunctionReference)() noexcept = NoexceptFunction;\n"
+                               "void VariadicFunction(int, ...) {}\n"
+                               "void (&variadicFunctionReference)(int, ...) = VariadicFunction;\n"
+
+                               "namespace { struct AnonymousRvalueReturnType {}; struct AnonymousRvalueArgumentType {}; }\n"
+                               "AnonymousRvalueReturnType FunctionWithAnonymousRvalueTypes(AnonymousRvalueArgumentType) { return {}; }\n"
+                               "AnonymousRvalueReturnType (&&functionAnonymousRvalueReference)(AnonymousRvalueArgumentType) = FunctionWithAnonymousRvalueTypes;\n"
+
+                            //   "typedef AnonymousRvalueReturnType AnonymousRvalueFunctionTypedef(AnonymousRvalueArgumentType);\n"
+                            // "AnonymousRvalueFunctionTypedef&& functionAnonymousRvalueTypedefReference = FunctionWithAnonymousRvalueTypes;\n"
+                            // "using AnonymousRvalueFunctionUsing = AnonymousRvalueReturnType(AnonymousRvalueArgumentType);\n"
+                            // "AnonymousRvalueFunctionUsing&& functionAnonymousRvalueUsingReference = FunctionWithAnonymousRvalueTypes;\n"
+                            //
+                               "namespace { struct AnonymousNoexceptReturnType {}; struct AnonymousNoexceptArgumentType {}; }\n"
+                            // "AnonymousNoexceptReturnType FunctionWithAnonymousNoexceptTypes(AnonymousNoexceptArgumentType) noexcept { return {}; }\n"
+                            // "AnonymousNoexceptReturnType (&functionAnonymousNoexceptReference)(AnonymousNoexceptArgumentType) noexcept = FunctionWithAnonymousNoexceptTypes;\n"
+                            //
+                            // "typedef AnonymousNoexceptReturnType AnonymousNoexceptFunctionTypedef(AnonymousNoexceptArgumentType) noexcept;\n"
+                            // "AnonymousNoexceptFunctionTypedef& functionAnonymousNoexceptTypedefReference = FunctionWithAnonymousNoexceptTypes;\n"
+                            //
+                            // "using AnonymousNoexceptFunctionUsing = AnonymousNoexceptReturnType(AnonymousNoexceptArgumentType) noexcept;\n"
+                            // "AnonymousNoexceptFunctionUsing& functionAnonymousNoexceptUsingReference = FunctionWithAnonymousNoexceptTypes;\n"
+                            //
+                               "namespace { struct AnonymousVariadicReturnType {}; struct AnonymousVariadicArgumentType {}; }\n"
+                            // "AnonymousVariadicReturnType FunctionWithAnonymousVariadicTypes(AnonymousVariadicArgumentType, ...) { return {}; }\n"
+                            // "AnonymousVariadicReturnType (&functionAnonymousVariadicReference)(AnonymousVariadicArgumentType, ...) = FunctionWithAnonymousVariadicTypes;\n"
+                            //
+                            // "typedef AnonymousVariadicReturnType AnonymousVariadicFunctionTypedef(AnonymousVariadicArgumentType, ...);\n"
+                            // "AnonymousVariadicFunctionTypedef& functionAnonymousVariadicTypedefReference = FunctionWithAnonymousVariadicTypes;\n"
+                            //
+                            // "using AnonymousVariadicFunctionUsing = AnonymousVariadicReturnType(AnonymousVariadicArgumentType, ...);\n"
+                            // "AnonymousVariadicFunctionUsing& functionAnonymousVariadicUsingReference = FunctionWithAnonymousVariadicTypes;\n"
+                            //
+                               "namespace { struct AnonymousRvalueNoexceptReturnType {}; struct AnonymousRvalueNoexceptArgumentType {}; }\n"
+                            // "AnonymousRvalueNoexceptReturnType FunctionWithAnonymousRvalueNoexceptTypes(AnonymousRvalueNoexceptArgumentType) noexcept { return {}; }\n"
+                            // "using AnonymousRvalueNoexceptFunctionUsing = AnonymousRvalueNoexceptReturnType(AnonymousRvalueNoexceptArgumentType) noexcept;\n"
+                            // "AnonymousRvalueNoexceptFunctionUsing&& functionAnonymousRvalueNoexceptUsingReference = FunctionWithAnonymousRvalueNoexceptTypes;\n"
+                            //
+                            // "typedef AnonymousRvalueNoexceptReturnType AnonymousRvalueNoexceptFunctionTypedef(AnonymousRvalueNoexceptArgumentType) noexcept;\n"
+                            // "AnonymousRvalueNoexceptFunctionTypedef&& functionAnonymousRvalueNoexceptTypedefReference = FunctionWithAnonymousRvalueNoexceptTypes;\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -2919,15 +2961,26 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousRvalueReturnType {\n"
+                                 "} (&&functionAnonymousRvalueReference)(struct (anonymous namespace)::AnonymousRvalueArgumentType {\n"
+                                 "                                       }) = FunctionWithAnonymousRvalueTypes;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousReturnType {\n"
                                  "} &functionAnonymousTypedefVariable(struct (anonymous namespace)::AnonymousArgumentType {\n"
-                                 "                                    }) = FunctionWithAnonymousTypes;\n"        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("void (&functionReference)() = FunctionReferencedByReference;\n"                , (*it++).second[0].fullyQualified);
+                                 "                                    }) = FunctionWithAnonymousTypes;\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousReturnType {\n"
+                                 "} (&functionAnonymousUsingVariable)(struct (anonymous namespace)::AnonymousArgumentType {\n"
+                                 "                                    }) = FunctionWithAnonymousTypes;\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void (&functionReference)() = FunctionReferencedByReference;\n"                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousReturnType {\n"
                                  "} (&functionReferenceWithAnonymousTypes)(struct (anonymous namespace)::AnonymousArgumentType {\n"
-                                 "                                         }) = FunctionWithAnonymousTypes;\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("FunctionTypedef &functionTypedefVariable = FunctionReferencedByReference;\n"   , (*it++).second[0].fullyQualified); 
-                Assert::AreEqual("FunctionUsing &functionUsingVariable = FunctionReferencedByReference;\n"       , (*it++).second[0].fullyQualified);
+                                 "                                         }) = FunctionWithAnonymousTypes;\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void (&&functionRvalueReference)() = FunctionReferencedByReference;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FunctionTypedef &functionTypedefVariable = FunctionReferencedByReference;\n"    , (*it++).second[0].fullyQualified); 
+                Assert::AreEqual("FunctionUsing &functionUsingVariable = FunctionReferencedByReference;\n"        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void (&noexceptFunctionReference)() noexcept = NoexceptFunction;\n"             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void (&variadicFunctionReference)(int, ...) = VariadicFunction;\n"              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
@@ -2944,10 +2997,13 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.typedefMap.begin();
                 Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousReturnType {\n"
                                  "        } AnonymousFunctionTypedef(struct (anonymous namespace)::AnonymousArgumentType {\n"
-                                 "                                   });\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef void (FunctionTypedef)();\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using FunctionUsing = void ();\n"        , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                                 "                                   });\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using AnonymousFunctionUsing = struct (anonymous namespace)::AnonymousReturnType {\n"
+                                 "                               } (&)(struct (anonymous namespace)::AnonymousArgumentType {\n"
+                                 "                                     });\n", (*it++).second[0].fullyQualified);
+       //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef void (FunctionTypedef)();\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FunctionUsing = void ();\n"          , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
@@ -2965,17 +3021,31 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("void FunctionTakingAnonymousFunctionTypedef(struct (anonymous namespace)::AnonymousReturnType {\n"
                                  "                                            } (struct (anonymous namespace)::AnonymousArgumentType {\n"
                                  "                                               })) {\n"
-                                 "}\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void FunctionTakingAnonymousFunctionUsing(struct (anonymous namespace)::AnonymousReturnType {\n"
+                                 "                                          } (&)(struct (anonymous namespace)::AnonymousArgumentType {\n"
+                                 "                                                })) {\n"
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void FunctionTakingFunctionTypedef(FunctionTypedef) {\n"
                                  "}\n"                                                          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void FunctionTakingFunctionUsing(FunctionUsing) {\n"
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousRvalueReturnType {\n"
+                                 "} FunctionWithAnonymousRvalueTypes(struct (anonymous namespace)::AnonymousRvalueArgumentType {\n"
+                                 "                                   }) {\n"
+                                 "    return {};\n"
                                  "}\n"                                                          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousReturnType {\n"
                                  "} FunctionWithAnonymousTypes(struct (anonymous namespace)::AnonymousArgumentType {\n"
                                  "                             }) {\n"
                                  "    return {};\n"
                                  "}\n"                                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void NoexceptFunction() noexcept {\n"
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void VariadicFunction(int, ...) {\n"
+                                 "}\n"                                                          , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
