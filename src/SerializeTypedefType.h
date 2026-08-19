@@ -24,6 +24,6 @@ namespace OdrCop3
     public:
         TypedefTypeSerializer(const ContextItems& contextItems, QualType qt, const TypedefType* typedefType) : contextItems(contextItems), qt(qt), typedefType(typedefType) {}
         // for an ODR violations detector, we never want any typedefs or using aliases. Just keep desugaring.
-        std::string Serialize() const { return SerializeDecl(contextItems, typedefType->getDecl()); }
+        std::string Serialize() const { return SerializeType(contextItems, typedefType->getDecl()->getUnderlyingType()); }
     };
 }

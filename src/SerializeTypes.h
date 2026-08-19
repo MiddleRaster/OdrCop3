@@ -86,6 +86,11 @@ namespace OdrCop3
                                     if (false == Can::Print(contextItems, arg.getAsType()))
                                         return false;
                         break;
+                    case clang::Type::TypeClass::Decayed:
+                        if (const auto* decayedType = qualType->getAs<clang::DecayedType>())
+                            if (false == Can::Print(contextItems, decayedType->getOriginalType()))
+                                return false;
+                        break;
                     default: break;
                     }
                     if (NeedsManualSerialization(contextItems, qualType))

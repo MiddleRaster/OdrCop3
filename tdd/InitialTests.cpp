@@ -1127,9 +1127,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("A::B::FTwoDeep()"                                                                                           , (*it  ).first, "should have gotten proper key");
                 Assert::AreEqual("void FTwoDeep() {\n}\n"                                                                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("FooWithAnonArg(A::B::C::(anonymous namespace in input.cc)::EInvisible)"                                     , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("void FooWithAnonArg(typedef enum A::B::C::(anonymous namespace)::EInvisible {\n"
-                                 "                                Zero\n"
-                                 "                            } MyInvisible) {\n"
+                Assert::AreEqual("void FooWithAnonArg(enum A::B::C::(anonymous namespace)::EInvisible {\n"
+                                 "                        Zero\n"
+                                 "                    }) {\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("VariadicFunction(int,...)"                                                                                  , (*it  ).first, "should have gotten proper key");
@@ -1929,14 +1929,14 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("UnnamedStructAlias<struct (anonymous namespace)::Invisible {\n"
                                  "                   }> GlobalVariableInvisibleStruct;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("UnnamedStructAlias<typedef enum (unnamed enum at input.cc:27:9) {\n"
-                                 "                               One,\n"
-                                 "                               Two\n"
-                                 "                           } UnnamedEnum> GlobalVariableUnnamedEnum;\n"
+                Assert::AreEqual("UnnamedStructAlias<enum (unnamed enum at input.cc:27:9) {\n"
+                                 "                       One,\n"
+                                 "                       Two\n"
+                                 "                   } > GlobalVariableUnnamedEnum;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("UnnamedStructAlias<typedef struct (unnamed struct at input.cc:25:9) {\n"
-                                 "                               int x;\n"
-                                 "                           } UnnamedStruct> GlobalVariableUnnamedStruct;\n"
+                Assert::AreEqual("UnnamedStructAlias<struct (unnamed struct at input.cc:25:9) {\n"
+                                 "                       int x;\n"
+                                 "                   }> GlobalVariableUnnamedStruct;\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (unnamed struct at input.cc:21:1) {\n"
                                  "    int x;\n"
@@ -1962,17 +1962,17 @@ Test ExploratoryTestsOfClangAST[] =
                                  "            int x;\n"
                                  "        } E;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using F = typedef struct (unnamed struct at input.cc:24:9) {\n"
-                                 "                      int x;\n"
-                                 "                  } E;\n"
+                Assert::AreEqual("using F = struct (unnamed struct at input.cc:24:9) {\n"
+                                 "              int x;\n"
+                                 "          };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef struct (unnamed struct at input.cc:24:9) {\n"
                                  "            int x;\n"
                                  "        } G;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using H = typedef struct (unnamed struct at input.cc:24:9) {\n"
-                                 "                      int x;\n"
-                                 "                  } G;\n"
+                Assert::AreEqual("using H = struct (unnamed struct at input.cc:24:9) {\n"
+                                 "              int x;\n"
+                                 "          };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef enum (unnamed enum at input.cc:27:9) {\n"
                                  "            One,\n"
@@ -2469,17 +2469,17 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("int (Foo::*var)(double) = &Foo::member;\n"  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("FooMemberPtr var2 = &Foo::member;\n"        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("FooMemberPtr2 var3 = &Foo::member;\n"        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef int (struct (anonymous namespace)::FooAnon {\n"
-                                 "                 int member(double) {\n"
-                                 "                     return 42;\n"
-                                 "                 }\n"
-                                 "             }::*FooAnonMemberPtr)(double); var4 = &FooAnon::member;\n"
+                Assert::AreEqual("int (struct (anonymous namespace)::FooAnon {\n"
+                                 "         int member(double) {\n"
+                                 "             return 42;\n"
+                                 "         }\n"
+                                 "     }::*)(double) var4 = &FooAnon::member;\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using FooAnonMemberPtr2 = int (struct (anonymous namespace)::FooAnon {\n"
-                                 "                                   int member(double) {\n"
-                                 "                                       return 42;\n"
-                                 "                                   }\n"
-                                 "                               }::*)(double); var5 = &FooAnon::member;\n"
+                Assert::AreEqual("int (struct (anonymous namespace)::FooAnon {\n"
+                                 "         int member(double) {\n"
+                                 "             return 42;\n"
+                                 "         }\n"
+                                 "     }::*)(double) var5 = &FooAnon::member;\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
@@ -2519,19 +2519,19 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return &Foo::member;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef int (struct (anonymous namespace)::FooAnon {\n"
-                                 "                 int member(double) {\n"
-                                 "                     return 42;\n"
-                                 "                 }\n"
-                                 "             }::*FooAnonMemberPtr)(double); FunctionReturningPointerToMember4() {\n"
+                Assert::AreEqual("int (struct (anonymous namespace)::FooAnon {\n"
+                                 "         int member(double) {\n"
+                                 "             return 42;\n"
+                                 "         }\n"
+                                 "     }::*)(double) FunctionReturningPointerToMember4() {\n"
                                  "    return &FooAnon::member;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using FooAnonMemberPtr2 = int (struct (anonymous namespace)::FooAnon {\n"
-                                 "                                   int member(double) {\n"
-                                 "                                       return 42;\n"
-                                 "                                   }\n"
-                                 "                               }::*)(double); FunctionReturningPointerToMember5() {\n"
+                Assert::AreEqual("int (struct (anonymous namespace)::FooAnon {\n"
+                                 "         int member(double) {\n"
+                                 "             return 42;\n"
+                                 "         }\n"
+                                 "     }::*)(double) FunctionReturningPointerToMember5() {\n"
                                  "    return &FooAnon::member;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
@@ -2551,11 +2551,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "              int member(double) {\n"
                                  "                  return 42;\n"
                                  "              }\n"
-                                 "          } &foo, typedef int (struct (anonymous namespace)::FooAnon {\n"
-                                 "                                   int member(double) {\n"
-                                 "                                       return 42;\n"
-                                 "                                   }\n"
-                                 "                               }::*FooAnonMemberPtr)(double) pmf) {\n"
+                                 "          } &foo, int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                           int member(double) {\n"
+                                 "                               return 42;\n"
+                                 "                           }\n"
+                                 "                       }::*)(double) pmf) {\n"
                                  "    return (foo .* pmf)(3.1400000000000001);\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
@@ -2563,11 +2563,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "              int member(double) {\n"
                                  "                  return 42;\n"
                                  "              }\n"
-                                 "          } &foo, using FooAnonMemberPtr2 = int (struct (anonymous namespace)::FooAnon {\n"
-                                 "                                                     int member(double) {\n"
-                                 "                                                         return 42;\n"
-                                 "                                                     }\n"
-                                 "                                                 }::*)(double) pmf) {\n"
+                                 "          } &foo, int (struct (anonymous namespace)::FooAnon {\n"
+                                 "                           int member(double) {\n"
+                                 "                               return 42;\n"
+                                 "                           }\n"
+                                 "                       }::*)(double) pmf) {\n"
                                  "    return (foo .* pmf)(3.1400000000000001);\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
@@ -2657,9 +2657,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "               } array[2][3]) {\n"
                                  "}\n"
                                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ArrayType4 = struct (anonymous namespace)::FooAnon {\n"
-                                 "                       int value;\n"
-                                 "                   } &Function6()[2][3] {\n"
+                Assert::AreEqual("struct (anonymous namespace)::FooAnon {\n"
+                                 "    int value;\n"
+                                 "} &Function6()[2][3] {\n"
                                  "    static ArrayType4 array{};\n"
                                  "    return array;\n"
                                  "}\n"
@@ -2771,16 +2771,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "} &referenceTypedefInvisibleArray2D[2][3] = invisibleColorArray2D;\n"                                    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("ColorArray1D &referenceUsingArray1D = colorArray1D;\n"                                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("ColorArray2D &referenceUsingArray2D = colorArray2D;\n"                                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using InvisibleColorArray1D = enum (anonymous namespace)::InvisibleColor {\n"
-                                 "                                  InvisibleRed,\n"
-                                 "                                  InvisibleGreen,\n"
-                                 "                                  InvisibleBlue\n"
-                                 "                              } &referenceUsingInvisibleArray1D[3] = invisibleColorArray1D;\n"           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using InvisibleColorArray2D = enum (anonymous namespace)::InvisibleColor {\n"
-                                 "                                  InvisibleRed,\n"
-                                 "                                  InvisibleGreen,\n"
-                                 "                                  InvisibleBlue\n"
-                                 "                              } &referenceUsingInvisibleArray2D[2][3] = invisibleColorArray2D;\n"        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
+                                 "    InvisibleRed,\n"
+                                 "    InvisibleGreen,\n"
+                                 "    InvisibleBlue\n"
+                                 "} &referenceUsingInvisibleArray1D[3] = invisibleColorArray1D;\n"           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::InvisibleColor {\n"
+                                 "    InvisibleRed,\n"
+                                 "    InvisibleGreen,\n"
+                                 "    InvisibleBlue\n"
+                                 "} &referenceUsingInvisibleArray2D[2][3] = invisibleColorArray2D;\n"        , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -2809,11 +2809,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "            InvisibleBlue\n"
                                  "        } InvisibleColorArray1DTypedef[3];\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using InvisibleColorArray2D = typedef enum (anonymous namespace)::InvisibleColor {\n"
-                                 "                                          InvisibleRed,\n"
-                                 "                                          InvisibleGreen,\n"
-                                 "                                          InvisibleBlue\n"
-                                 "                                      } InvisibleColorArray2DTypedef[2][3];\n"
+                Assert::AreEqual("using InvisibleColorArray2D = enum (anonymous namespace)::InvisibleColor {\n"
+                                 "                                  InvisibleRed,\n"
+                                 "                                  InvisibleGreen,\n"
+                                 "                                  InvisibleBlue\n"
+                                 "                              }[2][3];\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef enum (anonymous namespace)::InvisibleColor {\n"
                                  "            InvisibleRed,\n"
@@ -2893,10 +2893,10 @@ Test ExploratoryTestsOfClangAST[] =
 
                                "typedef AnonymousReturnType AnonymousFunctionTypedef(AnonymousArgumentType);\n"
                                "AnonymousFunctionTypedef& functionAnonymousTypedefVariable = FunctionWithAnonymousTypes;\n"
-//"void FunctionTakingAnonymousFunctionTypedef(AnonymousFunctionTypedef) {}\n"
-//"using AnonymousFunctionUsing = AnonymousReturnType(AnonymousArgumentType);\n"
-//"AnonymousFunctionUsing functionAnonymousUsingVariable = FunctionWithAnonymousTypes;\n"
-//"void FunctionTakingAnonymousFunctionUsing(AnonymousFunctionUsing) {}\n"
+                               "void FunctionTakingAnonymousFunctionTypedef(AnonymousFunctionTypedef) {}\n"
+                            //"using AnonymousFunctionUsing = AnonymousReturnType(AnonymousArgumentType);\n"
+                            //"AnonymousFunctionUsing functionAnonymousUsingVariable = FunctionWithAnonymousTypes;\n"
+                            //"void FunctionTakingAnonymousFunctionUsing(AnonymousFunctionUsing) {}\n"
 
                                ;
             OdrCop3::AllMaps maps;
@@ -2962,6 +2962,11 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("void FunctionReferencedByReference() {\n"
                                  "}\n"                                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void FunctionTakingAnonymousFunctionTypedef(struct (anonymous namespace)::AnonymousReturnType {\n"
+                                 "                                            } (struct (anonymous namespace)::AnonymousArgumentType {\n"
+                                 "                                               })) {\n"
+                                 "}\n"
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void FunctionTakingFunctionTypedef(FunctionTypedef) {\n"
                                  "}\n"                                                          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void FunctionTakingFunctionUsing(FunctionUsing) {\n"
@@ -2971,7 +2976,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                             }) {\n"
                                  "    return {};\n"
                                  "}\n"                                                          , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
@@ -2990,8 +2994,11 @@ Test ExploratoryTestsOfClangAST[] =
             A(int)->A<int>;
 
 
+
+
 19. Function references
-            void (&f)();
+            void (&f)();   ////////// TODO: make sure "using blah =" isn't inappropriately put in front of a serialization of an anonymous namespace type
+
 
 20. Array of pointers to functions
             void Foo(int) {}

@@ -36,7 +36,7 @@ namespace OdrCop3
             }
             auto startOfParm = out.size();
 
-            if (IsEventuallyArrayOrFunctionProtoType(parmVarDecl->getOriginalType()) && (nullptr != parmVarDecl->getIdentifier()))
+            if (IsEventuallyArrayOrFunctionProtoType(parmVarDecl->getOriginalType()))
             {
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
                 ci2.aux = parmVarDecl->getName().str();
