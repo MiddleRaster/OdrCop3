@@ -3106,9 +3106,25 @@ Test ExploratoryTestsOfClangAST[] =
                                "AnonymousStructAlias Baz(AnonymousEnumTypedef) { return {}; }\n"
                                "AnonymousEnumTypedef Qux(AnonymousStructAlias) { return {}; }\n"
                                "AnonymousStructAlias (*bazTable[1])(AnonymousEnumTypedef) = { &Baz };\n"
-                               //"AnonymousEnumTypedef (*quxTable[1])(AnonymousStructAlias) = { &Qux };\n"
+                               "AnonymousEnumTypedef (*quxTable[1])(AnonymousStructAlias) = { &Qux };\n"
+                               
+                               "struct DeepAliasType {};\n"
+                               "typedef DeepAliasType DeepTypedef1; using DeepUsing1 = DeepTypedef1;\n"
+                               "typedef DeepUsing1    DeepTypedef2; using DeepUsing2 = DeepTypedef2;\n"
+                               "typedef DeepUsing2    DeepTypedef3; using DeepUsing3 = DeepTypedef3;\n"
+                               "typedef DeepUsing3    DeepTypedef4; using DeepUsing4 = DeepTypedef4;\n"
+                               "typedef DeepUsing4    DeepTypedef5; using DeepUsing5 = DeepTypedef5;\n"
+                               "DeepUsing5 deepAliasVariable;\n"
 
-                               // keep seeing through typedefs and using aliases until either anonymous or not
+                               "namespace { enum DeepAnonymousEnum { DeepAnonymousRed, DeepAnonymousGreen, DeepAnonymousBlue }; }\n"
+                               "typedef DeepAnonymousEnum DeepEnumTypedef1; using DeepEnumUsing1 = DeepEnumTypedef1;\n"
+                               "typedef DeepEnumUsing1 DeepEnumTypedef2;    using DeepEnumUsing2 = DeepEnumTypedef2;\n"
+                               "typedef DeepEnumUsing2 DeepEnumTypedef3;    using DeepEnumUsing3 = DeepEnumTypedef3;\n"
+                               "typedef DeepEnumUsing3 DeepEnumTypedef4;    using DeepEnumUsing4 = DeepEnumTypedef4;\n"
+                               "typedef DeepEnumUsing4 DeepEnumTypedef5;    using DeepEnumUsing5 = DeepEnumTypedef5;\n"
+                               "DeepEnumUsing5 deepEnumVariable;\n"
+
+                                // array of arrays?
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -3123,6 +3139,9 @@ Test ExploratoryTestsOfClangAST[] =
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct DeepAliasType {\n"
+                                 "};\n"   , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -3130,6 +3149,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "} (*bazTable[1])(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
                                  "                     AnonymousEnumValue\n"
                                  "                 } ){&Baz};\n"                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("DeepUsing5 deepAliasVariable;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "    DeepAnonymousRed,\n"
+                                 "    DeepAnonymousGreen,\n"
+                                 "    DeepAnonymousBlue\n"
+                                 "} deepEnumVariable;\n"                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "    AnonymousEnumValue\n"
+                                 "} (*quxTable[1])(struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "                 }){&Qux};\n"                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int (*table[2])(int) = {&Foo, &Bar};\n"                 , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
             }
@@ -3139,6 +3168,73 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.typedefMap.begin();
+                Assert::AreEqual("typedef enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "            AnonymousEnumValue\n"
+                                 "        } AnonymousEnumTypedef;\n"           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using AnonymousStructAlias = struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "                             };\n"           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "            DeepAnonymousRed,\n"
+                                 "            DeepAnonymousGreen,\n"
+                                 "            DeepAnonymousBlue\n"
+                                 "        } DeepEnumTypedef1;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "            DeepAnonymousRed,\n"
+                                 "            DeepAnonymousGreen,\n"
+                                 "            DeepAnonymousBlue\n"
+                                 "        } DeepEnumTypedef2;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "            DeepAnonymousRed,\n"
+                                 "            DeepAnonymousGreen,\n"
+                                 "            DeepAnonymousBlue\n"
+                                 "        } DeepEnumTypedef3;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "            DeepAnonymousRed,\n"
+                                 "            DeepAnonymousGreen,\n"
+                                 "            DeepAnonymousBlue\n"
+                                 "        } DeepEnumTypedef4;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "            DeepAnonymousRed,\n"
+                                 "            DeepAnonymousGreen,\n"
+                                 "            DeepAnonymousBlue\n"
+                                 "        } DeepEnumTypedef5;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepEnumUsing1 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "                           DeepAnonymousRed,\n"
+                                 "                           DeepAnonymousGreen,\n"
+                                 "                           DeepAnonymousBlue\n"
+                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepEnumUsing2 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "                           DeepAnonymousRed,\n"
+                                 "                           DeepAnonymousGreen,\n"
+                                 "                           DeepAnonymousBlue\n"
+                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepEnumUsing3 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "                           DeepAnonymousRed,\n"
+                                 "                           DeepAnonymousGreen,\n"
+                                 "                           DeepAnonymousBlue\n"
+                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepEnumUsing4 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "                           DeepAnonymousRed,\n"
+                                 "                           DeepAnonymousGreen,\n"
+                                 "                           DeepAnonymousBlue\n"
+                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepEnumUsing5 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
+                                 "                           DeepAnonymousRed,\n"
+                                 "                           DeepAnonymousGreen,\n"
+                                 "                           DeepAnonymousBlue\n"
+                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepAliasType DeepTypedef1;\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepUsing1 DeepTypedef2;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepUsing2 DeepTypedef3;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepUsing3 DeepTypedef4;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepUsing4 DeepTypedef5;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing1 = DeepTypedef1;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing2 = DeepTypedef2;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing3 = DeepTypedef3;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing4 = DeepTypedef4;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing5 = DeepTypedef5;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using IntAlias = int;\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef int IntTypedef;\n"                   , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
             }
             {
