@@ -72,6 +72,29 @@ namespace OdrCop3
                 {
                     qualType = qualType.getNonReferenceType(); // strips off references only
 
+                    if (qualType->isArrayType())
+                        if (const auto* arrayType = qualType->getAsArrayTypeUnsafe())
+                            if (false == Can::Print(contextItems, arrayType->getElementType()))
+                                return false;
+
+                    if (const auto* pointerType = qualType->getAs<clang::PointerType>())
+                        if (false == Can::Print(contextItems, pointerType->getPointeeType()))
+                            return false;
+
+                    if (const auto* parenType = qualType->getAs<clang::ParenType>())
+                        if (false == Can::Print(contextItems, parenType->getInnerType()))
+                            return false;
+
+                    if (const auto* functionProtoType = qualType->getAs<clang::FunctionProtoType>())
+                    {
+                        if (false == Can::Print(contextItems, functionProtoType->getReturnType().getNonReferenceType()))
+                            return false;
+
+                        for (clang::QualType paramType : functionProtoType->param_types())
+                            if (false == Can::Print(contextItems, paramType))
+                                return false;
+                    }
+
                     switch (qualType.getTypePtr()->getTypeClass())
                     { // some types must be manually serialized, no matter what. E.g., typedefs
                     case clang::Type::TypeClass::Typedef: return false;

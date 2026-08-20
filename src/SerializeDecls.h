@@ -70,7 +70,29 @@ namespace OdrCop3
 
         class Can
         {
+            class RecursionGuard
+            {
+                std::unordered_set<const clang::Decl*>& decls;
+                const clang::Decl* decl;
+                bool inserted;
+            public:
+                RecursionGuard(std::unordered_set<const clang::Decl*>& decls, const clang::Decl* decl)
+                    : decls(decls)
+                    , decl(decl)
+                    , inserted(decls.insert(decl).second)
+                {}
+               ~RecursionGuard()
+                {
+                    if (inserted)
+                        decls.erase(decl);
+                }
+                bool IsRecursing() const
+                {
+                    return !inserted;
+                }
+            };
             const ContextItems& contextItems;
+            std::unordered_set<const clang::Decl*>& decls;
 
             bool IsUnnamedUnionClassOrStruct(const clang::Decl* decl) const
             {
@@ -154,6 +176,30 @@ namespace OdrCop3
                     return false;
                 if (false == Can::PrintType<clang::EnumType   >(qualType))
                     return false;
+                
+                if (qualType->isArrayType())
+                    if (const auto* arrayType = qualType->getAsArrayTypeUnsafe())
+                        if (false == Can::PrintAnyOf(arrayType->getElementType()))
+                            return false;
+
+                if (const auto* pointerType = qualType->getAs<clang::PointerType>())
+                    if (false == Can::PrintAnyOf(pointerType->getPointeeType()))
+                        return false;
+
+                if (const auto* parenType = qualType->getAs<clang::ParenType>())
+                    if (false == Can::PrintAnyOf(parenType->getInnerType()))
+                        return false;
+
+                if (const auto* functionProtoType = qualType->getAs<clang::FunctionProtoType>())
+                {
+                    if (false == Can::PrintAnyOf(functionProtoType->getReturnType().getNonReferenceType()))
+                        return false;
+
+                    for (clang::QualType paramType : functionProtoType->param_types())
+                        if (false == Can::PrintAnyOf(paramType))
+                            return false;
+                }
+
                 return true;
             }
 
@@ -171,9 +217,13 @@ namespace OdrCop3
             }
 
         public:
-            Can(const ContextItems& contextItems) : contextItems(contextItems) {}
+            Can(const ContextItems& contextItems, std::unordered_set<const clang::Decl*>& decls) : contextItems(contextItems), decls(decls) {}
             bool Print(const clang::Decl* decl) const
             {
+                RecursionGuard recursionGuard(decls, decl);
+                if (recursionGuard.IsRecursing())
+                    return true;
+
                 if (contextItems.needsFriend == true)
                     return false;
 
@@ -258,7 +308,8 @@ namespace OdrCop3
                 return qualType.getAsString();
             }
 
-            if (Can(contextItems).Print(decl) == false)
+            std::unordered_set<const clang::Decl*> decls;
+            if (Can(contextItems, decls).Print(decl) == false)
             {
                 using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>;
                 switch(decl->getKind())

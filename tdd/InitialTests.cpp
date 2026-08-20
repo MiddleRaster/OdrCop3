@@ -3095,6 +3095,80 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Ararys of and pointers to functions", []
+        {
+            std::string code =
+                               "typedef int IntTypedef; using IntAlias = int;"
+                               "IntAlias Foo(IntTypedef) { return {}; } IntTypedef Bar(IntAlias) { return {}; } int (* table[2])(int) = { &Foo, &Bar };\n"
+
+                               "namespace { enum AnonymousEnumForTypedef { AnonymousEnumValue }; } typedef AnonymousEnumForTypedef AnonymousEnumTypedef;\n"
+                               "namespace { struct AnonymousStructForAlias {}; } using AnonymousStructAlias = AnonymousStructForAlias;\n"
+                               "AnonymousStructAlias Baz(AnonymousEnumTypedef) { return {}; }\n"
+                               "AnonymousEnumTypedef Qux(AnonymousStructAlias) { return {}; }\n"
+                               "AnonymousStructAlias (*bazTable[1])(AnonymousEnumTypedef) = { &Baz };\n"
+                               //"AnonymousEnumTypedef (*quxTable[1])(AnonymousStructAlias) = { &Qux };\n"
+
+                               // keep seeing through typedefs and using aliases until either anonymous or not
+                               ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual(20, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual(12, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual(12, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "} (*bazTable[1])(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                     AnonymousEnumValue\n"
+                                 "                 } ){&Baz};\n"                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int (*table[2])(int) = {&Foo, &Bar};\n"                 , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("IntTypedef Bar(IntAlias) {\n"
+                                 "    return {};\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "} Baz(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "          AnonymousEnumValue\n"
+                                 "      }) {\n"
+                                 "    return {};\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("IntAlias Foo(IntTypedef) {\n"
+                                 "    return {};\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "    AnonymousEnumValue\n"
+                                 "} Qux(struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "      }) {\n"
+                                 "    return {};\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 
 };
@@ -3102,12 +3176,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 14. Deduction guides
             A(int)->A<int>;
-
-
-
-
-19. Function references
-            void (&f)();   ////////// TODO: make sure "using blah =" isn't inappropriately put in front of a serialization of an anonymous namespace type
 
 
 20. Array of pointers to functions
