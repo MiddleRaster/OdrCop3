@@ -26,7 +26,7 @@ namespace OdrCop3
         {
             switch (accessSpecDecl->getAccess()) {
             case AS_public:    return "public:\n";
-            case AS_protected: return "protected\n:";
+            case AS_protected: return "protected:\n";
             case AS_private:   return "private:\n";
             default:           return "";
             }

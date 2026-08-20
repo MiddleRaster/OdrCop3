@@ -3388,6 +3388,85 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Access specifier changes within single class", []
+        {
+            std::string code =
+                                "namespace { struct AnonymousAccessStruct {}; enum AnonymousAccessEnum { AnonymousAccessValue }; }\n"
+                                "class AccessSpecifierChanges\n"
+                                "{\n"
+                                "public:\n"
+                                "    AnonymousAccessStruct publicMember1;\n"
+                                "protected:\n"
+                                "    AnonymousAccessEnum protectedMember1;\n"
+                                "    int protectedMember2;\n"
+                                "private:\n"
+                                "    AnonymousAccessStruct privateMember1;\n"
+                                "public:\n"
+                                "    int publicMember2;\n"
+                                "private:\n"
+                                "    AnonymousAccessEnum privateMember2;\n"
+                                "protected:\n"
+                                "    AnonymousAccessStruct protectedMember3;\n"
+                                "public:\n"
+                                "    int publicMember3;\n"
+                                "};\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("class AccessSpecifierChanges {\n"
+                                 "public:\n"
+                                 "    struct (anonymous namespace)::AnonymousAccessStruct {\n"
+                                 "    } publicMember1;\n"
+                                 "protected:\n"
+                                 "    enum (anonymous namespace)::AnonymousAccessEnum {\n"
+                                 "        AnonymousAccessValue\n"
+                                 "    } protectedMember1;\n"
+                                 "    int protectedMember2;\n"
+                                 "private:\n"
+                                 "    struct (anonymous namespace)::AnonymousAccessStruct {\n"
+                                 "    } privateMember1;\n"
+                                 "public:\n"
+                                 "    int publicMember2;\n"
+                                 "private:\n"
+                                 "    enum (anonymous namespace)::AnonymousAccessEnum {\n"
+                                 "        AnonymousAccessValue\n"
+                                 "    } privateMember2;\n"
+                                 "protected:\n"
+                                 "    struct (anonymous namespace)::AnonymousAccessStruct {\n"
+                                 "    } protectedMember3;\n"
+                                 "public:\n"
+                                 "    int publicMember3;\n"
+                                 "};\n"                        , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
+
 
 
 };
@@ -3395,26 +3474,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 14. Deduction guides
             A(int)->A<int>;
-
-
-20. Array of pointers to functions
-            void Foo(int) {}
-            void Bar(int) {}
-            void (*const table[2])(int) =
-            {
-                &Foo,
-                &Bar
-            };
-
-21. Empty base optimization
-            struct B {};
-            struct D : B {};
-
-22. Multiple inheritance
-            struct D : A, B {};
-
-23. Virtual inheritance
-            struct D : virtual B {};
 
 24. Access-specifier changes
             private:
