@@ -3123,123 +3123,219 @@ Test ExploratoryTestsOfClangAST[] =
                                "typedef DeepEnumUsing3 DeepEnumTypedef4;    using DeepEnumUsing4 = DeepEnumTypedef4;\n"
                                "typedef DeepEnumUsing4 DeepEnumTypedef5;    using DeepEnumUsing5 = DeepEnumTypedef5;\n"
                                "DeepEnumUsing5 deepEnumVariable;\n"
+                                
+                               "AnonymousStructAlias (*bazTable2[2][3])(AnonymousEnumTypedef) = {\n"
+                               "    { &Baz, &Baz, &Baz },\n"
+                               "    { &Baz, &Baz, &Baz }\n"
+                               "};\n"
+                               "AnonymousEnumTypedef (*quxTable2[2][3])(AnonymousStructAlias) = {\n"
+                               "    { &Qux, &Qux, &Qux },\n"
+                               "    { &Qux, &Qux, &Qux }\n"
+                               "};\n"
 
-                                // array of arrays?
+                               "int (&functionReference)(int) = Foo;\n"
+                               "typedef int (&FunctionReferenceTypedef)(int); using FunctionReferenceAlias = FunctionReferenceTypedef; FunctionReferenceAlias aliasedFunctionReference = Foo;\n"
+                               "int *UniquePointerReturningFunction  (int) { return nullptr;           } int *(*pointerReturningFunctionTable[2])(int)   = { &UniquePointerReturningFunction, &UniquePointerReturningFunction };\n"
+                               "int &UniqueReferenceReturningFunction(int) { static int x{}; return x; } int &(*referenceReturningFunctionTable[2])(int) = { &UniqueReferenceReturningFunction, &UniqueReferenceReturningFunction };\n"
+                               "using IntArray3 = int[3]; IntArray3 &UniqueFunctionReturningAliasedArray() { static int x[3]{}; return x; }\n"
+
+                               "using ArrayReturningFunctionPointer = IntArray3 &(*)(void); ArrayReturningFunctionPointer arrayReturningFunctionPointer = &UniqueFunctionReturningAliasedArray;\n"
+
+                               "using IntArray3Again = int[3]; IntArray3Again &UniqueFunctionReturningAliasedArray2() { static int x[3]{}; return x; } "
+                               "using ArrayReferenceFunctionPointer = IntArray3Again &(*)(void);\n"
+                               "ArrayReferenceFunctionPointer arrayReferenceFunctionPointerTable[2] = {\n&UniqueFunctionReturningAliasedArray2,\n&UniqueFunctionReturningAliasedArray2\n};\n"
+
+                               "AnonymousStructAlias *UniquePointerParameterFunction(AnonymousEnumTypedef *) { return nullptr; }\n"
+                               "AnonymousStructAlias &UniqueReferenceParameterFunction(AnonymousEnumTypedef &) { static AnonymousStructAlias x{}; return x; }\n"
+
+                               "using UniquePointerParameterFunctionType = AnonymousStructAlias *(*)(AnonymousEnumTypedef *); "
+                               "UniquePointerParameterFunctionType uniquePointerParameterFunction = &UniquePointerParameterFunction;\n"
+
+                               "using UniqueReferenceParameterFunctionType = AnonymousStructAlias &(*)(AnonymousEnumTypedef &); "
+                               "UniqueReferenceParameterFunctionType uniqueReferenceParameterFunction = &UniqueReferenceParameterFunction;\n"
+
+                               "typedef AnonymousStructAlias (*BazFunctionPointerTypedef)(AnonymousEnumTypedef); "
+                               "using BazFunctionPointerAlias1 = BazFunctionPointerTypedef; "
+                               "typedef BazFunctionPointerAlias1 BazFunctionPointerTypedef2; "
+                               "using BazFunctionPointerAlias2 = BazFunctionPointerTypedef2; "
+                               "typedef BazFunctionPointerAlias2 BazFunctionPointerTypedef3; "
+                               "using BazFunctionPointerAlias3 = BazFunctionPointerTypedef3; "
+                               "BazFunctionPointerAlias3 *****deepFunctionPointer = nullptr;\n"
                                ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual(20, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual(12, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual(12, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual( 1, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(16, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(38, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(10, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct DeepAliasType {\n"
                                  "};\n"   , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("FunctionReferenceAlias aliasedFunctionReference = Foo;\n"                                                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ArrayReferenceFunctionPointer arrayReferenceFunctionPointerTable[2] = {&UniqueFunctionReturningAliasedArray2, &UniqueFunctionReturningAliasedArray2};\n"
+                                                                                                                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("ArrayReturningFunctionPointer arrayReturningFunctionPointer = &UniqueFunctionReturningAliasedArray;\n"                      , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
                                  "} (*bazTable[1])(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
                                  "                     AnonymousEnumValue\n"
-                                 "                 } ){&Baz};\n"                          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeepUsing5 deepAliasVariable;\n"                        , (*it++).second[0].fullyQualified);
+                                 "                 } ){&Baz};\n"                                                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "} (*bazTable2[2][3])(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                         AnonymousEnumValue\n"
+                                 "                     } ){{&Baz, &Baz, &Baz}, {&Baz, &Baz, &Baz}};\n"                                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("DeepUsing5 deepAliasVariable;\n"                                                                                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "    DeepAnonymousRed,\n"
                                  "    DeepAnonymousGreen,\n"
                                  "    DeepAnonymousBlue\n"
-                                 "} deepEnumVariable;\n"                                  , (*it++).second[0].fullyQualified);
+                                 "} deepEnumVariable;\n"                                                                                                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "} (******deepFunctionPointer)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                  AnonymousEnumValue\n"
+                                 "                              } ) = nullptr;\n"                                                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int (&functionReference)(int) = Foo;\n"                                                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int *(*pointerReturningFunctionTable[2])(int) = {&UniquePointerReturningFunction, &UniquePointerReturningFunction};\n"      , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
                                  "    AnonymousEnumValue\n"
                                  "} (*quxTable[1])(struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                 }){&Qux};\n"                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int (*table[2])(int) = {&Foo, &Bar};\n"                 , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                                 "                 }){&Qux};\n"                                                                                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "    AnonymousEnumValue\n"
+                                 "} (*quxTable2[2][3])(struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "                     }){{&Qux, &Qux, &Qux}, {&Qux, &Qux, &Qux}};\n"                                                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int &(*referenceReturningFunctionTable[2])(int) = {&UniqueReferenceReturningFunction, &UniqueReferenceReturningFunction};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int (*table[2])(int) = {&Foo, &Bar};\n"                                                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "} * (*uniquePointerParameterFunction)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                          AnonymousEnumValue\n"
+                                 "                                      } *) = &UniquePointerParameterFunction;\n"                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "} & (*uniqueReferenceParameterFunction)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                            AnonymousEnumValue\n"
+                                 "                                        } &) = &UniqueReferenceParameterFunction;\n"                                         , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
                 Assert::AreEqual("typedef enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
                                  "            AnonymousEnumValue\n"
-                                 "        } AnonymousEnumTypedef;\n"           , (*it++).second[0].fullyQualified);
+                                 "        } AnonymousEnumTypedef;\n"                             , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using AnonymousStructAlias = struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                             };\n"           , (*it++).second[0].fullyQualified);
+                                 "                             };\n"                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ArrayReferenceFunctionPointer = IntArray3Again &(*)();\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ArrayReturningFunctionPointer = IntArray3 &(*)();\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using BazFunctionPointerAlias1 = struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "                                 } (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                           AnonymousEnumValue\n"
+                                 "                                       } );\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using BazFunctionPointerAlias2 = struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "                                 } (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                           AnonymousEnumValue\n"
+                                 "                                       } );\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using BazFunctionPointerAlias3 = struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "                                 } (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                           AnonymousEnumValue\n"
+                                 "                                       } );\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "        } *BazFunctionPointerTypedef(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                         AnonymousEnumValue\n"
+                                 "                                     } );\n"                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "        } *BazFunctionPointerTypedef2(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                          AnonymousEnumValue\n"
+                                 "                                      } );\n"                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "        } *BazFunctionPointerTypedef3(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                          AnonymousEnumValue\n"
+                                 "                                      } );\n"                  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "            DeepAnonymousRed,\n"
                                  "            DeepAnonymousGreen,\n"
                                  "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef1;\n"               , (*it++).second[0].fullyQualified);
+                                 "        } DeepEnumTypedef1;\n"                                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "            DeepAnonymousRed,\n"
                                  "            DeepAnonymousGreen,\n"
                                  "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef2;\n"               , (*it++).second[0].fullyQualified);
+                                 "        } DeepEnumTypedef2;\n"                                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "            DeepAnonymousRed,\n"
                                  "            DeepAnonymousGreen,\n"
                                  "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef3;\n"               , (*it++).second[0].fullyQualified);
+                                 "        } DeepEnumTypedef3;\n"                                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "            DeepAnonymousRed,\n"
                                  "            DeepAnonymousGreen,\n"
                                  "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef4;\n"               , (*it++).second[0].fullyQualified);
+                                 "        } DeepEnumTypedef4;\n"                                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "            DeepAnonymousRed,\n"
                                  "            DeepAnonymousGreen,\n"
                                  "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef5;\n"               , (*it++).second[0].fullyQualified);
+                                 "        } DeepEnumTypedef5;\n"                                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using DeepEnumUsing1 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "                           DeepAnonymousRed,\n"
                                  "                           DeepAnonymousGreen,\n"
                                  "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using DeepEnumUsing2 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "                           DeepAnonymousRed,\n"
                                  "                           DeepAnonymousGreen,\n"
                                  "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using DeepEnumUsing3 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "                           DeepAnonymousRed,\n"
                                  "                           DeepAnonymousGreen,\n"
                                  "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using DeepEnumUsing4 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "                           DeepAnonymousRed,\n"
                                  "                           DeepAnonymousGreen,\n"
                                  "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
+                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using DeepEnumUsing5 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "                           DeepAnonymousRed,\n"
                                  "                           DeepAnonymousGreen,\n"
                                  "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepAliasType DeepTypedef1;\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepUsing1 DeepTypedef2;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepUsing2 DeepTypedef3;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepUsing3 DeepTypedef4;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepUsing4 DeepTypedef5;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing1 = DeepTypedef1;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing2 = DeepTypedef2;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing3 = DeepTypedef3;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing4 = DeepTypedef4;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing5 = DeepTypedef5;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using IntAlias = int;\n"                     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef int IntTypedef;\n"                   , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepAliasType DeepTypedef1;\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepUsing1 DeepTypedef2;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepUsing2 DeepTypedef3;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepUsing3 DeepTypedef4;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef DeepUsing4 DeepTypedef5;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing1 = DeepTypedef1;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing2 = DeepTypedef2;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing3 = DeepTypedef3;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing4 = DeepTypedef4;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using DeepUsing5 = DeepTypedef5;\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using FunctionReferenceAlias = FunctionReferenceTypedef;\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef int (&FunctionReferenceTypedef)(int);\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using IntAlias = int;\n"                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using IntArray3 = int[3];\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using IntArray3Again = int[3];\n"                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef int IntTypedef;\n"                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using UniquePointerParameterFunctionType = struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "                                           } * (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                                       AnonymousEnumValue\n"
+                                 "                                                   } *);\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using UniqueReferenceParameterFunctionType = struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "                                             } & (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                                         AnonymousEnumValue\n"
+                                 "                                                     } &);\n"  , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -3261,7 +3357,34 @@ Test ExploratoryTestsOfClangAST[] =
                                  "      }) {\n"
                                  "    return {};\n"
                                  "}\n"                                          , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("IntArray3 &UniqueFunctionReturningAliasedArray() {\n"
+                                 "    static int x[3]{};\n"
+                                 "    return x;\n"
+                                 "}\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("IntArray3Again &UniqueFunctionReturningAliasedArray2() {\n"
+                                 "    static int x[3]{};\n"
+                                 "    return x;\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "} *UniquePointerParameterFunction(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                      AnonymousEnumValue\n"
+                                 "                                  } *) {\n"
+                                 "    return nullptr;\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int *UniquePointerReturningFunction(int) {\n"
+                                 "    return nullptr;\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "} &UniqueReferenceParameterFunction(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
+                                 "                                        AnonymousEnumValue\n"
+                                 "                                    } &) {\n"
+                                 "    static AnonymousStructAlias x{};\n"
+                                 "    return x;\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int &UniqueReferenceReturningFunction(int) {\n"
+                                 "    static int x{};\n"
+                                 "    return x;\n"
+                                 "}\n"                                          , (*it++).second[0].fullyQualified);
             }
         }
     },
