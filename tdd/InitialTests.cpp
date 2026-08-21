@@ -917,7 +917,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    };\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <enum class (anonymous namespace)::Mode : int {\n"
+                Assert::AreEqual("template <enum class (anonymous namespace)::Mode {\n"
                                  "              A,\n"
                                  "              B\n"
                                  "          } M> struct EnumHolder {\n"
@@ -1291,7 +1291,7 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.enumMap.begin();
-                Assert::AreEqual("enum class Color : int {\n    Red,\n    Green\n};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class Color {\n    Red,\n    Green\n};\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -3466,6 +3466,147 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Scoped enum with underlying type", []
+        {
+            std::string code =
+                                "enum class E : unsigned short { A, B, C};\n"
+                                "enum class NoExplicitUnderlyingType { A, B, C };\n"
+                                "enum struct EnumWithStruct { A, B, C };\n"
+//You can determine whether your serializer intentionally preserves the spelling or normalizes it to enum class.
+//
+//3. Explicit underlying types
+//You already have unsigned short.I would test a signed type and perhaps char :
+//enum class E : int { A, B, C };
+//enum class E : unsigned char { A, B, C };
+//The important thing is that the underlying type is actually serialized rather than reconstructed from Clang's default.
+//
+//4. Enumerator values
+//enum class E : unsigned short
+//{
+//    A = 1,
+//    B = 10,
+//    C = 100
+//};
+//enum class E : unsigned short
+//{
+//    A = 1 << 2,
+//    B = A + 3,
+//    C
+//};
+//5. Qualified use of the enumerators
+//Since the whole point of a scoped enum is that its enumerators are scoped, test actual use :
+//enum class E : unsigned short { A, B, C };
+//E e = E::B;
+//This is especially useful if your serializer has logic involving EnumConstantDecl or name lookup.
+//
+//6. Anonymous scoped enum
+//Given what you have been testing with anonymous - namespace types, I would definitely include :
+//namespace
+//{
+//    enum class AnonymousE : unsigned short { A, B, C };
+//}
+//That tests the interaction between scoped enum + anonymous namespace, which is directly relevant to your serializer's special handling of anonymous-namespace declarations.
+//
+//7. Scoped enum with a fixed underlying type and negative values
+//This catches another potentially interesting case:
+//enum class E : int
+//{
+//    A = -1,
+//    B = 0,
+//    C = 1
+//};
+//This is particularly useful because the underlying type is signed.
+//
+//8. Enumerator values at the limits of the underlying type
+//If your expression serialization is important, something like :
+//enum class E : unsigned char
+//{
+//    A = 0,
+//    B = 255
+//};
+//is a good test.It verifies that the values aren't inadvertently being printed according to the enum's default underlying type.
+//
+//9. Forward declaration
+//Scoped enums have an interesting forward - declaration form :
+//enum class E : unsigned short;
+//enum class E : unsigned short
+//{
+//    A, B, C
+//};
+//And, importantly, a scoped enum can be forward - declared with an underlying type, whereas an unscoped enum has different rules.This is worth testing if your serializer handles declarations separately from definitions.
+//
+//10. Scoped enum used as a type
+//I'd also test it in the places where your type serializer actually has to encounter the enum:
+//enum class E : unsigned short { A, B, C };
+//E e;
+//E* p;
+//E& r = e;
+//And, given the array / pointer / reference work you have been doing :
+//E array[3];
+//E* pointer;
+//E& reference = e;
+
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum class E : unsigned short {\n"
+                                 "    A,\n"
+                                 "    B,\n"
+                                 "    C\n"
+                                 "};\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum struct EnumWithStruct {\n"
+                                 "    A,\n"
+                                 "    B,\n"
+                                 "    C\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class NoExplicitUnderlyingType {\n"
+                                 "    A,\n"
+                                 "    B,\n"
+                                 "    C\n"
+                                 "};\n"   , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
 
 
 
@@ -3475,14 +3616,6 @@ Test ExploratoryTestsOfClangAST[] =
 14. Deduction guides
             A(int)->A<int>;
 
-24. Access-specifier changes
-            private:
-            protected:
-            public:
-        inside the same class.
-
-25. Scoped enum with underlying type
-            enum class E : unsigned short
 
 ///////////////////////////////////////////////////////////////////// variables 
 27. Inline variables

@@ -230,6 +230,11 @@ namespace OdrCop3
                 if (decl->getKind() == clang::Decl::Kind::AccessSpec)
                     return false; // AccessSpecDecl::print() prints nothing
 
+                if (const auto* enumDecl = llvm::dyn_cast<clang::EnumDecl>(decl))
+                    if (enumDecl->isScoped())
+                        if (enumDecl->getIntegerTypeSourceInfo() == nullptr)
+                            return false; // EnumDecl::print() adds implicit underlying type even if not in source (makes a false negative)
+
                 if (NeedsManualSerialization(contextItems, decl) == true)
                     return false; // needs (anonymous namespace) type's definition inlined
 

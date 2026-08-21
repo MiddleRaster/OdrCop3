@@ -70,15 +70,23 @@ namespace OdrCop3
         std::string Serialize() const
         {
             std::string enumName = enumDecl->getNameAsString();
-            if ((enumName != "") && !enumDecl->isInAnonymousNamespace())
-                return Print(); // not anonymous type nor defined in anonymous namespace: do shortcut.
-
             if (enumName == "")
                 enumName = BuildNameForNameless(contextItems, enumDecl);
-            else
-                enumName = enumDecl->getQualifiedNameAsString();
+            else if (enumDecl->isInAnonymousNamespace())
+                enumName = enumDecl->getQualifiedNameAsString(); // TODO: REVIEW: Should I do this only for "(anonymous namespace)" types?
             
-            std::string fqe = (enumDecl->isScoped() ? "enum class " : "enum ") + enumName + (enumDecl->isFixed() ? " : " + enumDecl->getIntegerType().getCanonicalType().getAsString() : "") + " {\n";
+            std::string fqe;
+            if (!enumDecl->isScoped())
+                fqe += "enum ";
+            else if (enumDecl->isScopedUsingClassTag())
+                fqe += "enum class ";
+            else
+                fqe += "enum struct ";
+            fqe += enumName;
+            if (enumDecl->isFixed() && enumDecl->getIntegerTypeSourceInfo() != nullptr)
+                fqe += " : " + enumDecl->getIntegerType().getCanonicalType().getAsString();
+            fqe += " {\n";
+
             for (const EnumConstantDecl* enumeratorDecl : enumDecl->enumerators())
             {
                 fqe += "    " + enumeratorDecl->getName().str();
