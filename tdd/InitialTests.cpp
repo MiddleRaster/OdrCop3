@@ -3472,132 +3472,184 @@ Test ExploratoryTestsOfClangAST[] =
                                 "enum class E : unsigned short { A, B, C};\n"
                                 "enum class NoExplicitUnderlyingType { A, B, C };\n"
                                 "enum struct EnumWithStruct { A, B, C };\n"
-//You can determine whether your serializer intentionally preserves the spelling or normalizes it to enum class.
-//
-//3. Explicit underlying types
-//You already have unsigned short.I would test a signed type and perhaps char :
-//enum class E : int { A, B, C };
-//enum class E : unsigned char { A, B, C };
-//The important thing is that the underlying type is actually serialized rather than reconstructed from Clang's default.
-//
-//4. Enumerator values
-//enum class E : unsigned short
-//{
-//    A = 1,
-//    B = 10,
-//    C = 100
-//};
-//enum class E : unsigned short
-//{
-//    A = 1 << 2,
-//    B = A + 3,
-//    C
-//};
-//5. Qualified use of the enumerators
-//Since the whole point of a scoped enum is that its enumerators are scoped, test actual use :
-//enum class E : unsigned short { A, B, C };
-//E e = E::B;
-//This is especially useful if your serializer has logic involving EnumConstantDecl or name lookup.
-//
-//6. Anonymous scoped enum
-//Given what you have been testing with anonymous - namespace types, I would definitely include :
-//namespace
-//{
-//    enum class AnonymousE : unsigned short { A, B, C };
-//}
-//That tests the interaction between scoped enum + anonymous namespace, which is directly relevant to your serializer's special handling of anonymous-namespace declarations.
-//
-//7. Scoped enum with a fixed underlying type and negative values
-//This catches another potentially interesting case:
-//enum class E : int
-//{
-//    A = -1,
-//    B = 0,
-//    C = 1
-//};
-//This is particularly useful because the underlying type is signed.
-//
-//8. Enumerator values at the limits of the underlying type
-//If your expression serialization is important, something like :
-//enum class E : unsigned char
-//{
-//    A = 0,
-//    B = 255
-//};
-//is a good test.It verifies that the values aren't inadvertently being printed according to the enum's default underlying type.
-//
-//9. Forward declaration
-//Scoped enums have an interesting forward - declaration form :
-//enum class E : unsigned short;
-//enum class E : unsigned short
-//{
-//    A, B, C
-//};
-//And, importantly, a scoped enum can be forward - declared with an underlying type, whereas an unscoped enum has different rules.This is worth testing if your serializer handles declarations separately from definitions.
-//
-//10. Scoped enum used as a type
-//I'd also test it in the places where your type serializer actually has to encounter the enum:
-//enum class E : unsigned short { A, B, C };
-//E e;
-//E* p;
-//E& r = e;
-//And, given the array / pointer / reference work you have been doing :
-//E array[3];
-//E* pointer;
-//E& reference = e;
+                                "enum class UnderlyingInt : int { A, B, C };\n"
+                                "enum class UnderlyingUnsignedChar : unsigned char { A, B, C };\n"
+                                "using SHORT = short; enum struct EnumShort : SHORT { A, B  };\n"
+                                "enum class EnumWithExponentialValues : unsigned short { A = 1, B = 10, C = 100 };\n"
+                                "enum class EnumWithExpressionValues : unsigned short { A = 1 << 2, B = A + 3, C };\n"
+                                "E e = E::B;\n"
+                                "namespace { enum class AnonymousE : unsigned short { A, B, C }; } auto ea = AnonymousE::A;\n"
+                                "enum class ENegativeValues : int { A = -1, B = 0, C = 1 };\n"
+                                "enum class EUnsignedChar : unsigned char { A = 0, B = 255 };\n"
+                                "enum class ForwardDeclaration : unsigned short; enum class ForwardDeclaration : unsigned short { A, B, C };\n"
+                                "E e2; E* p; E& r = e2; E array[3];\n"
+                                "enum class CodeCoverage { A=1, B=A+1 };\n"
 
+                                "enum { AnonymousA, AnonymousB, AnonymousC };\n"
+                                "enum { AnonymousValueA = 1, AnonymousValueB = 10, AnonymousValueC = 100 };\n"
+                                "enum : unsigned short { AnonymousUnderlyingA, AnonymousUnderlyingB, AnonymousUnderlyingC };\n"
+                                "enum { AnonymousVariableA, AnonymousVariableB, AnonymousVariableC } anonymousEnumVariable;\n"
+                                "enum : unsigned short { AnonymousUnderlyingVariableA, AnonymousUnderlyingVariableB, AnonymousUnderlyingVariableC } anonymousEnumVariableWithUnderlyingType;\n"
+                                "struct AnonymousEnumStruct { enum { MemberA, MemberB, MemberC }; };\n"
+                                "struct AnonymousEnumStructWithValue{ enum { MemberValueA, MemberValueB, MemberValueC } value; };\n"
+                                "typedef enum { TypedefA, TypedefB, TypedefC } AnonymousEnumTypedef; AnonymousEnumTypedef anonymousEnumTypedefVar;\n"
+                                "namespace { enum { AnonymousNamespaceA, AnonymousNamespaceB, AnonymousNamespaceC }; }\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual( 2, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 9, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(18, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 2, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct AnonymousEnumStruct {\n"
+                                 "    enum (unnamed enum at input.cc:21:30) {\n"
+                                 "        MemberA,\n"
+                                 "        MemberB,\n"
+                                 "        MemberC\n"
+                                 "    };\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct AnonymousEnumStructWithValue {\n"
+                                 "    enum (unnamed enum at input.cc:22:38) {\n"
+                                 "        MemberValueA,\n"
+                                 "        MemberValueB,\n"
+                                 "        MemberValueC\n"
+                                 "    } value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("enum (unnamed enum at input.cc:23:9) {\n"
+                                 "    TypedefA,\n"
+                                 "    TypedefB,\n"
+                                 "    TypedefC\n"
+                                 "} anonymousEnumTypedefVar;\n"                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (unnamed enum at input.cc:19:1) {\n"
+                                 "    AnonymousVariableA,\n"
+                                 "    AnonymousVariableB,\n"
+                                 "    AnonymousVariableC\n"
+                                 "} anonymousEnumVariable;\n"                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (unnamed enum at input.cc:20:1) : unsigned short {\n"
+                                 "    AnonymousUnderlyingVariableA,\n"
+                                 "    AnonymousUnderlyingVariableB,\n"
+                                 "    AnonymousUnderlyingVariableC\n"
+                                 "} anonymousEnumVariableWithUnderlyingType;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("E array[3];\n"                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("E e = E::B;\n"                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("E e2;\n"                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class (anonymous namespace)::AnonymousE : unsigned short {\n"
+                                 "    A,\n"
+                                 "    B,\n"
+                                 "    C\n"
+                                 "} ea = AnonymousE::A;\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("E *p;\n"                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("E &r = e2;\n"                                , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum (unnamed enum at input.cc:16:1) {\n"
+                                 "    AnonymousA,\n"
+                                 "    AnonymousB,\n"
+                                 "    AnonymousC\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (unnamed enum at input.cc:17:1) {\n"
+                                 "    AnonymousValueA = 1,\n"
+                                 "    AnonymousValueB = 10,\n"
+                                 "    AnonymousValueC = 100\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+
+                Assert::AreEqual("enum (unnamed enum at input.cc:18:1) : unsigned short {\n"
+                                 "    AnonymousUnderlyingA,\n"
+                                 "    AnonymousUnderlyingB,\n"
+                                 "    AnonymousUnderlyingC\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (unnamed enum at input.cc:19:1) {\n"
+                                 "    AnonymousVariableA,\n"
+                                 "    AnonymousVariableB,\n"
+                                 "    AnonymousVariableC\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (unnamed enum at input.cc:20:1) : unsigned short {\n"
+                                 "    AnonymousUnderlyingVariableA,\n"
+                                 "    AnonymousUnderlyingVariableB,\n"
+                                 "    AnonymousUnderlyingVariableC\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum (unnamed enum at input.cc:23:9) {\n"
+                                 "    TypedefA,\n"
+                                 "    TypedefB,\n"
+                                 "    TypedefC\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class CodeCoverage {\n"
+                                 "    A = 1,\n"
+                                 "    B = 2\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum class E : unsigned short {\n"
                                  "    A,\n"
                                  "    B,\n"
                                  "    C\n"
                                  "};\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class ENegativeValues : int {\n"
+                                 "    A = -1,\n"
+                                 "    B = 0,\n"
+                                 "    C = 1\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class EUnsignedChar : unsigned char {\n"
+                                 "    A = 0,\n"
+                                 "    B = 255\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum struct EnumShort : SHORT {\n"
+                                 "    A,\n"
+                                 "    B\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class EnumWithExponentialValues : unsigned short {\n"
+                                 "    A = 1,\n"
+                                 "    B = 10,\n"
+                                 "    C = 100\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class EnumWithExpressionValues : unsigned short {\n"
+                                 "    A = 1 << 2,\n"
+                                 "    B = A + 3,\n"
+                                 "    C\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum struct EnumWithStruct {\n"
                                  "    A,\n"
                                  "    B,\n"
                                  "    C\n"
-                                 "};\n", (*it++).second[0].fullyQualified);
+                                 "};\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class ForwardDeclaration : unsigned short {\n"
+                                 "    A,\n"
+                                 "    B,\n"
+                                 "    C\n"
+                                 "};\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum class NoExplicitUnderlyingType {\n"
                                  "    A,\n"
                                  "    B,\n"
                                  "    C\n"
                                  "};\n"   , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class UnderlyingInt : int {\n"
+                                 "    A,\n"
+                                 "    B,\n"
+                                 "    C\n"
+                                 "};\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class UnderlyingUnsignedChar : unsigned char {\n"
+                                 "    A,\n"
+                                 "    B,\n"
+                                 "    C\n"
+                                 "};\n"   , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
+                Assert::AreEqual("typedef enum (unnamed enum at input.cc:23:9) {\n"
+                                 "            TypedefA,\n"
+                                 "            TypedefB,\n"
+                                 "            TypedefC\n"
+                                 "        } AnonymousEnumTypedef;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using SHORT = short;\n"           , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
