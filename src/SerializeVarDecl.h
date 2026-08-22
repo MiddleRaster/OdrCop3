@@ -133,10 +133,9 @@ namespace OdrCop3
         }
 
         std::string GetInlineStaticConstAndConstexpr() const
-        {
-            // duplicating what DeclPrinter::VisitVarDecl(VarDecl *D) does exactly.  Notably, "inline" is ignored completely
-            std::string out;
+        {   // no longer duplicating what DeclPrinter::VisitVarDecl(VarDecl *D) does exactly (notably, "inline" is ignored completely), as this would miss valid ODR violations
 
+            std::string out;
             StorageClass storageClass = varDecl->getStorageClass();
             switch(storageClass)
             {
@@ -145,10 +144,10 @@ namespace OdrCop3
             case StorageClass::SC_Extern: out += "extern "; break;
             case StorageClass::SC_Static: out += "static "; break;
             }
-
+            if (varDecl->isInlineSpecified())
+                out += "inline ";
             if (varDecl->isConstexpr())
                 out += "constexpr "; // there is code to strip off const in Serialize(), just like DeclPrinter does
-
             return out;
         }
 

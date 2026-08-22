@@ -120,6 +120,12 @@ namespace OdrCop3
                     return true;
                 return false;
             }
+            bool IsVarInline(const clang::Decl* decl) const
+            {
+                if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
+                    return varDecl->isInlineSpecified();
+                return false;
+            }
             bool IsVarOfUnnamedType(const clang::Decl* decl) const
             {
                 if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
@@ -262,6 +268,8 @@ namespace OdrCop3
                 if (true == IsUnnamedUnionClassOrStruct(decl))
                     return false;
                 if (true == IsUnnamedEnum(decl))
+                    return false;
+                if (true == IsVarInline(decl))
                     return false;
                 if (true == IsVarOfUnnamedType(decl))
                     return false;
