@@ -4001,29 +4001,34 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Attributes", []
         {
-
-//30.5. Attributes
-//            [[nodiscard]]
-//            [[maybe_unused]]
-//            [[no_unique_address]] // The last one is especially relevant.
-
-
             std::string code =  
                                 "struct NoUniqueAddressTest { struct Empty {}; [[msvc::no_unique_address]] Empty empty; int value; };\n"
+                                "[[nodiscard]] int NodiscardFunction() { return 0; }\n"
+                                "struct [[deprecated]] DeprecatedType {};\n"
+                                "struct [[deprecated(\"use something else\")]] DeprecatedTypeWithMessage {};\n"
+                                "struct MaybeUnusedFieldTest { [[maybe_unused]] int value; };\n"
+                                "void MaybeUnusedParameterTest([[maybe_unused]] int value) {}\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual(15, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct [[deprecated(\"\")]] DeprecatedType {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct [[deprecated(\"use something else\")]] DeprecatedTypeWithMessage {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MaybeUnusedFieldTest {\n"
+                                 "    [[maybe_unused]] int value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NoUniqueAddressTest {\n"
                                  "    struct Empty {\n"
                                  "    };\n"
@@ -4045,6 +4050,11 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("void MaybeUnusedParameterTest([[maybe_unused]] int value) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("[[nodiscard(\"\")]] int NodiscardFunction() {\n"
+                                 "    return 0;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
             }
         }
     },
