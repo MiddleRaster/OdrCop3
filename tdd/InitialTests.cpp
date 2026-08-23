@@ -3661,9 +3661,6 @@ Test ExploratoryTestsOfClangAST[] =
     },
     {"Inline variables", []
         {
-            // 27. Inline variables
-            //            inline int x = 0;
-
             std::string code =
                                 "inline int inlineVariable = 0;\n"
                                 "inline constexpr int inlineConstexprVariable = 0;\n"
@@ -3759,6 +3756,54 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Thread_local variables", []
+        {
+            std::string code =
+                                "thread_local int threadLocalVariable = 0;\n"
+                                "namespace { struct ThreadLocalType {}; } thread_local ThreadLocalType threadLocalVariable2;\n"
+                                "static thread_local int staticThreadLocalVariable = 0;\n"
+                                "extern thread_local int externThreadLocalVariable;\n"
+                                "namespace { enum ThreadLocalEnum {A}; } thread_local ThreadLocalEnum threadLocalVariable3;\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual(9, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("extern thread_local int externThreadLocalVariable;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("thread_local int threadLocalVariable = 0;\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("thread_local struct (anonymous namespace)::ThreadLocalType {\n"
+                                 "             } threadLocalVariable2;\n"              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("thread_local enum (anonymous namespace)::ThreadLocalEnum {\n"
+                                 "                 A\n"
+                                 "             } threadLocalVariable3;\n"              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
+
 
 };
 /* some missing test cases
@@ -3768,8 +3813,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 
 ///////////////////////////////////////////////////////////////////// variables 
-27. Inline variables
-            inline int x=0;
 
 28. Thread local
             thread_local int x;

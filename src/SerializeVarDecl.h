@@ -140,9 +140,15 @@ namespace OdrCop3
             switch(storageClass)
             {
             case StorageClass::SC_None  :
-            default:                                        break;
+            default                     :                   break;
             case StorageClass::SC_Extern: out += "extern "; break;
             case StorageClass::SC_Static: out += "static "; break;
+            }
+            switch(varDecl->getTSCSpec())
+            {
+            case ThreadStorageClassSpecifier::TSCS_unspecified :
+            default                                            :                         break;
+            case ThreadStorageClassSpecifier::TSCS_thread_local: out += "thread_local "; break;
             }
             if (varDecl->isInlineSpecified())
                 out += "inline ";
