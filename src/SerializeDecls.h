@@ -167,6 +167,12 @@ namespace OdrCop3
                     return true;
                 return false;
             }
+            bool IsFieldAttributed(const clang::Decl* decl) const
+            {
+                if (const auto* fieldDecl = llvm::dyn_cast<clang::FieldDecl>(decl))
+                    return !fieldDecl->attrs().empty();
+                return false;
+            }
 
             template <typename Type> bool PrintType(clang::QualType qualType) const
             {
@@ -280,6 +286,8 @@ namespace OdrCop3
                 if (true == IsFriendDecl(decl))
                     return false;
                 if (true == IsVarOutOfLine(decl))
+                    return false;
+                if (true == IsFieldAttributed(decl))
                     return false;
 
                 return true;

@@ -3885,7 +3885,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
     {"Constexpr static data members", []
         {
             std::string code =  
@@ -4000,6 +3999,56 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+    {"Attributes", []
+        {
+
+//30.5. Attributes
+//            [[nodiscard]]
+//            [[maybe_unused]]
+//            [[no_unique_address]] // The last one is especially relevant.
+
+
+            std::string code =  
+                                "struct NoUniqueAddressTest { struct Empty {}; [[msvc::no_unique_address]] Empty empty; int value; };\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            //Assert::AreEqual(15, maps.udtMap.size(), "wrong number of UDTs in map");
+            //Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
+            //Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            //Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            //Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct NoUniqueAddressTest {\n"
+                                 "    struct Empty {\n"
+                                 "    };\n"
+                                 "    [[msvc::no_unique_address]] Empty empty;\n"
+                                 "    int value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
+
 
 
 };
@@ -4009,13 +4058,6 @@ Test ExploratoryTestsOfClangAST[] =
             A(int)->A<int>;
 
 
-///////////////////////////////////////////////////////////////////// variables 
-
-
-30.5. Attributes
-            [[nodiscard]]
-            [[maybe_unused]]
-            [[no_unique_address]] // The last one is especially relevant.
 
 /////////////////////////////////////////////////////////////////////////// friends
 34. Friend function template

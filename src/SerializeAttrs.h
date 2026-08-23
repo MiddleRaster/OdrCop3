@@ -75,6 +75,7 @@ namespace OdrCop3
             case clang::attr::Override:         if (const auto*    override = clang::dyn_cast<clang::OverrideAttr        >(attr)) return Attr::Serialize(contextItems, override);    break;
             case clang::attr::Unused:           if (const auto*      unused = clang::dyn_cast<clang::UnusedAttr          >(attr)) return Attr::Serialize(contextItems, unused);      break;
             case clang::attr::ConstInit:        if (const auto*   constInit = clang::dyn_cast<clang::ConstInitAttr       >(attr)) return Attr::Serialize(contextItems, constInit);   break;
+            case clang::attr::NoUniqueAddress:  if (const auto*         nua = clang::dyn_cast<clang::NoUniqueAddressAttr >(attr)) return Attr::Serialize(contextItems, nua);         break;
 
             // filtering out all of those attributes below here:
             case clang::attr::Visibility:      // Windows doesn't have this concept
@@ -82,7 +83,7 @@ namespace OdrCop3
             case clang::attr::AllocSize:
             case clang::attr::MSInheritance:   // always skip these
                 return "";
-            default: // might turn this on later: 
+            default: // turn this on later: 
                 // return Attr::Serialize(contextItems, attr);
                 break;
             };
