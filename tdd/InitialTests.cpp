@@ -3769,12 +3769,12 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual(9, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(4, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -3803,8 +3803,88 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Constinit variables", []
+        {
+            std::string code =  // N.B. "inline" is never printed by clang's DeclPrinter::print() and the standard gives some leeway. 
+                                // Copilot and ChatGPT both suggested just before the type, which is not how people write code.
+                                // Claude said after thread_local and before constexpr, which is much better. So I'm going with that.
+                                "constinit                     int                  constinitVariable = 0;\n"
+                                "constinit        const        int             constinitConstVariable = 0;\n"
+                                "constinit static              int            staticConstinitVariable = 0;\n"
+                                "constinit inline              int            inlineConstinitVariable = 0;\n"
+                                "constinit inline const        int       inlineConstinitConstVariable = 0;\n"
+                                "constinit        thread_local int       threadLocalConstinitVariable = 0;\n"
+                                "constinit inline thread_local int inlineThreadLocalConstinitVariable = 0;\n"
 
+                                "namespace { struct AnonymousConstinitStruct {}; } constinit AnonymousConstinitStruct constinitAnonymousStruct{};\n"
+                                "namespace { enum AnonymousConstinitEnum { AnonymousConstinitValue }; } constinit AnonymousConstinitEnum constinitAnonymousEnum = AnonymousConstinitValue;\n"
+                                "namespace { struct AnonymousConstinitConstStruct {}; } constinit const AnonymousConstinitConstStruct constinitAnonymousConstStruct{};\n"
+                                "namespace { struct AnonymousConstinitTypedefStruct {}; } typedef AnonymousConstinitTypedefStruct AnonymousConstinitTypedef; constinit AnonymousConstinitTypedef constinitTypedefVariable{};\n"
+                                "namespace { struct AnonymousConstinitUsingStruct {}; } using AnonymousConstinitUsing = AnonymousConstinitUsingStruct; constinit AnonymousConstinitUsing constinitUsingVariable{};\n"
+                                "namespace { enum AnonymousConstinitTypedefEnum { AnonymousConstinitTypedefValue }; } typedef AnonymousConstinitTypedefEnum AnonymousConstinitEnumTypedef; constinit AnonymousConstinitEnumTypedef constinitEnumTypedefVariable = AnonymousConstinitTypedefValue;\n"
+                                "namespace { enum AnonymousConstinitUsingEnum { AnonymousConstinitUsingValue }; } using AnonymousConstinitEnumUsing = AnonymousConstinitUsingEnum; constinit AnonymousConstinitEnumUsing constinitEnumUsingVariable = AnonymousConstinitUsingValue;\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
 
+            Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(11, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("constinit enum (anonymous namespace)::AnonymousConstinitEnum {\n"
+                                 "              AnonymousConstinitValue\n"
+                                 "          } constinitAnonymousEnum = AnonymousConstinitValue;\n"             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit struct (anonymous namespace)::AnonymousConstinitStruct {\n"
+                                 "          } constinitAnonymousStruct{};\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit enum (anonymous namespace)::AnonymousConstinitTypedefEnum {\n"
+                                 "              AnonymousConstinitTypedefValue\n"
+                                 "          } constinitEnumTypedefVariable = AnonymousConstinitTypedefValue;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit enum (anonymous namespace)::AnonymousConstinitUsingEnum {\n"
+                                 "              AnonymousConstinitUsingValue\n"
+                                 "          } constinitEnumUsingVariable = AnonymousConstinitUsingValue;\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit struct (anonymous namespace)::AnonymousConstinitTypedefStruct {\n"
+                                 "          } constinitTypedefVariable{};\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit struct (anonymous namespace)::AnonymousConstinitUsingStruct {\n"
+                                 "          } constinitUsingVariable{};\n"                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit int constinitVariable = 0;\n"                                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit inline const int inlineConstinitConstVariable = 0;\n"              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit inline int inlineConstinitVariable = 0;\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit thread_local inline int inlineThreadLocalConstinitVariable = 0;\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit thread_local int threadLocalConstinitVariable = 0;\n"              , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("typedef enum (anonymous namespace)::AnonymousConstinitTypedefEnum {\n"
+                                 "            AnonymousConstinitTypedefValue\n"
+                                 "        } AnonymousConstinitEnumTypedef;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using AnonymousConstinitEnumUsing = enum (anonymous namespace)::AnonymousConstinitUsingEnum {\n"
+                                 "                                        AnonymousConstinitUsingValue\n"
+                                 "                                    };\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousConstinitTypedefStruct {\n"
+                                 "        } AnonymousConstinitTypedef;\n"    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using AnonymousConstinitUsing = struct (anonymous namespace)::AnonymousConstinitUsingStruct {\n"
+                                 "                                };\n"      , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
 };
 /* some missing test cases
 
@@ -3813,12 +3893,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 
 ///////////////////////////////////////////////////////////////////// variables 
-
-28. Thread local
-            thread_local int x;
-
-29. constinit
-            constinit int x=0;
 
 30. constexpr static data members
 
