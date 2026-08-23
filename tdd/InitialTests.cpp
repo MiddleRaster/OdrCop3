@@ -3665,38 +3665,91 @@ Test ExploratoryTestsOfClangAST[] =
             //            inline int x = 0;
 
             std::string code =
-                                "inline int x = 0;\n"
+                                "inline int inlineVariable = 0;\n"
+                                "inline constexpr int inlineConstexprVariable = 0;\n"
+                                "static inline int staticInlineVariable = 0;\n"
+                                "static inline constexpr int staticInlineConstexprVariable = 0;\n"
+                                "struct StaticInline { static inline int value = 0; };\n"
+                                "struct StaticInlineConstexpr { static inline constexpr int value = 0; };\n"
+
+                                "namespace { enum InlineEnum1 { InlineEnum1A, InlineEnum1B }; } inline InlineEnum1 inlineEnumVariable1 = InlineEnum1A; \n"
+                                "namespace { enum InlineEnum2 { InlineEnum2A, InlineEnum2B }; } inline constexpr InlineEnum2 inlineEnumVariable2 = InlineEnum2A; \n"
+                                "namespace { enum InlineEnum3 { InlineEnum3A, InlineEnum3B }; } typedef InlineEnum3 InlineEnumTypedef3; \ninline InlineEnumTypedef3 inlineEnumVariable3 = InlineEnum3A;\n"
+                                "namespace { enum InlineEnum4 { InlineEnum4A, InlineEnum4B }; } using InlineEnumAlias4 = InlineEnum4; \ninline InlineEnumAlias4 inlineEnumVariable4 = InlineEnum4A; \n"
+
+                                "namespace { struct InlineStruct { int value; }; } inline InlineStruct inlineStructVariable = {};\n"
+                                "namespace { struct InlineStructTypedefSource { int value; }; } typedef InlineStructTypedefSource InlineStructTypedef; \ninline InlineStructTypedef inlineStructTypedefVariable = {};\n"
+                                "namespace { struct InlineStructAliasSource { int value; }; } using InlineStructAlias = InlineStructAliasSource; \ninline InlineStructAlias inlineStructAliasVariable = {};\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            //Assert::AreEqual( 2, maps.udtMap.size(), "wrong number of UDTs in map");
-            //Assert::AreEqual( 9, maps.varMap.size(),  "wrong number of vars in map");
-            //Assert::AreEqual(18, maps.enumMap.size(),  "wrong number of enums in map");
-            //Assert::AreEqual( 2, maps.typedefMap.size(),"wrong number of typedefs in map");
-            //Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            //Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(9, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct StaticInline {\n"
+                                 "    static inline int value = 0;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct StaticInlineConstexpr {\n"
+                                 "    static inline constexpr int value = 0;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("inline int x = 0;\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline constexpr int inlineConstexprVariable = 0;\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline enum (anonymous namespace)::InlineEnum1 {\n"
+                                 "           InlineEnum1A,\n"
+                                 "           InlineEnum1B\n"
+                                 "       } inlineEnumVariable1 = InlineEnum1A;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline constexpr enum (anonymous namespace)::InlineEnum2 {\n"
+                                 "                     InlineEnum2A,\n"
+                                 "                     InlineEnum2B\n"
+                                 "                 } inlineEnumVariable2 = InlineEnum2A;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline enum (anonymous namespace)::InlineEnum3 {\n"
+                                 "           InlineEnum3A,\n"
+                                 "           InlineEnum3B\n"
+                                 "       } inlineEnumVariable3 = InlineEnum3A;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline enum (anonymous namespace)::InlineEnum4 {\n"
+                                 "           InlineEnum4A,\n"
+                                 "           InlineEnum4B\n"
+                                 "       } inlineEnumVariable4 = InlineEnum4A;\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline struct (anonymous namespace)::InlineStructAliasSource {\n"
+                                 "           int value;\n"
+                                 "       } inlineStructAliasVariable{};\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline struct (anonymous namespace)::InlineStructTypedefSource {\n"
+                                 "           int value;\n"
+                                 "       } inlineStructTypedefVariable{};\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline struct (anonymous namespace)::InlineStruct {\n"
+                                 "           int value;\n"
+                                 "       } inlineStructVariable{};\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int inlineVariable = 0;\n"                        , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
             }
             {
                 auto it = maps.typedefMap.begin();
+                Assert::AreEqual("using InlineEnumAlias4 = enum (anonymous namespace)::InlineEnum4 {\n"
+                                 "                             InlineEnum4A,\n"
+                                 "                             InlineEnum4B\n"
+                                 "                         };\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef enum (anonymous namespace)::InlineEnum3 {\n"
+                                 "            InlineEnum3A,\n"
+                                 "            InlineEnum3B\n"
+                                 "        } InlineEnumTypedef3;\n" , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using InlineStructAlias = struct (anonymous namespace)::InlineStructAliasSource {\n"
+                                 "                              int value;\n"
+                                 "                          };\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef struct (anonymous namespace)::InlineStructTypedefSource {\n"
+                                 "            int value;\n"
+                                 "        } InlineStructTypedef;\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
