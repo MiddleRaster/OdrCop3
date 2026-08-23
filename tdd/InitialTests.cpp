@@ -3885,6 +3885,123 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+
+    {"Constexpr static data members", []
+        {
+            std::string code =  
+                                "struct ConstexprStaticMember { static constexpr int value = 42; };\n"
+                                "namespace { struct ConstexprStaticAnonymousType1 {}; } struct ConstexprStaticAnonymousType2 { static constexpr ConstexprStaticAnonymousType1 value{};};\n"
+                                "struct ConstexprStaticArray { static constexpr int value[3] = { 1, 2, 3 }; };\n"
+                                "constexpr int constexprStaticPointerTarget = 42; struct ConstexprStaticPointer { static constexpr const int* value = &constexprStaticPointerTarget; };\n"
+                                "struct ConstexprLiteralType { constexpr ConstexprLiteralType(int value) : value(value) {} int value; }; struct ConstexprStaticLiteral { static constexpr ConstexprLiteralType member{42}; };\n"
+                                "struct StaticConstMember { static const int value; };\n"
+                                "struct ExplicitInlineConstexpr { inline static constexpr int value = 42; };\n"
+
+                                "namespace { struct ConstexprStaticMemberAnonymousType {}; } struct ConstexprStaticMemberAnonymous { static constexpr ConstexprStaticMemberAnonymousType value{}; };\n"
+                                "namespace { enum ConstexprStaticMemberAnonymousEnum { ConstexprStaticMemberAnonymousValue }; } struct ConstexprStaticMemberAnonymousEnumHolder { static constexpr ConstexprStaticMemberAnonymousEnum value = ConstexprStaticMemberAnonymousValue; };\n"
+                                "namespace { struct ConstexprStaticNestedAnonymousType {}; } struct ConstexprStaticNestedAnonymousHolder { struct Nested { static constexpr ConstexprStaticNestedAnonymousType value{}; }; };\n"
+
+                                "typedef int ConstexprStaticTypedefInt; struct ConstexprStaticTypedefMember { static constexpr ConstexprStaticTypedefInt value = 42; };\n"
+                                "using ConstexprStaticUsingInt = int; struct ConstexprStaticUsingMember { static constexpr ConstexprStaticUsingInt value = 42; };\n"
+                                "namespace { struct ConstexprStaticTypedefAnonymousType {}; } typedef ConstexprStaticTypedefAnonymousType ConstexprStaticTypedefAnonymousAlias; struct ConstexprStaticTypedefAnonymousMember { static constexpr ConstexprStaticTypedefAnonymousAlias value{}; };\n"
+                                "namespace { struct ConstexprStaticUsingAnonymousType {}; } using ConstexprStaticUsingAnonymousAlias = ConstexprStaticUsingAnonymousType; struct ConstexprStaticUsingAnonymousMember { static constexpr ConstexprStaticUsingAnonymousAlias value{}; };\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(15, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ConstexprLiteralType {\n"
+                                 "    constexpr ConstexprLiteralType(int value) : value(value) {\n"
+                                 "    }\n"
+                                 "    int value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticAnonymousType2 {\n"
+                                 "    static constexpr struct (anonymous namespace)::ConstexprStaticAnonymousType1 {\n"
+                                 "                     } value{};\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticArray {\n"
+                                 "    static constexpr int value[3] = {1, 2, 3};\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticLiteral {\n"
+                                 "    static constexpr ConstexprLiteralType member{42};\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticMember {\n"
+                                 "    static constexpr int value = 42;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticMemberAnonymous {\n"
+                                 "    static constexpr struct (anonymous namespace)::ConstexprStaticMemberAnonymousType {\n"
+                                 "                     } value{};\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticMemberAnonymousEnumHolder {\n"
+                                 "    static constexpr enum (anonymous namespace)::ConstexprStaticMemberAnonymousEnum {\n"
+                                 "                         ConstexprStaticMemberAnonymousValue\n"
+                                 "                     } value = ConstexprStaticMemberAnonymousValue;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticNestedAnonymousHolder {\n"
+                                 "    struct Nested {\n"
+                                 "        static constexpr struct (anonymous namespace)::ConstexprStaticNestedAnonymousType {\n"
+                                 "                         } value{};\n"
+                                 "    };\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticPointer {\n"
+                                 "    static constexpr const int *value = &constexprStaticPointerTarget;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticTypedefAnonymousMember {\n"
+                                 "    static constexpr struct (anonymous namespace)::ConstexprStaticTypedefAnonymousType {\n"
+                                 "                     } value{};\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticTypedefMember {\n"
+                                 "    static constexpr ConstexprStaticTypedefInt value = 42;\n" // TODO: REVIEW: should I inline this typedef?
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticUsingAnonymousMember {\n"
+                                 "    static constexpr struct (anonymous namespace)::ConstexprStaticUsingAnonymousType {\n"
+                                 "                     } value{};\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConstexprStaticUsingMember {\n"
+                                 "    static constexpr ConstexprStaticUsingInt value = 42;\n" // TODO: REVIEW: should I inline this using alias?
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ExplicitInlineConstexpr {\n"
+                                 "    static inline constexpr int value = 42;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct StaticConstMember {\n"
+                                 "    static const int value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("typedef struct (anonymous namespace)::ConstexprStaticTypedefAnonymousType {\n"
+                                 "        } ConstexprStaticTypedefAnonymousAlias;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef int ConstexprStaticTypedefInt;\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ConstexprStaticUsingAnonymousAlias = struct (anonymous namespace)::ConstexprStaticUsingAnonymousType {\n"
+                                 "                                           };\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ConstexprStaticUsingInt = int;\n"           , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
+
+
+
 };
 /* some missing test cases
 
@@ -3894,7 +4011,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 ///////////////////////////////////////////////////////////////////// variables 
 
-30. constexpr static data members
 
 30.5. Attributes
             [[nodiscard]]
