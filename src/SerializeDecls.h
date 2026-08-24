@@ -161,10 +161,20 @@ namespace OdrCop3
                     return varDecl->isOutOfLine();
                 return false;
             }
-            bool IsFriendDecl(const clang::Decl* decl) const
+            bool IsFriendTemplateOrFunction(const clang::Decl* decl) const
             {
-                if (const auto* FriendDecl = llvm::dyn_cast<clang::FriendDecl>(decl))
-                    return true;
+                if (const auto* friendDecl = llvm::dyn_cast<clang::FriendDecl>(decl))
+                {
+                    if (const auto* namedDecl = friendDecl->getFriendDecl())
+                    {
+                        if (nullptr != llvm::dyn_cast<clang::FunctionTemplateDecl>(namedDecl))
+                            return true; // DeclPrinter::print() prints "friend" out front which is wrong.
+                        if (nullptr != llvm::dyn_cast<clang::ClassTemplateDecl>(namedDecl))
+                            return true; // DeclPrinter::print() prints "friend" out front which is wrong.
+                        if (nullptr != llvm::dyn_cast<clang::FunctionDecl>(namedDecl))
+                            return true; // DeclPrinter::print() prints a stray ";\n"
+                    }
+                }
                 return false;
             }
             bool IsFieldAttributed(const clang::Decl* decl) const
@@ -283,7 +293,7 @@ namespace OdrCop3
                     return false;
                 if (true == IsVarTemplate(decl))
                     return false;
-                if (true == IsFriendDecl(decl))
+                if (true == IsFriendTemplateOrFunction(decl))
                     return false;
                 if (true == IsVarOutOfLine(decl))
                     return false;

@@ -3998,7 +3998,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
     {"Attributes", []
         {
             std::string code =  
@@ -4059,7 +4058,97 @@ Test ExploratoryTestsOfClangAST[] =
         }
     },
 
+    {"Friend function templates", []
+        {
+            std::string code =  
+                                "struct FriendFunctionTemplate { template<typename T> friend void f(T); };\n"
+                                "struct FriendClassTemplate { template<typename T> friend class F; };\n"
+                                "struct FriendFunctionTemplateRequires { template<typename T> requires (sizeof(T) > 0) friend void friendFunctionTemplateRequires(T); };\n"
+                                "struct FriendClassTemplateRequires { template<typename T> requires (sizeof(T) > 0) friend class FriendClassTemplateRequiresFriend; };\n"
 
+                                "struct FriendFunction { friend void friendFunction(); };\n"
+                                "struct FriendFunctionWithParameter { friend void friendFunctionWithParameter(int); };\n"
+                                "struct FriendClass { friend class FriendClassFriend; };\n"
+                                "struct FriendStruct { friend struct FriendStructFriend; };\n"
+                                "struct FriendUnion { friend union FriendUnionFriend; };\n"
+
+                                "struct FriendFunctionDefinition { friend void friendFunctionDefinition() {} };\n"
+                                "struct FriendFunctionWithReturnType { friend int friendFunctionWithReturnType(); };\n"
+                                "enum FriendEnumFriend { A }; struct FriendEnum { friend FriendEnumFriend; };\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(12, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 1, maps.functionMap.size(), "wrong number of functions in map");
+            
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct FriendClass {\n"
+                                 "    friend class FriendClassFriend;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendClassTemplate {\n"
+                                 "    template <typename T> friend class F;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendClassTemplateRequires {\n"
+                                 "    template <typename T> requires (sizeof(T) > 0) friend class FriendClassTemplateRequiresFriend;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendEnum {\n"
+                                 "    friend FriendEnumFriend;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendFunction {\n"
+                                 "    friend void friendFunction();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendFunctionDefinition {\n"
+                                 "    friend void friendFunctionDefinition() {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendFunctionTemplate {\n"
+                                 "    template <typename T> friend void f(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendFunctionTemplateRequires {\n"
+                                 "    template <typename T> requires (sizeof(T) > 0) friend void friendFunctionTemplateRequires(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendFunctionWithParameter {\n"
+                                 "    friend void friendFunctionWithParameter(int);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendFunctionWithReturnType {\n"
+                                 "    friend int friendFunctionWithReturnType();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendStruct {\n"
+                                 "    friend struct FriendStructFriend;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendUnion {\n"
+                                 "    friend union FriendUnionFriend;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum FriendEnumFriend {\n"
+                                 "    A\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("void friendFunctionDefinition() {\n"
+                                "}\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 };
 /* some missing test cases
