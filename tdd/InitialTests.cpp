@@ -4249,6 +4249,78 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Inline namespaces", []
+        {
+            std::string code =  
+                                "namespace InlineNamespaceTest { inline namespace v1 { struct Type {}; inline int value = 0; } Type object; } int inlineNamespaceValue1 = InlineNamespaceTest::value; int inlineNamespaceValue2 = InlineNamespaceTest::v1::value;\n"
+                                "namespace InlineNamespaceExplicit { inline namespace v1 { inline int explicitValue = 0; } int explicitValueAlias = InlineNamespaceExplicit::v1::explicitValue; }\n"
+                                "namespace InlineNamespaceNested { inline namespace v1 { namespace details { struct NestedType {}; } } details::NestedType nestedObject; }\n"
+                                "namespace InlineNamespaceTypeUse { inline namespace v1 { struct InlineType {}; } InlineType inlineTypeObject; InlineNamespaceTypeUse::InlineType qualifiedInlineTypeObject; }\n"
+                                "namespace InlineNamespaceSibling { inline namespace v1 { inline int inlineSiblingValue = 0; } namespace details { inline int nonInlineSiblingValue = 0; } }\n"
+                                "namespace InlineNamespaceMultiple { inline namespace v1 { inline int multipleV1Value = 0; } inline namespace v2 { inline int multipleV2Value = 0; } }\n"
+                                "namespace InlineNamespaceClassMember { inline namespace v1 { struct InlineMemberType { int inlineMemberValue; }; } InlineMemberType inlineMemberObject; }\n"
+                                "namespace InlineNamespaceNestedOuter { namespace Inner { inline namespace v1 { inline int nestedInlineValue = 0; } } }\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual( 4, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(15, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct InlineMemberType {\n"
+                                 "    int inlineMemberValue;\n"
+                                 "};\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NestedType {\n"
+                                 "};\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InlineNamespaceTest::Type", (*it  ).first);
+                Assert::AreEqual("struct Type {\n"
+                                 "};\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct InlineType {\n"
+                                 "};\n"                     , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("InlineMemberType inlineMemberObject;\n"                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int explicitValue = 0;\n"                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int explicitValueAlias = InlineNamespaceExplicit::v1::explicitValue;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int multipleV1Value = 0;\n"                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int multipleV2Value = 0;\n"                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("details::NestedType nestedObject;\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int nestedInlineValue = 0;\n"                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int nonInlineSiblingValue = 0;\n"                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int inlineSiblingValue = 0;\n"                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InlineNamespaceTest::object"                                           , (*it  ).first);
+                Assert::AreEqual("Type object;\n"                                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InlineNamespaceTest::value"                                            , (*it  ).first);
+                Assert::AreEqual("inline int value = 0;\n"                                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InlineType inlineTypeObject;\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InlineNamespaceTypeUse::InlineType qualifiedInlineTypeObject;\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inlineNamespaceValue1"                                                 , (*it  ).first);
+                Assert::AreEqual("int inlineNamespaceValue1 = InlineNamespaceTest::value;\n"             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inlineNamespaceValue2"                                                 , (*it  ).first);
+                Assert::AreEqual("int inlineNamespaceValue2 = InlineNamespaceTest::v1::value;\n"         , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
 
 
 };
@@ -4259,10 +4331,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 
 /////////////////////////////////////////////////////////////////////////// namespace
-
-36. Inline namespaces
-            inline namespace v1
-        Those affect qualification.
 
 37. Namespace aliases
             namespace N = M;
