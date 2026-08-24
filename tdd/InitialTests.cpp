@@ -4057,7 +4057,6 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-
     {"Friend function templates", []
         {
             std::string code =  
@@ -4149,6 +4148,108 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Friend class templates", []
+        {
+            std::string code =  
+                                "template<typename T> class Wrapper; class A { template<typename T> friend class Wrapper; }; template<typename T> class Wrapper { public: T value; };\n"
+                                "template<typename T> class FriendClassTemplateForwardDeclared; struct FriendClassTemplateForwardDeclaration { template<typename T> friend class FriendClassTemplateForwardDeclared; }; template<typename T> class FriendClassTemplateForwardDeclared { public: T value; };\n"
+                                "template<typename T> class FriendClassTemplateAlreadyDefined { public: T value; }; struct FriendClassTemplateAlreadyDefinedFriend { template<typename T> friend class FriendClassTemplateAlreadyDefined; };\n"
+                                "template<typename T, typename U> class FriendClassTemplateTwoParameters; struct FriendClassTemplateTwoParameterFriend { template<typename T, typename U> friend class FriendClassTemplateTwoParameters; }; template<typename T, typename U> class FriendClassTemplateTwoParameters { public: T value1; U value2; };\n"
+                                "template<typename T, int N> class FriendClassTemplateNonTypeParameter; struct FriendClassTemplateNonTypeParameterFriend { template<typename T, int N> friend class FriendClassTemplateNonTypeParameter; }; template<typename T, int N> class FriendClassTemplateNonTypeParameter { public: T value[N]; };\n"
+
+                                "template<template<typename> class C> class FriendClassTemplateTemplateParameter; struct FriendClassTemplateTemplateParameterFriend { template<template<typename> class C> friend class FriendClassTemplateTemplateParameter; }; template<template<typename> class C> class FriendClassTemplateTemplateParameter {};\n"
+                                "template<typename T, typename U> requires (sizeof(T) > 0 && sizeof(U) > 0) class FriendClassTemplateMultipleRequires; struct FriendClassTemplateMultipleRequiresFriend { template<typename T, typename U> requires (sizeof(T) > 0 && sizeof(U) > 0) friend class FriendClassTemplateMultipleRequires; }; template<typename T, typename U> requires (sizeof(T) > 0 && sizeof(U) > 0) class FriendClassTemplateMultipleRequires {};\n"
+                                "template<typename T> struct FriendClassTemplateOuter { template<typename U> friend class FriendClassTemplateNestedFriend; }; template<typename U> class FriendClassTemplateNestedFriend {};\n"
+                                "template<typename T> struct FriendClassTemplateOuterWithParameter { template<typename U> friend class FriendClassTemplateOuterWithParameterFriend; }; template<typename U> class FriendClassTemplateOuterWithParameterFriend {};\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(18, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("class A {\n"
+                                 "    template <typename T> friend class Wrapper;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> class FriendClassTemplateAlreadyDefined {\n"
+                                 "public:\n"
+                                 "    T value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendClassTemplateAlreadyDefinedFriend {\n"
+                                 "    template <typename T> friend class FriendClassTemplateAlreadyDefined;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendClassTemplateForwardDeclaration {\n"
+                                 "    template <typename T> friend class FriendClassTemplateForwardDeclared;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> class FriendClassTemplateForwardDeclared {\n"
+                                 "public:\n"
+                                 "    T value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> requires (sizeof(T) > 0 && sizeof(U) > 0) class FriendClassTemplateMultipleRequires {\n"
+                                "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendClassTemplateMultipleRequiresFriend {\n"
+                                 "    template <typename T, typename U> requires (sizeof(T) > 0 && sizeof(U) > 0) friend class FriendClassTemplateMultipleRequires;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename U> class FriendClassTemplateNestedFriend {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, int N> class FriendClassTemplateNonTypeParameter {\n"
+                                 "public:\n"
+                                 "    T value[N];\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendClassTemplateNonTypeParameterFriend {\n"
+                                 "    template <typename T, int N> friend class FriendClassTemplateNonTypeParameter;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct FriendClassTemplateOuter {\n"
+                                 "    template <typename U> friend class FriendClassTemplateNestedFriend;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct FriendClassTemplateOuterWithParameter {\n"
+                                 "    template <typename U> friend class FriendClassTemplateOuterWithParameterFriend;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename U> class FriendClassTemplateOuterWithParameterFriend {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <template <typename> class C> class FriendClassTemplateTemplateParameter {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendClassTemplateTemplateParameterFriend {\n"
+                                 "    template <template <typename> class C> friend class FriendClassTemplateTemplateParameter;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendClassTemplateTwoParameterFriend {\n"
+                                 "    template <typename T, typename U> friend class FriendClassTemplateTwoParameters;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> class FriendClassTemplateTwoParameters {\n"
+                                 "public:\n"
+                                 "    T value1;\n"
+                                 "    U value2;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> class Wrapper {\n"
+                                 "public:\n"
+                                 "    T value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+            }
+        }
+    },
+
 
 };
 /* some missing test cases
@@ -4156,16 +4257,6 @@ Test ExploratoryTestsOfClangAST[] =
 14. Deduction guides
             A(int)->A<int>;
 
-
-
-/////////////////////////////////////////////////////////////////////////// friends
-34. Friend function template
-            template<typename T> friend void f(T);
-
-35. Friend class template
-            template<typename T> class Wrapper;
-            class A { template<typename T> friend class Wrapper; ;
-            template<typename T> class Wrapper { public: T value; };
 
 /////////////////////////////////////////////////////////////////////////// namespace
 
