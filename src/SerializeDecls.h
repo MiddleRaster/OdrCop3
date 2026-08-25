@@ -376,93 +376,128 @@ namespace OdrCop3
 
             class Needs
             {
-                static bool NestedNameSpecifierHasAlias(clang::NestedNameSpecifier nestedNameSpecifier)
+            public:
+                enum class PrintingType
                 {
-                    while (nestedNameSpecifier.getKind() == clang::NestedNameSpecifier::Kind::Namespace)
-                    {
-                        auto namespaceAndPrefix = nestedNameSpecifier.getAsNamespaceAndPrefix();
-                        if (llvm::isa<clang::NamespaceAliasDecl>(namespaceAndPrefix.Namespace))
-                            return true;
-                        nestedNameSpecifier = namespaceAndPrefix.Prefix;
-                    }
-                    return false;
-                }
+                    IsOrdinary,
+                    HasNamespaceAlias,
+                    HasNamespaceAliasAndTypedefOrUsingAlias
+                };
+            private:
+                static PrintingType Combine(PrintingType a, PrintingType b) { return (a > b) ? a : b; }
+                static PrintingType ClassifyNestedNameSpecifier(clang::NestedNameSpecifier nestedNameSpecifier)
+                {
+                    bool hasNamespaceAlias      = false;
+                    bool hasTypedefOrUsingAlias = false;
 
-                static bool IsDeclQualifiedByNamespaceAlias(const clang::Decl* decl)
+                    bool keepGoing = static_cast<bool>(nestedNameSpecifier);
+                    while (keepGoing)
+                    {
+                        switch (nestedNameSpecifier.getKind())
+                        {
+                        case clang::NestedNameSpecifier::Kind::Namespace:
+                            if (llvm::isa<clang::NamespaceAliasDecl>(nestedNameSpecifier.getAsNamespaceAndPrefix().Namespace))
+                                hasNamespaceAlias = true;
+                            nestedNameSpecifier   = nestedNameSpecifier.getAsNamespaceAndPrefix().Prefix;
+                            keepGoing             = static_cast<bool>(nestedNameSpecifier);
+                            break;
+                        case clang::NestedNameSpecifier::Kind::Type:
+                            keepGoing = false;
+                            if (const clang::Type* type = nestedNameSpecifier.getAsType())
+                            if (const auto* typedefType = llvm::dyn_cast<clang::TypedefType>(type))
+                            {
+                                hasTypedefOrUsingAlias = true;
+                                nestedNameSpecifier    = typedefType->getQualifier();
+                                keepGoing              = static_cast<bool>(nestedNameSpecifier);
+                            }
+                            break;
+                        default:
+                            keepGoing = false;
+                            break;
+                        }
+                    }
+
+                    if (hasNamespaceAlias && hasTypedefOrUsingAlias)
+                        return PrintingType::HasNamespaceAliasAndTypedefOrUsingAlias;
+
+                    if (hasNamespaceAlias)
+                        return PrintingType::HasNamespaceAlias;
+
+                    return PrintingType::IsOrdinary;
+                }
+                static PrintingType DeclQualifierPrintingType(const clang::Decl* decl)
                 {
                     if (const auto* declaratorDecl = llvm::dyn_cast<clang::DeclaratorDecl>(decl))
-                        return NestedNameSpecifierHasAlias(declaratorDecl->getQualifier());
+                        return ClassifyNestedNameSpecifier(declaratorDecl->getQualifier());
                     if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
-                        return NestedNameSpecifierHasAlias(tagDecl->getQualifier());
-                    return false;
+                        return ClassifyNestedNameSpecifier(tagDecl->getQualifier());
+                    return PrintingType::IsOrdinary;
                 }
-
-                static bool TypeUsesNamespaceAlias(clang::QualType qt)
+                static PrintingType TypePrintingType(clang::QualType qt)
                 {
+                    PrintingType result      = PrintingType::IsOrdinary;
+                    bool         sawTypedef  = (qt->getAs<clang::TypedefType>() != nullptr);
+
                     if (const auto* recordType = qt->getAs<clang::RecordType>())
-                        if (NestedNameSpecifierHasAlias(recordType->getQualifier()))
-                            return true;
+                        result = Combine(result, ClassifyNestedNameSpecifier(recordType->getQualifier()));
+
                     if (const auto* enumType = qt->getAs<clang::EnumType>())
-                        if (NestedNameSpecifierHasAlias(enumType->getQualifier()))
-                            return true;
+                        result = Combine(result, ClassifyNestedNameSpecifier(enumType->getQualifier()));
 
                     if (const auto* typedefType = qt->getAs<clang::TypedefType>())
-                        if (NestedNameSpecifierHasAlias(typedefType->getQualifier()))
-                            return true;
+                        result = Combine(result, ClassifyNestedNameSpecifier(typedefType->getQualifier()));
 
                     // Pointer types
                     if (const auto* ptrType = qt->getAs<clang::PointerType>())
-                        return TypeUsesNamespaceAlias(ptrType->getPointeeType());
+                        result = Combine(result, TypePrintingType(ptrType->getPointeeType()));
 
                     // Reference types
                     if (const auto* refType = qt->getAs<clang::ReferenceType>())
-                        return TypeUsesNamespaceAlias(refType->getPointeeType());
+                        result = Combine(result, TypePrintingType(refType->getPointeeType()));
 
                     // Array types: must go via Type*; getAs<ArrayType>() is forbidden.
                     if (const clang::Type* rawType = qt.getTypePtr())
                         if (const auto* arrayType = llvm::dyn_cast<clang::ArrayType>(rawType))
-                            return TypeUsesNamespaceAlias(arrayType->getElementType());
+                            result = Combine(result, TypePrintingType(arrayType->getElementType()));
 
                     // Template specialization: check template arguments for alias use
                     if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
                         for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
                             if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
-                                if (TypeUsesNamespaceAlias(arg.getAsType()))
-                                    return true;
+                                result = Combine(result, TypePrintingType(arg.getAsType()));
 
-                    return false;
+                    if (sawTypedef && result == PrintingType::HasNamespaceAlias)
+                        result = PrintingType::HasNamespaceAliasAndTypedefOrUsingAlias;
+
+                    return result;
                 }
 
             public:
-                static bool OriginalNamespace(const clang::Decl* decl)
+                static PrintingType OriginalNamespace(const clang::Decl* decl)
                 {
+                    PrintingType result = PrintingType::IsOrdinary;
+
                     // Decl-side qualifiers
-                    if (IsDeclQualifiedByNamespaceAlias(decl))
-                        return true;
+                    result = Combine(result, DeclQualifierPrintingType(decl));
 
                     // Type-side qualifiers (ValueDecls)
                     if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
-                        if (TypeUsesNamespaceAlias(valueDecl->getType()))
-                            return true;
+                        result = Combine(result, TypePrintingType(valueDecl->getType()));
 
                     // Recursively inspect child decls (fields, nested types, etc.)
                     if (const auto* declContext = llvm::dyn_cast<clang::DeclContext>(decl))
                         for (const clang::Decl* child : declContext->decls())
                             if (!child->isImplicit())
-                                if (Needs::OriginalNamespace(child))
-                                    return true;
+                                result = Combine(result, Needs::OriginalNamespace(child));
 
                     // Base classes on CXXRecordDecl
                     if (const auto* cxxRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
                         for (const clang::CXXBaseSpecifier& base : cxxRecord->bases())
-                            if (TypeUsesNamespaceAlias(base.getType()))
-                                return true;
+                            result = Combine(result, TypePrintingType(base.getType()));
 
-                    return false;
+                    return result;
                 }
             };
-
-
 
             struct Semicolon
             {
@@ -490,22 +525,45 @@ namespace OdrCop3
                 }
             };
 
-            if (Needs::OriginalNamespace(decl))
-            {
-                clang::PrintingPolicy policy = contextItems.printPolicy;
-                policy.FullyQualifiedName = true;
-
-                std::string str;
-                llvm::raw_string_ostream os(str);
-                decl->print(os, policy);
-                os.flush();
-
-                return str + Semicolon::IfNeeded(str, decl);
-            }
-
             std::string str;
             llvm::raw_string_ostream os(str);
-            decl->print(os, contextItems.printPolicy);
+            clang::PrintingPolicy policy(contextItems.printPolicy);
+            switch (Needs::OriginalNamespace(decl))
+            {
+            case Needs::PrintingType::HasNamespaceAliasAndTypedefOrUsingAlias:
+                policy.FullyQualifiedName     = true;
+                policy.SuppressUnwrittenScope = true;
+
+                if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
+                {
+                    clang::QualType resolvedType = contextItems.context.getCanonicalType(valueDecl->getType());
+                    resolvedType.print(os, policy, valueDecl->getName());
+                } else 
+                if (const auto* typedefDecl = llvm::dyn_cast<clang::TypedefNameDecl>(decl))
+                {
+                    clang::QualType resolvedType = contextItems.context.getCanonicalType(typedefDecl->getUnderlyingType());
+                    os << (llvm::isa<clang::TypeAliasDecl>(typedefDecl) ? "using " : "typedef ");
+                    if (llvm::isa<clang::TypeAliasDecl>(typedefDecl))
+                    {
+                        os << typedefDecl->getName() << " = ";
+                        resolvedType.print(os, policy);
+                    } else
+                        resolvedType.print(os, policy, typedefDecl->getName());
+                } else
+                if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
+                {
+                    os << tagDecl->getKindName() << " ";
+                    tagDecl->printQualifiedName(os, policy);
+                } else
+                    decl->print(os, policy);
+                break;
+
+            case Needs::PrintingType::HasNamespaceAlias: policy.FullyQualifiedName = true; [[fallthrough]];
+            case Needs::PrintingType::IsOrdinary:
+            default:
+                decl->print(os, policy);
+                break;
+            }
             os.flush();
             return str + Semicolon::IfNeeded(str, decl);
         }

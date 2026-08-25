@@ -4336,7 +4336,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace OriginalNamespace { Alias::NamespaceAliasTest namespaceAliasArrayVariable[3]; }\n"
                                 "namespace OriginalNamespace { Alias::NamespaceAliasTest namespaceAliasArray2DVariable[2][3]; }\n"
                                 "template<typename T> struct NamespaceAliasTemplate { T value; }; NamespaceAliasTemplate<Alias::NamespaceAliasTest> namespaceAliasTemplateVariable;\n"
-                                //"using NamespaceAliasUsingTest = Alias::NamespaceAliasTest; NamespaceAliasUsingTest namespaceAliasUsingVariable;\n"
+                                "using NamespaceAliasUsingTest = Alias::NamespaceAliasTest; NamespaceAliasUsingTest namespaceAliasUsingVariable;\n"
                                 //"typedef Alias::NamespaceAliasTest NamespaceAliasTypedefTest; NamespaceAliasTypedefTest namespaceAliasTypedefVariable;\n"
                                 //"namespace NestedNamespace { using NestedNamespaceAliasTest = Alias::NamespaceAliasTest; } NestedNamespace::NestedNamespaceAliasTest namespaceAliasNestedVariable;\n"
                                 //"namespace AliasOfAliasNamespace = Alias; AliasOfAliasNamespace::NamespaceAliasTest namespaceAliasChainedVariable;\n"
@@ -4347,9 +4347,9 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::IsTrue(ok);
 
             Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(7, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(8, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(1, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(1, maps.typedefMap.size(),"wrong number of typedefs in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -4374,7 +4374,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest &namespaceAliasReferenceVariable = *namespaceAliasPointerVariable;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTestEnum namespaceAliasEnumVariable;\n"                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("NamespaceAliasTemplate<OriginalNamespace::NamespaceAliasTest> namespaceAliasTemplateVariable;\n"           , (*it++).second[0].fullyQualified);
-            //  Assert::AreEqual("NamespaceAliasUsingTest namespaceAliasUsingVariable;", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasUsingVariable;\n"                                      , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasVariable;\n"                                           , (*it++).second[0].fullyQualified);
             }
             {
@@ -4387,7 +4387,7 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.typedefMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasUsingTest = Alias::NamespaceAliasTest;\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
