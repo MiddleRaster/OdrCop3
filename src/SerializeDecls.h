@@ -374,6 +374,96 @@ namespace OdrCop3
                 throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));
             }
 
+            class Needs
+            {
+                static bool NestedNameSpecifierHasAlias(clang::NestedNameSpecifier nestedNameSpecifier)
+                {
+                    while (nestedNameSpecifier.getKind() == clang::NestedNameSpecifier::Kind::Namespace)
+                    {
+                        auto namespaceAndPrefix = nestedNameSpecifier.getAsNamespaceAndPrefix();
+                        if (llvm::isa<clang::NamespaceAliasDecl>(namespaceAndPrefix.Namespace))
+                            return true;
+                        nestedNameSpecifier = namespaceAndPrefix.Prefix;
+                    }
+                    return false;
+                }
+
+                static bool IsDeclQualifiedByNamespaceAlias(const clang::Decl* decl)
+                {
+                    if (const auto* declaratorDecl = llvm::dyn_cast<clang::DeclaratorDecl>(decl))
+                        return NestedNameSpecifierHasAlias(declaratorDecl->getQualifier());
+                    if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
+                        return NestedNameSpecifierHasAlias(tagDecl->getQualifier());
+                    return false;
+                }
+
+                static bool TypeUsesNamespaceAlias(clang::QualType qt)
+                {
+                    if (const auto* recordType = qt->getAs<clang::RecordType>())
+                        if (NestedNameSpecifierHasAlias(recordType->getQualifier()))
+                            return true;
+                    if (const auto* enumType = qt->getAs<clang::EnumType>())
+                        if (NestedNameSpecifierHasAlias(enumType->getQualifier()))
+                            return true;
+
+                    if (const auto* typedefType = qt->getAs<clang::TypedefType>())
+                        if (NestedNameSpecifierHasAlias(typedefType->getQualifier()))
+                            return true;
+
+                    // Pointer types
+                    if (const auto* ptrType = qt->getAs<clang::PointerType>())
+                        return TypeUsesNamespaceAlias(ptrType->getPointeeType());
+
+                    // Reference types
+                    if (const auto* refType = qt->getAs<clang::ReferenceType>())
+                        return TypeUsesNamespaceAlias(refType->getPointeeType());
+
+                    // Array types: must go via Type*; getAs<ArrayType>() is forbidden.
+                    if (const clang::Type* rawType = qt.getTypePtr())
+                        if (const auto* arrayType = llvm::dyn_cast<clang::ArrayType>(rawType))
+                            return TypeUsesNamespaceAlias(arrayType->getElementType());
+
+                    // Template specialization: check template arguments for alias use
+                    if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
+                        for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
+                            if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                                if (TypeUsesNamespaceAlias(arg.getAsType()))
+                                    return true;
+
+                    return false;
+                }
+
+            public:
+                static bool OriginalNamespace(const clang::Decl* decl)
+                {
+                    // Decl-side qualifiers
+                    if (IsDeclQualifiedByNamespaceAlias(decl))
+                        return true;
+
+                    // Type-side qualifiers (ValueDecls)
+                    if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
+                        if (TypeUsesNamespaceAlias(valueDecl->getType()))
+                            return true;
+
+                    // Recursively inspect child decls (fields, nested types, etc.)
+                    if (const auto* declContext = llvm::dyn_cast<clang::DeclContext>(decl))
+                        for (const clang::Decl* child : declContext->decls())
+                            if (!child->isImplicit())
+                                if (Needs::OriginalNamespace(child))
+                                    return true;
+
+                    // Base classes on CXXRecordDecl
+                    if (const auto* cxxRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
+                        for (const clang::CXXBaseSpecifier& base : cxxRecord->bases())
+                            if (TypeUsesNamespaceAlias(base.getType()))
+                                return true;
+
+                    return false;
+                }
+            };
+
+
+
             struct Semicolon
             {
                 static std::string IfNeeded(const std::string& str, const clang::Decl* decl)
@@ -399,6 +489,19 @@ namespace OdrCop3
                     return ";\n"; // everything else needs this
                 }
             };
+
+            if (Needs::OriginalNamespace(decl))
+            {
+                clang::PrintingPolicy policy = contextItems.printPolicy;
+                policy.FullyQualifiedName = true;
+
+                std::string str;
+                llvm::raw_string_ostream os(str);
+                decl->print(os, policy);
+                os.flush();
+
+                return str + Semicolon::IfNeeded(str, decl);
+            }
 
             std::string str;
             llvm::raw_string_ostream os(str);

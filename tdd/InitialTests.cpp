@@ -4321,7 +4321,87 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Namespace aliases", []
+        {
+            std::string code =  
+                                "namespace OriginalNamespace { struct NamespaceAliasTest {}; } namespace Alias = OriginalNamespace; Alias::NamespaceAliasTest namespaceAliasVariable;\n"
+                                "namespace OriginalNamespace { enum NamespaceAliasTestEnum { NamespaceAliasTestRed, NamespaceAliasTestGreen, NamespaceAliasTestBlue }; } namespace Alias = OriginalNamespace; Alias::NamespaceAliasTestEnum namespaceAliasEnumVariable;\n"
+                                "struct NamespaceAliasTestStruct { Alias::NamespaceAliasTest namespaceAliasField; };\n"
 
+                                "namespace OriginalNamespace { void namespaceAliasParameterFunction(Alias::NamespaceAliasTest value) {} }\n"
+                                "namespace OriginalNamespace { Alias::NamespaceAliasTest namespaceAliasReturnFunction() { return {}; } }\n"
+                                "namespace OriginalNamespace { struct NamespaceAliasDerived : Alias::NamespaceAliasTest {}; }\n"
+                                "namespace OriginalNamespace { Alias::NamespaceAliasTest* namespaceAliasPointerVariable; }\n"
+                                "namespace OriginalNamespace { Alias::NamespaceAliasTest& namespaceAliasReferenceVariable = *namespaceAliasPointerVariable; }\n"
+                                "namespace OriginalNamespace { Alias::NamespaceAliasTest namespaceAliasArrayVariable[3]; }\n"
+                                "namespace OriginalNamespace { Alias::NamespaceAliasTest namespaceAliasArray2DVariable[2][3]; }\n"
+                                "template<typename T> struct NamespaceAliasTemplate { T value; }; NamespaceAliasTemplate<Alias::NamespaceAliasTest> namespaceAliasTemplateVariable;\n"
+                                //"using NamespaceAliasUsingTest = Alias::NamespaceAliasTest; NamespaceAliasUsingTest namespaceAliasUsingVariable;\n"
+                                //"typedef Alias::NamespaceAliasTest NamespaceAliasTypedefTest; NamespaceAliasTypedefTest namespaceAliasTypedefVariable;\n"
+                                //"namespace NestedNamespace { using NestedNamespaceAliasTest = Alias::NamespaceAliasTest; } NestedNamespace::NestedNamespaceAliasTest namespaceAliasNestedVariable;\n"
+                                //"namespace AliasOfAliasNamespace = Alias; AliasOfAliasNamespace::NamespaceAliasTest namespaceAliasChainedVariable;\n"
+                                //"template<typename T> void namespaceAliasTemplateFunction(T) {} void namespaceAliasTemplateInstantiation(Alias::NamespaceAliasTest value) {}\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(7, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(1, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("template <typename T> struct NamespaceAliasTemplate {\n"
+                                 "    T value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasTestStruct {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest namespaceAliasField;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasDerived : OriginalNamespace::NamespaceAliasTest {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasTest {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasArray2DVariable[2][3];\n"                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasArrayVariable[3];\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest *namespaceAliasPointerVariable;\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest &namespaceAliasReferenceVariable = *namespaceAliasPointerVariable;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTestEnum namespaceAliasEnumVariable;\n"                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("NamespaceAliasTemplate<OriginalNamespace::NamespaceAliasTest> namespaceAliasTemplateVariable;\n"           , (*it++).second[0].fullyQualified);
+            //  Assert::AreEqual("NamespaceAliasUsingTest namespaceAliasUsingVariable;", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasVariable;\n"                                           , (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum NamespaceAliasTestEnum {\n"
+                                 "    NamespaceAliasTestRed,\n"
+                                 "    NamespaceAliasTestGreen,\n"
+                                 "    NamespaceAliasTestBlue\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("void OriginalNamespace::namespaceAliasParameterFunction(OriginalNamespace::NamespaceAliasTest value) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Alias::NamespaceAliasTest namespaceAliasReturnFunction() {\n"
+                                 "    return {};\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 };
 /* some missing test cases
