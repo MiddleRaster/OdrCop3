@@ -489,6 +489,11 @@ namespace OdrCop3
                         for (const clang::Decl* child : declContext->decls())
                             if (!child->isImplicit())
                                 result = Combine(result, Needs::OriginalNamespace(child));
+                    // the code above handle function parameters, but not return types
+                    if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl))
+                        result = Combine(result, TypePrintingType(functionDecl->getReturnType()));
+                    if (const auto* conversionDecl = llvm::dyn_cast<clang::CXXConversionDecl>(decl))
+                        result = Combine(result, TypePrintingType(conversionDecl->getConversionType()));
 
                     // Base classes on CXXRecordDecl
                     if (const auto* cxxRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
@@ -535,13 +540,11 @@ namespace OdrCop3
                 policy.SuppressUnwrittenScope = true;
 
                 if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl))
-                    return FunctionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>(contextItems, functionDecl).Serialize();
+                    return FunctionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, functionDecl).Serialize();
                 else
                 if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
-                {
-                    clang::QualType resolvedType = contextItems.context.getCanonicalType(valueDecl->getType());
-                    resolvedType.print(os, policy, valueDecl->getName());
-                } else 
+                    QualType(contextItems.context.getCanonicalType(valueDecl->getType())).print(os, policy, valueDecl->getName());
+                else 
                 if (const auto* typedefDecl = llvm::dyn_cast<clang::TypedefNameDecl>(decl))
                 {
                     clang::QualType resolvedType = contextItems.context.getCanonicalType(typedefDecl->getUnderlyingType());

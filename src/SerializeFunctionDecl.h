@@ -17,7 +17,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FunctionDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class FunctionDeclSerializer
     {
         const ContextItems& contextItems;
         const FunctionDecl* funcDecl;
@@ -92,7 +92,7 @@ namespace OdrCop3
                 std::string out = SerializeType(ci2, funcDecl->getReturnType());
                 return TrimRightIf(out, " ");
             }
-            return TrimRightIf(SerializeType(contextItems, funcDecl->getReturnType()), " ");
+            return TrimRightIf(SerializeType(contextItems, resolveNamespaceAliases ? funcDecl->getReturnType().getCanonicalType() : funcDecl->getReturnType()), " ");
         }
         std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval "    : ""; }
         std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "       : ""; }
