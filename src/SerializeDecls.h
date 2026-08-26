@@ -534,6 +534,9 @@ namespace OdrCop3
                 policy.FullyQualifiedName     = true;
                 policy.SuppressUnwrittenScope = true;
 
+                if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl))
+                    return FunctionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>(contextItems, functionDecl).Serialize();
+                else
                 if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
                 {
                     clang::QualType resolvedType = contextItems.context.getCanonicalType(valueDecl->getType());
