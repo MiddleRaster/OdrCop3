@@ -550,11 +550,12 @@ namespace OdrCop3
                     } else
                         resolvedType.print(os, policy, typedefDecl->getName());
                 } else
+                if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
+                    return CXXRecordDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, cxxRecordDecl).Serialize();
+                else
                 if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
-                {
-                    os << tagDecl->getKindName() << " ";
-                    tagDecl->printQualifiedName(os, policy);
-                } else
+                    tagDecl->print(os, policy);
+                else
                     decl->print(os, policy);
                 break;
 

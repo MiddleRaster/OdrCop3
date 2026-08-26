@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class CXXRecordDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class CXXRecordDeclSerializer
     {
         const ContextItems & contextItems;
         const CXXRecordDecl* cxxRecordDecl;
@@ -90,7 +90,21 @@ namespace OdrCop3
                     out += ' ';
                 }
 
-                out += IndentBlock(SerializeType(contextItems, base.getType()), LengthOfLastLine(out));
+                if (resolveNamespaceAliases == true)
+                {   // only set to true when called from Needs::OriginalNamespace switch statement in SerializeDecls.h
+                    std::string str;
+                    llvm::raw_string_ostream os(str);
+                    clang::PrintingPolicy policy(contextItems.printPolicy);
+                    policy.FullyQualifiedName     = true;
+                    policy.SuppressUnwrittenScope = true;
+
+                    clang::QualType baseType = contextItems.context.getCanonicalType(base.getType());
+                    baseType.print(os, policy);
+                    os.flush();
+                    out += str;
+                } else
+                    out += IndentBlock(SerializeType(contextItems, base.getType()), LengthOfLastLine(out)); // the normal serialization
+                
                 out  = TrimRightIf(out, ";");
             }
             if (firstBase == false)
