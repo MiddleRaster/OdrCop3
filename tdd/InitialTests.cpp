@@ -4368,7 +4368,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 "void namespaceAliasFunction(Alias::NamespaceAliasTest) {}\n"
                                 "struct NamespaceAliasConstructorTest { NamespaceAliasConstructorTest(Alias::NamespaceAliasTest) {} };\n"
                                 "struct NamespaceAliasDestructorTest { ~NamespaceAliasDestructorTest() {} Alias::NamespaceAliasTest namespaceAliasDestructorField; };\n"
-                                //"struct NamespaceAliasConversionTest { operator Alias::NamespaceAliasTest() const { return {}; } };\n"
+                                "struct NamespaceAliasConversionTest { operator Alias::NamespaceAliasTest() const { return {}; } };\n"
                                 //"struct NamespaceAliasMethodTest { Alias::NamespaceAliasTest namespaceAliasMethod(Alias::NamespaceAliasTest) { return {}; } };\n"
                                 //"struct NamespaceAliasConstMethodTest { Alias::NamespaceAliasTest namespaceAliasConstMethod(Alias::NamespaceAliasTest) const { return {}; } };\n"
                                 //"struct NamespaceAliasRefQualifierMethodTest { Alias::NamespaceAliasTest namespaceAliasRefQualifierMethod(Alias::NamespaceAliasTest) & { return {}; } };\n"
@@ -4446,7 +4446,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(14, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(15, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(28, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(20, maps.typedefMap.size(),"wrong number of typedefs in map");
@@ -4457,6 +4457,11 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct NamespaceAliasConstructorTest {\n"
                                  "    NamespaceAliasConstructorTest(OriginalNamespace::NamespaceAliasTest) {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasConversionTest {\n"
+                                 "    operator OriginalNamespace::NamespaceAliasTest() const {\n"
+                                 "        return {};\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasDestructorTest {\n"
@@ -4495,7 +4500,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

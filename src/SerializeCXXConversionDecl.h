@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class CXXConversionDeclSerializer : private FunctionDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class CXXConversionDeclSerializer : private FunctionDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>
     {
         const ContextItems     & contextItems;
         const CXXConversionDecl* cxxConversionDecl;
@@ -33,7 +33,9 @@ namespace OdrCop3
 
             std::string typeName;
             llvm::raw_string_ostream os(typeName);
-            cxxConversionDecl->getConversionType().print(os, contextItems.printPolicy);
+            PrintingPolicy policy{contextItems.printPolicy};
+            policy.FullyQualifiedName = resolveNamespaceAliases;
+            cxxConversionDecl->getConversionType().print(os, policy);
             return "operator " + typeName;
         }
     public:
