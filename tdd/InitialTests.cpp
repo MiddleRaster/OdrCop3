@@ -4383,7 +4383,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 "template<typename T> requires (sizeof(T) > 0) Alias::NamespaceAliasTest namespaceAliasConstrainedFunctionTemplate(T) { return {}; }\n"
                                 "template<> Alias::NamespaceAliasTest namespaceAliasFunctionTemplate<Alias::NamespaceAliasTest>(Alias::NamespaceAliasTest) { return {}; }\n"
                                 "template<typename T> struct NamespaceAliasClassTemplate { Alias::NamespaceAliasTest value; };\n"
-                                //"template<typename T> struct NamespaceAliasClassTemplateWithAliasBase : T { Alias::NamespaceAliasTest value; };\n"
+                                "template<typename T> struct NamespaceAliasClassTemplateWithAliasBase : T { Alias::NamespaceAliasTest value; };\n"
                                 //"template<typename T> struct NamespaceAliasClassTemplateSpecializationTest { Alias::NamespaceAliasTest value; }; template<> struct NamespaceAliasClassTemplateSpecializationTest<Alias::NamespaceAliasTest> { Alias::NamespaceAliasTest value; };\n"
                                 //"template<typename T> struct NamespaceAliasPartialClassTemplate { Alias::NamespaceAliasTest value; }; template<typename T> struct NamespaceAliasPartialClassTemplate<T*> { Alias::NamespaceAliasTest value; };\n"
                                 //"template<typename T> Alias::NamespaceAliasTest namespaceAliasVariableTemplate = {};\n"
@@ -4446,7 +4446,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(25, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(26, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(28, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(20, maps.typedefMap.size(),"wrong number of typedefs in map");
@@ -4456,6 +4456,9 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("template <typename T> struct NamespaceAliasClassTemplate {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct NamespaceAliasClassTemplateWithAliasBase : T {\n"
                                  "    OriginalNamespace::NamespaceAliasTest value;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasConstMethodTest {\n"
@@ -4549,7 +4552,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

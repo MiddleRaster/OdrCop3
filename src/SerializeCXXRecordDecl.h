@@ -90,7 +90,8 @@ namespace OdrCop3
                     out += ' ';
                 }
 
-                if (resolveNamespaceAliases == true)
+                clang::QualType baseType = base.getType();
+                if ((resolveNamespaceAliases == true) && !baseType->isTemplateTypeParmType())
                 {   // only set to true when called from Needs::OriginalNamespace switch statement in SerializeDecls.h
                     std::string str;
                     llvm::raw_string_ostream os(str);
@@ -103,7 +104,7 @@ namespace OdrCop3
                     os.flush();
                     out += str;
                 } else
-                    out += IndentBlock(SerializeType(contextItems, base.getType()), LengthOfLastLine(out)); // the normal serialization
+                    out += IndentBlock(SerializeType(contextItems, baseType), LengthOfLastLine(out)); // the normal serialization
                 
                 out  = TrimRightIf(out, ";");
             }
