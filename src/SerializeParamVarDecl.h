@@ -36,16 +36,20 @@ namespace OdrCop3
             }
             auto startOfParm = out.size();
 
-            QualType qualType = parmVarDecl->getType();
-            if (resolveNamespaceAliases)
-                qualType = qualType.getCanonicalType();
-
             if (IsEventuallyArrayOrFunctionProtoType(parmVarDecl->getOriginalType()))
             {
+                QualType qualType = parmVarDecl->getOriginalType();
+                if (resolveNamespaceAliases)
+                    qualType = qualType.getCanonicalType();
+
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
                 ci2.aux = parmVarDecl->getName().str();
-                out += IndentBlock(SerializeType(ci2,          qualType), LengthOfLastLine(out));
+                out += IndentBlock(SerializeType(ci2, qualType), LengthOfLastLine(out));
             } else {
+                QualType qualType = parmVarDecl->getType();
+                if (resolveNamespaceAliases)
+                    qualType = qualType.getCanonicalType();
+
                 out += IndentBlock(SerializeType(contextItems, qualType), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
                 out += SnugUpPointersAndReferences(out);

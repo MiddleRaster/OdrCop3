@@ -4388,21 +4388,19 @@ Test ExploratoryTestsOfClangAST[] =
                                 "template<typename T> struct NamespaceAliasPartialClassTemplate { Alias::NamespaceAliasTest value; }; template<typename T> struct NamespaceAliasPartialClassTemplate<T*> { Alias::NamespaceAliasTest value; };\n"
                                 "template<typename T> Alias::NamespaceAliasTest namespaceAliasVariableTemplate = {};\n"
                                 "template<typename T> Alias::NamespaceAliasTest namespaceAliasVariableTemplateSpecializationTest = {}; template<> Alias::NamespaceAliasTest namespaceAliasVariableTemplateSpecializationTest<Alias::NamespaceAliasTest> = {};\n"
-                                //"typedef Alias::NamespaceAliasTest NamespaceAliasTypedefTest;\n"
-                                //"using NamespaceAliasUsingTest = Alias::NamespaceAliasTest;\n"
-                                //"using NamespaceAliasUsingTest2 = NamespaceAliasUsingTest;\n"
-                                //"typedef NamespaceAliasUsingTest NamespaceAliasTypedefFromUsingTest;\n"
-                                //"template<typename T> using NamespaceAliasAliasTemplate = Alias::NamespaceAliasTest;\n"
-                                //"template<typename T> using NamespaceAliasDependentAliasTemplate = T;\n"
-                                //"struct NamespaceAliasFieldTest { Alias::NamespaceAliasTest namespaceAliasField; };\n"
-                                //"struct NamespaceAliasConstFieldTest { const Alias::NamespaceAliasTest namespaceAliasConstField; };\n"
-                                //"struct NamespaceAliasPointerFieldTest { Alias::NamespaceAliasTest* namespaceAliasPointerField; };\n"
-                                //"struct NamespaceAliasReferenceFieldTest { Alias::NamespaceAliasTest& namespaceAliasReferenceField; };\n"
-                                //"struct NamespaceAliasArrayFieldTest { Alias::NamespaceAliasTest namespaceAliasArrayField[3]; };\n"
-                                //"void namespaceAliasParameterTest(Alias::NamespaceAliasTest namespaceAliasParameter) {}\n"
-                                //"void namespaceAliasPointerParameterTest(Alias::NamespaceAliasTest* namespaceAliasPointerParameter) {}\n"
-                                //"void namespaceAliasReferenceParameterTest(const Alias::NamespaceAliasTest& namespaceAliasReferenceParameter) {}\n"
-                                //"void namespaceAliasArrayParameterTest(Alias::NamespaceAliasTest namespaceAliasArrayParameter[3]) {}\n"
+                                "using NamespaceAliasUsingTest2 = NamespaceAliasUsingTest;\n"
+                                "typedef NamespaceAliasUsingTest NamespaceAliasTypedefFromUsingTest;\n"
+                                "template<typename T> using NamespaceAliasAliasTemplate = Alias::NamespaceAliasTest;\n"
+                                "template<typename T> using NamespaceAliasDependentAliasTemplate = T;\n"
+                                "struct NamespaceAliasFieldTest2 { Alias::NamespaceAliasTest namespaceAliasField; };\n"
+                                "struct NamespaceAliasConstFieldTest { const Alias::NamespaceAliasTest namespaceAliasConstField; };\n"
+                                "struct NamespaceAliasPointerFieldTest { Alias::NamespaceAliasTest* namespaceAliasPointerField; };\n"
+                                "struct NamespaceAliasReferenceFieldTest { Alias::NamespaceAliasTest& namespaceAliasReferenceField; };\n"
+                                "struct NamespaceAliasArrayFieldTest { Alias::NamespaceAliasTest namespaceAliasArrayField[3]; };\n"
+                                "void namespaceAliasParameterTest(Alias::NamespaceAliasTest namespaceAliasParameter) {}\n"
+                                "void namespaceAliasPointerParameterTest(Alias::NamespaceAliasTest* namespaceAliasPointerParameter) {}\n"
+                                "void namespaceAliasReferenceParameterTest(const Alias::NamespaceAliasTest& namespaceAliasReferenceParameter) {}\n"
+                                "void namespaceAliasArrayParameterTest(Alias::NamespaceAliasTest namespaceAliasArrayParameter[3]) {}\n"
                                 //"enum NamespaceAliasValueEnumTest { NamespaceAliasValueEnumTestA, NamespaceAliasValueEnumTestB };\n"
                                 //"struct NamespaceAliasStructTest { Alias::NamespaceAliasTest value; };\n"
                                 //"class NamespaceAliasClassTest { Alias::NamespaceAliasTest value; };\n"
@@ -4446,15 +4444,18 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(30, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(35, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(31, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(20, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(24, maps.typedefMap.size(),"wrong number of typedefs in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            Assert::AreEqual(11, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(15, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct NamespaceAliasArrayFieldTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest namespaceAliasArrayField[3];\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasClassTemplate {\n"
                                  "    OriginalNamespace::NamespaceAliasTest value;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -4466,6 +4467,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasClassTemplateWithAliasBase : T {\n"
                                  "    OriginalNamespace::NamespaceAliasTest value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasConstFieldTest {\n"
+                                 "    const OriginalNamespace::NamespaceAliasTest namespaceAliasConstField;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasConstMethodTest {\n"
                                  "    OriginalNamespace::NamespaceAliasTest namespaceAliasConstMethod(OriginalNamespace::NamespaceAliasTest) const {\n"
@@ -4491,6 +4495,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    OriginalNamespace::NamespaceAliasTest *pointer;\n"
                                  "    OriginalNamespace::NamespaceAliasTest &reference;\n"
                                  "    OriginalNamespace::NamespaceAliasTest array[2];\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasFieldTest2 {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest namespaceAliasField;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasInnerTemplate {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -4536,6 +4543,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> struct NamespaceAliasPartialClassTemplate<T *> {\n"
                                  "    OriginalNamespace::NamespaceAliasTest value;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasPointerFieldTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest *namespaceAliasPointerField;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasRValueRefQualifierMethodTest {\n"
                                  "    OriginalNamespace::NamespaceAliasTest namespaceAliasRValueRefQualifierMethod(OriginalNamespace::NamespaceAliasTest) && {\n"
                                  "        return {};\n"
@@ -4545,6 +4555,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    OriginalNamespace::NamespaceAliasTest namespaceAliasRefQualifierMethod(OriginalNamespace::NamespaceAliasTest) & {\n"
                                  "        return {};\n"
                                  "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasReferenceFieldTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest &namespaceAliasReferenceField;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasTemplate {\n"
                                  "    T value;\n"
@@ -4564,11 +4577,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -4622,26 +4630,32 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef Alias::NamespaceAliasTest Level1;\n"                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef Level1 Level2;\n"                                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level1 = Alias::NamespaceAliasTest;\n"                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level2 = Level1;\n"                                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef Alias::NamespaceAliasTest NamespaceAliasBaseTypedefAlias;\n"         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasBaseUsingAlias = Alias::NamespaceAliasTest;\n"           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasDecltypeUsing = decltype(Alias::NamespaceAliasTest{});\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef Alias::NamespaceAliasTestEnum NamespaceAliasEnumTypedefAlias;\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasEnumUsingAlias = Alias::NamespaceAliasTestEnum;\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef Alias::NamespaceAliasTest NamespaceAliasFunctionTypedefAlias;\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasFunctionUsingAlias = Alias::NamespaceAliasTest;\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasMixedLevel1 = Alias::NamespaceAliasTest;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef NamespaceAliasMixedLevel1 NamespaceAliasMixedLevel2;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasMixedLevel3 = NamespaceAliasMixedLevel2;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using NamespaceAliasTemplateAlias = T;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef Alias::NamespaceAliasTest NamespaceAliasTypedefTest;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level2 = Level1;\n"                                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level1 = Alias::NamespaceAliasTest;\n"                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasUsingTest = Alias::NamespaceAliasTest;\n"                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NestedNamespaceAliasTest = Alias::NamespaceAliasTest;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef Alias::NamespaceAliasTest Level1;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef Level1 Level2;\n"                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Level1 = Alias::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Level2 = Level1;\n"                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> using NamespaceAliasAliasTemplate = Alias::NamespaceAliasTest;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef Alias::NamespaceAliasTest NamespaceAliasBaseTypedefAlias;\n"                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasBaseUsingAlias = Alias::NamespaceAliasTest;\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasDecltypeUsing = decltype(Alias::NamespaceAliasTest{});\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> using NamespaceAliasDependentAliasTemplate = T;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef Alias::NamespaceAliasTestEnum NamespaceAliasEnumTypedefAlias;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasEnumUsingAlias = Alias::NamespaceAliasTestEnum;\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef Alias::NamespaceAliasTest NamespaceAliasFunctionTypedefAlias;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasFunctionUsingAlias = Alias::NamespaceAliasTest;\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasMixedLevel1 = Alias::NamespaceAliasTest;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef NamespaceAliasMixedLevel1 NamespaceAliasMixedLevel2;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasMixedLevel3 = NamespaceAliasMixedLevel2;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> using NamespaceAliasTemplateAlias = T;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef NamespaceAliasUsingTest NamespaceAliasTypedefFromUsingTest;\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef Alias::NamespaceAliasTest NamespaceAliasTypedefTest;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Level2 = Level1;\n"                                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Level1 = Alias::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasUsingTest = Alias::NamespaceAliasTest;\n"                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasUsingTest2 = NamespaceAliasUsingTest;\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NestedNamespaceAliasTest = Alias::NamespaceAliasTest;\n"                         , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -4657,6 +4671,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasReturnFunction() {\n"
                                  "    return {};\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void namespaceAliasArrayParameterTest(OriginalNamespace::NamespaceAliasTest namespaceAliasArrayParameter[3]) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> requires (sizeof(T) > 0) OriginalNamespace::NamespaceAliasTest namespaceAliasConstrainedFunctionTemplate(T) {\n"
                                  "    return {};\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -4671,6 +4687,12 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> OriginalNamespace::NamespaceAliasTest namespaceAliasFunctionTemplateWithAlias(OriginalNamespace::NamespaceAliasTest, T) {\n"
                                  "    return {};\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void namespaceAliasParameterTest(OriginalNamespace::NamespaceAliasTest namespaceAliasParameter) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void namespaceAliasPointerParameterTest(OriginalNamespace::NamespaceAliasTest *namespaceAliasPointerParameter) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void namespaceAliasReferenceParameterTest(const OriginalNamespace::NamespaceAliasTest &namespaceAliasReferenceParameter) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> void namespaceAliasTemplateFunction(T) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void namespaceAliasTemplateInstantiation(OriginalNamespace::NamespaceAliasTest value) {\n"
@@ -4680,9 +4702,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void namespaceAliasUsingAliasParameter(OriginalNamespace::NamespaceAliasTest value) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
