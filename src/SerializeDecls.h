@@ -376,6 +376,17 @@ namespace OdrCop3
 
             class Needs
             {
+            private:
+                static bool TemplateArgsPrintingType(const clang::CXXRecordDecl* cxxRecordDecl)
+                {   // pulls template arguments directly off a ClassTemplateSpecializationDecl,
+                    // for cases where the TemplateSpecializationType sugar has already been stripped away.
+                    if (const auto* specDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(cxxRecordDecl))
+                        for (const clang::TemplateArgument& arg : specDecl->getTemplateArgs().asArray())
+                            if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                                if (true == TypePrintingType(arg.getAsType()))
+                                    return true;
+                    return false;
+                }
                 static bool ClassifyNestedNameSpecifier(clang::NestedNameSpecifier nestedNameSpecifier)
                 {
                     while (nestedNameSpecifier)
@@ -388,8 +399,10 @@ namespace OdrCop3
                             nestedNameSpecifier = nestedNameSpecifier.getAsNamespaceAndPrefix().Prefix;
                             break;
                         case clang::NestedNameSpecifier::Kind::Type:
+                            // A Type-kind qualifier can itself be a template specialization carrying
+                            // an aliased argument, so run it through the full TypePrintingType check.
                             if (const clang::Type* type = nestedNameSpecifier.getAsType())
-                                return llvm::isa<clang::TypedefType>(type);
+                                return TypePrintingType(clang::QualType(type, 0));
                             return false;
                         default:
                             return false;
@@ -408,8 +421,14 @@ namespace OdrCop3
                 static bool TypePrintingType(clang::QualType qt)
                 {
                     if (const auto* recordType = qt->getAs<clang::RecordType>())
+                    {
                         if (true == ClassifyNestedNameSpecifier(recordType->getQualifier()))
                             return true;
+                        // for template args living on the decl
+                        if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(recordType->getDecl()))
+                            if (true == TemplateArgsPrintingType(cxxRecordDecl))
+                                return true;
+                    }
 
                     if (const auto* enumType = qt->getAs<clang::EnumType>())
                         if (true == ClassifyNestedNameSpecifier(enumType->getQualifier()))
@@ -435,7 +454,7 @@ namespace OdrCop3
                             if (true == TypePrintingType(arrayType->getElementType()))
                                 return true;
 
-                    // Template specialization: check template arguments for alias use
+                    // Template specialization sugar: check template arguments for alias use
                     if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
                         for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
                             if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
@@ -444,6 +463,7 @@ namespace OdrCop3
 
                     return false;
                 }
+
             public:
                 static bool OriginalNamespace(const clang::Decl* decl)
                 {
@@ -462,7 +482,7 @@ namespace OdrCop3
                             if (!child->isImplicit())
                                 if (true == Needs::OriginalNamespace(child))
                                     return true;
-                    // the code above handles function parameters, but not return types
+                    // the code above handle function parameters, but not return types
                     if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl))
                         if (true == TypePrintingType(functionDecl->getReturnType()))
                             return true;
