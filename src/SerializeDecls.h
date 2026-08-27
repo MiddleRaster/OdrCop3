@@ -515,10 +515,14 @@ namespace OdrCop3
                             if (!child->isImplicit())
                                 if (true == Needs::OriginalNamespace(child))
                                     return true;
-                    // the code above handle function parameters, but not return types
-                    if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl))
+                    if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+                        for (const clang::ParmVarDecl* parm : functionDecl->parameters())
+                            if (!parm->isImplicit())
+                                if (true == Needs::OriginalNamespace(parm))
+                                    return true;
                         if (true == TypeContainsAliasedName(functionDecl->getReturnType()))
                             return true;
+                    }
                     if (const auto* conversionDecl = llvm::dyn_cast<clang::CXXConversionDecl>(decl))
                         if (true == TypeContainsAliasedName(conversionDecl->getConversionType()))
                             return true;
