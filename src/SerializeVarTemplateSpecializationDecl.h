@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class VarTemplateSpecializationDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class VarTemplateSpecializationDeclSerializer
     {
         const ContextItems                 & contextItems;
         const VarTemplateSpecializationDecl* varTemplateSpecializationDecl;
@@ -24,7 +24,7 @@ namespace OdrCop3
         VarTemplateSpecializationDeclSerializer(const ContextItems& contextItems, const VarTemplateSpecializationDecl* varTemplateSpecializationDecl) : contextItems(contextItems), varTemplateSpecializationDecl(varTemplateSpecializationDecl) {}
         std::string Serialize() const
         {
-            return "template<> " + IndentBlock(VarDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems, static_cast<const clang::VarDecl*>(varTemplateSpecializationDecl)).Serialize(), 0) + "\n";
+            return "template<> " + IndentBlock(VarDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems, static_cast<const clang::VarDecl*>(varTemplateSpecializationDecl)).Serialize(), 0) + "\n";
         }
     };
 }
