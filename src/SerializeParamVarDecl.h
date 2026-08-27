@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class ParmVarDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class ParmVarDeclSerializer
     {
         const ContextItems& contextItems;
         const ParmVarDecl* parmVarDecl;
@@ -36,13 +36,17 @@ namespace OdrCop3
             }
             auto startOfParm = out.size();
 
+            QualType qualType = parmVarDecl->getType();
+            if (resolveNamespaceAliases)
+                qualType = qualType.getCanonicalType();
+
             if (IsEventuallyArrayOrFunctionProtoType(parmVarDecl->getOriginalType()))
             {
                 ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
                 ci2.aux = parmVarDecl->getName().str();
-                out += IndentBlock(SerializeType(ci2,          parmVarDecl->getType()), LengthOfLastLine(out));
+                out += IndentBlock(SerializeType(ci2,          qualType), LengthOfLastLine(out));
             } else {
-                out += IndentBlock(SerializeType(contextItems, parmVarDecl->getType()), LengthOfLastLine(out));
+                out += IndentBlock(SerializeType(contextItems, qualType), LengthOfLastLine(out));
                 out  = TrimRightIf(out, ";");
                 out += SnugUpPointersAndReferences(out);
                 if (parmVarDecl->getIdentifier()) // name if any

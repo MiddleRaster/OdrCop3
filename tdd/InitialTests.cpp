@@ -677,7 +677,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T, int Tag = 0> constexpr T DefaultValue = T{};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> constexpr T *DefaultValue<T *, 0> = nullptr;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> constexpr int DefaultValue<int, 0> = 42;\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> T GlobalValue{};\n"                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> T GlobalValue = {};\n"                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> char GlobalValue<char> = 42;\n"                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> constexpr bool IsPointerLike = false;\n"       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> constexpr bool IsPointerLike<T *> = true;\n"   , (*it++).second[0].fullyQualified);
@@ -3187,11 +3187,11 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
                                  "} (*bazTable[1])(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
                                  "                     AnonymousEnumValue\n"
-                                 "                 } ){&Baz};\n"                                                                                              , (*it++).second[0].fullyQualified);
+                                 "                 } ) = {&Baz};\n"                                                                                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
                                  "} (*bazTable2[2][3])(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
                                  "                         AnonymousEnumValue\n"
-                                 "                     } ){{&Baz, &Baz, &Baz}, {&Baz, &Baz, &Baz}};\n"                                                        , (*it++).second[0].fullyQualified);
+                                 "                     } ) = {{&Baz, &Baz, &Baz}, {&Baz, &Baz, &Baz}};\n"                                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("DeepUsing5 deepAliasVariable;\n"                                                                                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::DeepAnonymousEnum {\n"
                                  "    DeepAnonymousRed,\n"
@@ -3207,11 +3207,11 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
                                  "    AnonymousEnumValue\n"
                                  "} (*quxTable[1])(struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                 }){&Qux};\n"                                                                                               , (*it++).second[0].fullyQualified);
+                                 "                 }) = {&Qux};\n"                                                                                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
                                  "    AnonymousEnumValue\n"
                                  "} (*quxTable2[2][3])(struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                     }){{&Qux, &Qux, &Qux}, {&Qux, &Qux, &Qux}};\n"                                                         , (*it++).second[0].fullyQualified);
+                                 "                     }) = {{&Qux, &Qux, &Qux}, {&Qux, &Qux, &Qux}};\n"                                                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int &(*referenceReturningFunctionTable[2])(int) = {&UniqueReferenceReturningFunction, &UniqueReferenceReturningFunction};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int (*table[2])(int) = {&Foo, &Bar};\n"                                                                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::AnonymousStructForAlias {\n"
@@ -3719,13 +3719,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "       } inlineEnumVariable4 = InlineEnum4A;\n"          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline struct (anonymous namespace)::InlineStructAliasSource {\n"
                                  "           int value;\n"
-                                 "       } inlineStructAliasVariable{};\n"                 , (*it++).second[0].fullyQualified);
+                                 "       } inlineStructAliasVariable = {};\n"              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline struct (anonymous namespace)::InlineStructTypedefSource {\n"
                                  "           int value;\n"
-                                 "       } inlineStructTypedefVariable{};\n"               , (*it++).second[0].fullyQualified);
+                                 "       } inlineStructTypedefVariable = {};\n"            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline struct (anonymous namespace)::InlineStruct {\n"
                                  "           int value;\n"
-                                 "       } inlineStructVariable{};\n"                      , (*it++).second[0].fullyQualified);
+                                 "       } inlineStructVariable = {};\n"                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int inlineVariable = 0;\n"                        , (*it++).second[0].fullyQualified);
             }
             {

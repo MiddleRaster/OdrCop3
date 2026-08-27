@@ -16,18 +16,18 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class ClassTemplateSpecializationDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class ClassTemplateSpecializationDeclSerializer
     {
         const ContextItems& contextItems;
         const ClassTemplateSpecializationDecl* classTemplateSpecializationDecl;
     public:
         ClassTemplateSpecializationDeclSerializer(const ContextItems& contextItems, const ClassTemplateSpecializationDecl* classTemplateSpecializationDecl) : contextItems(contextItems), classTemplateSpecializationDecl(classTemplateSpecializationDecl) {}
         std::string Serialize() const
-        {   
+        {
             std::string out = "template<> ";
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, TemplateArgsToString(contextItems, classTemplateSpecializationDecl));
             // a classTemplateSpecializationDecl* "is a" CXXRecordDecl, so I can't call SerializeDecl, as the RecursionPreventor will kick in. So, call the right serializer directly.
-            out += CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(ci2, static_cast<const clang::CXXRecordDecl*>(classTemplateSpecializationDecl)).Serialize();
+            out += CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(ci2, static_cast<const clang::CXXRecordDecl*>(classTemplateSpecializationDecl)).Serialize();
             return out;
         }
     };

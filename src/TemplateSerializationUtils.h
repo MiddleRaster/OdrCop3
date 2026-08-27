@@ -15,7 +15,10 @@ namespace OdrCop3
         {
             llvm::ArrayRef<TemplateArgumentLoc> ArgsRef(ArgsAsWritten->getTemplateArgs(), ArgsAsWritten->NumTemplateArgs);
             llvm::raw_string_ostream os(out);
-            clang::printTemplateArgumentList(os, ArgsRef, contextItems.printPolicy, nullptr);
+            PrintingPolicy policy{contextItems.printPolicy};
+            policy.FullyQualifiedName     = true;
+            policy.SuppressUnwrittenScope = true;
+            clang::printTemplateArgumentList(os, ArgsRef, policy, nullptr);
             os.flush();
             return out;
         }

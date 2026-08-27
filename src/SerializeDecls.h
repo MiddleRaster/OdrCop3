@@ -42,32 +42,6 @@ namespace OdrCop3
 {
     namespace Serialize
     {
-        template<auto SerializeDecl, auto SerializeType, auto SerializeExpr>
-        struct Decl
-        {
-            static std::string SerializeFunctionTemplateDecl                  (const ContextItems& contextItems, const FunctionTemplateDecl            * functionTemplateDecl) { return FunctionTemplateDeclSerializer                  <SerializeDecl, SerializeType, SerializeExpr>(contextItems,  functionTemplateDecl).Serialize(); }
-            static std::string SerializeFunctionDecl                          (const ContextItems& contextItems, const FunctionDecl                                * funcDecl) { return FunctionDeclSerializer                          <SerializeDecl, SerializeType, SerializeExpr>(contextItems,              funcDecl).Serialize(); }
-            static std::string SerializeCXXConversionDecl                     (const ContextItems& contextItems, const CXXConversionDecl                  * cxxConversionDecl) { return CXXConversionDeclSerializer                     <SerializeDecl, SerializeType, SerializeExpr>(contextItems,     cxxConversionDecl).Serialize(); }
-            static std::string SerializeCXXConstructorDecl                    (const ContextItems& contextItems, const CXXConstructorDecl                * cxxConstructorDecl) { return CXXConstructorDeclSerializer                    <SerializeDecl, SerializeType, SerializeExpr>(contextItems,    cxxConstructorDecl).Serialize(); }
-            static std::string SerializeCXXDestructorDecl                     (const ContextItems& contextItems, const CXXDestructorDecl                  * cxxDestructorDecl) { return CXXDestructorDeclSerializer                     <SerializeDecl, SerializeType, SerializeExpr>(contextItems,     cxxDestructorDecl).Serialize(); }
-            static std::string SerializeAccessSpecDecl                        (const ContextItems& contextItems, const AccessSpecDecl                            * accessDecl) { return AccessSpecDeclSerializer                        <SerializeDecl, SerializeType, SerializeExpr>(contextItems,            accessDecl).Serialize(); }
-            static std::string SerializeTypedefDecl                           (const ContextItems& contextItems, const TypedefDecl                              * typedefDecl) { return TypedefDeclSerializer                           <SerializeDecl, SerializeType, SerializeExpr>(contextItems,           typedefDecl).Serialize(); }
-            static std::string SerializeTypeAliasDecl                         (const ContextItems& contextItems, const TypeAliasDecl                          * typeAliasDecl) { return TypeAliasDeclSerializer                         <SerializeDecl, SerializeType, SerializeExpr>(contextItems,         typeAliasDecl).Serialize(); }
-            static std::string SerializeTypeAliasTemplateDecl                 (const ContextItems& contextItems, const TypeAliasTemplateDecl          * typeAliasTemplateDecl) { return TypeAliasTemplateDeclSerializer                 <SerializeDecl, SerializeType, SerializeExpr>(contextItems, typeAliasTemplateDecl).Serialize(); }
-            static std::string SerializeFieldDecl                             (const ContextItems& contextItems, const FieldDecl                                  * fieldDecl) { return FieldDeclSerializer                             <SerializeDecl, SerializeType, SerializeExpr>(contextItems,             fieldDecl).Serialize(); }
-            static std::string SerializeVarDecl                               (const ContextItems& contextItems, const VarDecl                                      * varDecl) { return VarDeclSerializer                               <SerializeDecl, SerializeType, SerializeExpr>(contextItems,               varDecl).Serialize(); }
-            static std::string SerializeEnumDecl                              (const ContextItems& contextItems, const EnumDecl                                    * enumDecl) { return EnumDeclSerializer                              <SerializeDecl, SerializeType, SerializeExpr>(contextItems,              enumDecl).Serialize(); }
-            static std::string SerializeParmVarDecl                           (const ContextItems& contextItems, const ParmVarDecl                             *  parmVarDecl) { return ParmVarDeclSerializer                           <SerializeDecl, SerializeType, SerializeExpr>(contextItems,           parmVarDecl).Serialize(); }
-            static std::string SerializeCXXRecordDecl                         (const ContextItems& contextItems, const CXXRecordDecl                          * cxxRecordDecl) { return CXXRecordDeclSerializer                         <SerializeDecl, SerializeType, SerializeExpr>(contextItems,         cxxRecordDecl).Serialize(); }
-            static std::string SerializeClassTemplateDecl                     (const ContextItems& contextItems, const ClassTemplateDecl                                * ctd) { return ClassTemplateDeclSerializer                     <SerializeDecl, SerializeType, SerializeExpr>(contextItems,                   ctd).Serialize(); }
-            static std::string SerializeClassTemplateSpecializationDecl       (const ContextItems& contextItems, const ClassTemplateSpecializationDecl                 * ctsd) { return ClassTemplateSpecializationDeclSerializer       <SerializeDecl, SerializeType, SerializeExpr>(contextItems,                  ctsd).Serialize(); }
-            static std::string SerializeClassTemplatePartialSpecializationDecl(const ContextItems& contextItems, const ClassTemplatePartialSpecializationDecl         * ctpsd) { return ClassTemplatePartialSpecializationDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,                 ctpsd).Serialize(); }
-            static std::string SerializeVarTemplateSpecializationDecl         (const ContextItems& contextItems, const VarTemplateSpecializationDecl                   * vtsd) { return VarTemplateSpecializationDeclSerializer         <SerializeDecl, SerializeType, SerializeExpr>(contextItems,                  vtsd).Serialize(); }
-            static std::string SerializeVarTemplatePartialSpecializationDecl  (const ContextItems& contextItems, const VarTemplatePartialSpecializationDecl           * vtpsd) { return VarTemplatePartialSpecializationDeclSerializer  <SerializeDecl, SerializeType, SerializeExpr>(contextItems,                 vtpsd).Serialize(); }
-            static std::string SerializeFriendDecl                            (const ContextItems& contextItems, const FriendDecl                                * friendDecl) { return FriendDeclSerializer                            <SerializeDecl, SerializeType, SerializeExpr>(contextItems,            friendDecl).Serialize(); }
-            static std::string SerializeConceptDecl                           (const ContextItems& contextItems, const ConceptDecl                              * conceptDecl) { return ConceptDeclSerializer                           <SerializeDecl, SerializeType, SerializeExpr>(contextItems,           conceptDecl).Serialize(); }
-        };
-
         class Can
         {
             class RecursionGuard
@@ -304,6 +278,249 @@ namespace OdrCop3
             }
         };
 
+        class Needs
+        {
+        private:
+            static bool TemplateArgsContainAliasedName(const clang::CXXRecordDecl* cxxRecordDecl)
+            {   // pulls template arguments directly off a ClassTemplateSpecializationDecl,
+                // for cases where the TemplateSpecializationType sugar has already been stripped away.
+                if (const auto* specDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(cxxRecordDecl))
+                    for (const clang::TemplateArgument& arg : specDecl->getTemplateArgs().asArray())
+                        if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                            if (true == TypeContainsAliasedName(arg.getAsType()))
+                                return true;
+                return false;
+            }
+            static bool NestedNameSpecifierContainsAliasedName(clang::NestedNameSpecifier nestedNameSpecifier)
+            {
+                while (nestedNameSpecifier)
+                {
+                    switch (nestedNameSpecifier.getKind())
+                    {
+                    case clang::NestedNameSpecifier::Kind::Namespace:
+                        if (llvm::isa<clang::NamespaceAliasDecl>(nestedNameSpecifier.getAsNamespaceAndPrefix().Namespace))
+                            return true;
+                        nestedNameSpecifier = nestedNameSpecifier.getAsNamespaceAndPrefix().Prefix;
+                        break;
+                    case clang::NestedNameSpecifier::Kind::Type:
+                        // A Type-kind qualifier can itself be a template specialization carrying
+                        // an aliased argument, so run it through the full TypePrintingType check.
+                        if (const clang::Type* type = nestedNameSpecifier.getAsType())
+                            return TypeContainsAliasedName(clang::QualType(type, 0));
+                        return false;
+                    default:
+                        return false;
+                    }
+                }
+                return false;
+            }
+            static bool QualifierContainsAliasedName(const clang::Decl* decl)
+            {
+                if (const auto* declaratorDecl = llvm::dyn_cast<clang::DeclaratorDecl>(decl))
+                    return NestedNameSpecifierContainsAliasedName(declaratorDecl->getQualifier());
+                if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
+                    return NestedNameSpecifierContainsAliasedName(tagDecl->getQualifier());
+                return false;
+            }
+            static bool TypeContainsAliasedName(clang::QualType qt)
+            {
+                if (const auto* recordType = qt->getAs<clang::RecordType>())
+                {
+                    if (true == NestedNameSpecifierContainsAliasedName(recordType->getQualifier()))
+                        return true;
+                    if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(recordType->getDecl()))
+                        if (true == TemplateArgsContainAliasedName(cxxRecordDecl))
+                            return true;
+                }
+
+                if (const auto* enumType = qt->getAs<clang::EnumType>())
+                    if (true == NestedNameSpecifierContainsAliasedName(enumType->getQualifier()))
+                        return true;
+
+                if (const auto* typedefType = qt->getAs<clang::TypedefType>())
+                    if (true == NestedNameSpecifierContainsAliasedName(typedefType->getQualifier()))
+                        return true;
+
+                // Pointer types
+                if (const auto* ptrType = qt->getAs<clang::PointerType>())
+                    if (true == TypeContainsAliasedName(ptrType->getPointeeType()))
+                        return true;
+
+                // Reference types
+                if (const auto* refType = qt->getAs<clang::ReferenceType>())
+                    if (true == TypeContainsAliasedName(refType->getPointeeType()))
+                        return true;
+
+                // Array types: must go via Type*; getAs<ArrayType>() is forbidden.
+                if (const clang::Type* rawType = qt.getTypePtr())
+                    if (const auto* arrayType = llvm::dyn_cast<clang::ArrayType>(rawType))
+                        if (true == TypeContainsAliasedName(arrayType->getElementType()))
+                            return true;
+
+                // Template specialization sugar: check template arguments for alias use
+                if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
+                    for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
+                        if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                            if (true == TypeContainsAliasedName(arg.getAsType()))
+                                return true;
+
+                return false;
+            }
+            static bool ExprContainsAliasedName(const clang::Expr* expr)
+            {   // Walks an expression subtree. Needed because a namespace alias can appear inside an
+                // initializer's Expr nodes (e.g. sizeof(Alias::Foo), a DeclRefExpr's own qualifier, or a
+                // MemberExpr's own qualifier) with no path back through any Decl's type.
+                if (!expr)
+                    return false;
+
+                if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(expr))
+                    if (true == NestedNameSpecifierContainsAliasedName(declRefExpr->getQualifier()))
+                        return true;
+
+                if (const auto* memberExpr = llvm::dyn_cast<clang::MemberExpr>(expr))
+                    if (true == NestedNameSpecifierContainsAliasedName(memberExpr->getQualifier()))
+                        return true;
+
+                if (const auto* traitExpr = llvm::dyn_cast<clang::UnaryExprOrTypeTraitExpr>(expr))
+                    if (traitExpr->isArgumentType())
+                        if (true == TypeContainsAliasedName(traitExpr->getArgumentTypeInfo()->getType()))
+                            return true;
+
+                // Generic fallthrough: recurse into every child statement/expression so we don't
+                // have to special-case every Expr subclass (CallExpr, CXXConstructExpr, etc.).
+                for (const clang::Stmt* child : expr->children())
+                    if (const auto* childExpr = llvm::dyn_cast_or_null<clang::Expr>(child))
+                        if (true == ExprContainsAliasedName(childExpr))
+                            return true;
+
+                return false;
+            }
+
+        public:
+            static bool OriginalNamespace(const clang::Decl* decl)
+            {
+                // Decl-side qualifiers
+                if (true == QualifierContainsAliasedName(decl))
+                    return true;
+
+                // Type-side qualifiers (ValueDecls)
+                if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
+                    if (true == TypeContainsAliasedName(valueDecl->getType()))
+                        return true;
+
+                // Initializer-side qualifiers (VarDecls) — e.g. sizeof(Alias::Foo) in the init.
+                if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
+                    if (true == ExprContainsAliasedName(varDecl->getInit()))
+                        return true;
+
+                // Recursively inspect child decls (fields, nested types, etc.)
+                if (const auto* declContext = llvm::dyn_cast<clang::DeclContext>(decl))
+                    for (const clang::Decl* child : declContext->decls())
+                        if (!child->isImplicit())
+                            if (true == Needs::OriginalNamespace(child))
+                                return true;
+
+                // class templates
+                if (const auto* classTemplateDecl = llvm::dyn_cast<clang::ClassTemplateDecl>(decl))
+                    if (const auto* cxxRecord = classTemplateDecl->getTemplatedDecl())
+                        if (true == Needs::OriginalNamespace(cxxRecord))
+                            return true;
+
+                // functions and function templates
+                const clang::FunctionDecl* functionDecl = nullptr;
+                if (const auto* functionTemplateDecl = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
+                    functionDecl = functionTemplateDecl->getTemplatedDecl();
+                else
+                    functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl);
+                if (functionDecl) {
+                    for (const clang::ParmVarDecl* parm : functionDecl->parameters())
+                        if (!parm->isImplicit())
+                            if (true == Needs::OriginalNamespace(parm))
+                                return true;
+                    if (true == TypeContainsAliasedName(functionDecl->getReturnType()))
+                        return true;
+                }
+                if (const auto* conversionDecl = llvm::dyn_cast<clang::CXXConversionDecl>(decl))
+                    if (true == TypeContainsAliasedName(conversionDecl->getConversionType()))
+                        return true;
+
+                // Base classes on CXXRecordDecl
+                if (const auto* cxxRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
+                    if (cxxRecord->isThisDeclarationADefinition())
+                        for (const clang::CXXBaseSpecifier& base : cxxRecord->bases())
+                            if (true == TypeContainsAliasedName(base.getType()))
+                                return true;
+
+                return false;
+            }
+        };
+
+        struct Semicolon
+        {
+            static std::string IfNeeded(const std::string& str, const clang::Decl* decl)
+            {
+                switch (decl->getKind())
+                {
+                case clang::Decl::FunctionTemplate: return cast<clang::FunctionTemplateDecl>(decl)->getTemplatedDecl()->hasBody() ? "" : ";";
+                case clang::Decl::CXXConstructor:
+                case clang::Decl::CXXConversion:
+                case clang::Decl::CXXDestructor:
+                case clang::Decl::CXXMethod:
+                case clang::Decl::Function:
+                    if (cast<clang::FunctionDecl>(decl)->hasBody())
+                        return "";
+                    if (str.ends_with("}"))
+                        return "";
+                    if (str.ends_with("}\n"))
+                        return "";
+                    return ";\n";
+                default:
+                    break;
+                }
+                return ";\n"; // everything else needs this
+            }
+        };
+
+        template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases>
+        static inline std::string CallSerializer(const ContextItems& contextItems, const clang::Decl* decl)
+        {
+            switch(decl->getKind())
+            {
+            case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<         VarTemplateSpecializationDecl>(decl)) return          VarTemplateSpecializationDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,               vtsd).Serialize(); break;
+            case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<  VarTemplatePartialSpecializationDecl>(decl)) return   VarTemplatePartialSpecializationDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,              vtpsd).Serialize(); break;
+            case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return ClassTemplatePartialSpecializationDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,              ctpsd).Serialize(); break;
+            case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<       ClassTemplateSpecializationDecl>(decl)) return        ClassTemplateSpecializationDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,               ctsd).Serialize(); break;
+            case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<                     ClassTemplateDecl>(decl)) return                      ClassTemplateDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,                ctd).Serialize(); break;
+            case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl*                     ftd = dyn_cast<                  FunctionTemplateDecl>(decl)) return                   FunctionTemplateDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,                ftd).Serialize(); break;
+            case clang::Decl::Kind::CXXMethod: // is a subclass of FunctionDecl
+            case clang::Decl::Kind::Function:                           if (const FunctionDecl*                    functionDecl = dyn_cast<                          FunctionDecl>(decl)) return                           FunctionDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,       functionDecl).Serialize(); break;
+            case clang::Decl::Kind::CXXConversion:                      if (const CXXConversionDecl*          cxxConversionDecl = dyn_cast<                     CXXConversionDecl>(decl)) return                      CXXConversionDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,  cxxConversionDecl).Serialize(); break;
+            case clang::Decl::Kind::CXXConstructor:                     if (const CXXConstructorDecl*        cxxConstructorDecl = dyn_cast<                    CXXConstructorDecl>(decl)) return                     CXXConstructorDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems, cxxConstructorDecl).Serialize(); break;
+            case clang::Decl::Kind::CXXDestructor:                      if (const CXXDestructorDecl*          cxxDestructorDecl = dyn_cast<                     CXXDestructorDecl>(decl)) return                      CXXDestructorDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,  cxxDestructorDecl).Serialize(); break;
+            case clang::Decl::Kind::ParmVar:                            if (const ParmVarDecl *                             pvd = dyn_cast<                           ParmVarDecl>(decl)) return                            ParmVarDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,                pvd).Serialize(); break;
+            case clang::Decl::Kind::CXXRecord:                          if (const CXXRecordDecl *                 cxxRecordDecl = dyn_cast<                         CXXRecordDecl>(decl)) return                          CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,      cxxRecordDecl).Serialize(); break;
+            case clang::Decl::Kind::Field:                              if (const FieldDecl *                         fieldDecl = dyn_cast<                             FieldDecl>(decl)) return                              FieldDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,          fieldDecl).Serialize(); break;
+            case clang::Decl::Kind::AccessSpec:                         if (const AccessSpecDecl *                   accessDecl = dyn_cast<                        AccessSpecDecl>(decl)) return                         AccessSpecDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,         accessDecl).Serialize(); break;
+            case clang::Decl::Kind::Var:                                if (const VarDecl *                             varDecl = dyn_cast<                               VarDecl>(decl)) return                                VarDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,            varDecl).Serialize(); break;
+            case clang::Decl::Kind::Enum:                               if (const EnumDecl*                            enumDecl = dyn_cast<                              EnumDecl>(decl)) return                               EnumDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,           enumDecl).Serialize(); break;
+            case clang::Decl::Kind::Typedef:                            if (const TypedefDecl *                     typedefDecl = dyn_cast<                           TypedefDecl>(decl)) return                            TypedefDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,        typedefDecl).Serialize(); break;
+            case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<                         TypeAliasDecl>(decl)) return                          TypeAliasDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,                tad).Serialize(); break;
+            case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<                 TypeAliasTemplateDecl>(decl)) return                  TypeAliasTemplateDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,               tatd).Serialize(); break;
+            case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<                            FriendDecl>(decl)) return                             FriendDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,         friendDecl).Serialize(); break;
+            case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<                           ConceptDecl>(decl)) return                            ConceptDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,        conceptDecl).Serialize(); break;
+            default: break;
+            }
+            // when this is released, comment out the next two lines, so that it won't throw but will print something
+            decl->dump();
+            throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));
+
+            std::string str;
+            llvm::raw_string_ostream os(str);
+            decl->print(os, contextItems.printPolicy);
+            os.flush();
+            return str + Semicolon::IfNeeded(str, decl);
+        }
+
         template<auto SerializeType, auto SerializeExpr>
         inline std::string Decls(const ContextItems& contextItems, const clang::Decl* decl)
         {
@@ -339,299 +556,20 @@ namespace OdrCop3
                 return qualType.getAsString();
             }
 
+            bool resolveNamespaceAliases = Needs::OriginalNamespace(decl);
             std::unordered_set<const clang::Decl*> decls;
-            if (Can(contextItems, decls).Print(decl) == false)
+            if ((Can(contextItems, decls).Print(decl) == false) || (resolveNamespaceAliases == true))
             {
-                using DeclSerializer = Serialize::Decl<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>;
-                switch(decl->getKind())
-                {
-                case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;
-                case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);              break;
-                case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
-                case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
-                case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
-                case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
-                case clang::Decl::Kind::CXXMethod: // is a subclass of FunctionDecl
-                case clang::Decl::Kind::Function:                           if (const FunctionDecl*                    functionDecl = dyn_cast<FunctionDecl                          >(decl)) return DeclSerializer::SerializeFunctionDecl                          (contextItems, functionDecl);       break;
-                case clang::Decl::Kind::CXXConversion:                      if (const CXXConversionDecl*          cxxConversionDecl = dyn_cast<CXXConversionDecl                     >(decl)) return DeclSerializer::SerializeCXXConversionDecl                     (contextItems, cxxConversionDecl);  break;
-                case clang::Decl::Kind::CXXConstructor:                     if (const CXXConstructorDecl*        cxxConstructorDecl = dyn_cast<CXXConstructorDecl                    >(decl)) return DeclSerializer::SerializeCXXConstructorDecl                    (contextItems, cxxConstructorDecl); break;
-                case clang::Decl::Kind::CXXDestructor:                      if (const CXXDestructorDecl*          cxxDestructorDecl = dyn_cast<CXXDestructorDecl                     >(decl)) return DeclSerializer::SerializeCXXDestructorDecl                     (contextItems, cxxDestructorDecl);  break;
-                case clang::Decl::Kind::ParmVar:                            if (const ParmVarDecl *                             pvd = dyn_cast<ParmVarDecl                           >(decl)) return DeclSerializer::SerializeParmVarDecl                           (contextItems, pvd);                break;
-                case clang::Decl::Kind::CXXRecord:                          if (const CXXRecordDecl *                           cxx = dyn_cast<CXXRecordDecl                         >(decl)) return DeclSerializer::SerializeCXXRecordDecl                         (contextItems, cxx);                break;
-                case clang::Decl::Kind::Field:                              if (const FieldDecl *                         fieldDecl = dyn_cast<FieldDecl                             >(decl)) return DeclSerializer::SerializeFieldDecl                             (contextItems, fieldDecl);          break;
-                case clang::Decl::Kind::AccessSpec:                         if (const AccessSpecDecl *                   accessDecl = dyn_cast<AccessSpecDecl                        >(decl)) return DeclSerializer::SerializeAccessSpecDecl                        (contextItems, accessDecl);         break;
-                case clang::Decl::Kind::Var:                                if (const VarDecl *                             varDecl = dyn_cast<VarDecl                               >(decl)) return DeclSerializer::SerializeVarDecl                               (contextItems, varDecl);            break;
-                case clang::Decl::Kind::Enum:                               if (const EnumDecl*                            enumDecl = dyn_cast<EnumDecl                              >(decl)) return DeclSerializer::SerializeEnumDecl                              (contextItems, enumDecl);           break;
-                case clang::Decl::Kind::Typedef:                            if (const TypedefDecl *                     typedefDecl = dyn_cast<TypedefDecl                           >(decl)) return DeclSerializer::SerializeTypedefDecl                           (contextItems, typedefDecl);        break;
-                case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<TypeAliasDecl                         >(decl)) return DeclSerializer::SerializeTypeAliasDecl                         (contextItems, tad);                break;
-                case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<TypeAliasTemplateDecl                 >(decl)) return DeclSerializer::SerializeTypeAliasTemplateDecl                 (contextItems, tatd);               break;
-                case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<FriendDecl                            >(decl)) return DeclSerializer::SerializeFriendDecl                            (contextItems, friendDecl);         break;
-                case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<ConceptDecl                           >(decl)) return DeclSerializer::SerializeConceptDecl                           (contextItems, conceptDecl);        break;
-                default: break;
-                }
-                // when this is released, comment out the next two lines, so that it won't throw but will print something
-                decl->dump();
-                throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));
+                if (resolveNamespaceAliases)
+                    return CallSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true >(contextItems, decl);
+                else
+                    return CallSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, false>(contextItems, decl);
             }
-
-            class Needs
-            {
-            private:
-                static bool TemplateArgsContainAliasedName(const clang::CXXRecordDecl* cxxRecordDecl)
-                {   // pulls template arguments directly off a ClassTemplateSpecializationDecl,
-                    // for cases where the TemplateSpecializationType sugar has already been stripped away.
-                    if (const auto* specDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(cxxRecordDecl))
-                        for (const clang::TemplateArgument& arg : specDecl->getTemplateArgs().asArray())
-                            if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
-                                if (true == TypeContainsAliasedName(arg.getAsType()))
-                                    return true;
-                    return false;
-                }
-                static bool NestedNameSpecifierContainsAliasedName(clang::NestedNameSpecifier nestedNameSpecifier)
-                {
-                    while (nestedNameSpecifier)
-                    {
-                        switch (nestedNameSpecifier.getKind())
-                        {
-                        case clang::NestedNameSpecifier::Kind::Namespace:
-                            if (llvm::isa<clang::NamespaceAliasDecl>(nestedNameSpecifier.getAsNamespaceAndPrefix().Namespace))
-                                return true;
-                            nestedNameSpecifier = nestedNameSpecifier.getAsNamespaceAndPrefix().Prefix;
-                            break;
-                        case clang::NestedNameSpecifier::Kind::Type:
-                            // A Type-kind qualifier can itself be a template specialization carrying
-                            // an aliased argument, so run it through the full TypePrintingType check.
-                            if (const clang::Type* type = nestedNameSpecifier.getAsType())
-                                return TypeContainsAliasedName(clang::QualType(type, 0));
-                            return false;
-                        default:
-                            return false;
-                        }
-                    }
-                    return false;
-                }
-                static bool QualifierContainsAliasedName(const clang::Decl* decl)
-                {
-                    if (const auto* declaratorDecl = llvm::dyn_cast<clang::DeclaratorDecl>(decl))
-                        return NestedNameSpecifierContainsAliasedName(declaratorDecl->getQualifier());
-                    if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
-                        return NestedNameSpecifierContainsAliasedName(tagDecl->getQualifier());
-                    return false;
-                }
-                static bool TypeContainsAliasedName(clang::QualType qt)
-                {
-                    if (const auto* recordType = qt->getAs<clang::RecordType>())
-                    {
-                        if (true == NestedNameSpecifierContainsAliasedName(recordType->getQualifier()))
-                            return true;
-                        if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(recordType->getDecl()))
-                            if (true == TemplateArgsContainAliasedName(cxxRecordDecl))
-                                return true;
-                    }
-
-                    if (const auto* enumType = qt->getAs<clang::EnumType>())
-                        if (true == NestedNameSpecifierContainsAliasedName(enumType->getQualifier()))
-                            return true;
-
-                    if (const auto* typedefType = qt->getAs<clang::TypedefType>())
-                        if (true == NestedNameSpecifierContainsAliasedName(typedefType->getQualifier()))
-                            return true;
-
-                    // Pointer types
-                    if (const auto* ptrType = qt->getAs<clang::PointerType>())
-                        if (true == TypeContainsAliasedName(ptrType->getPointeeType()))
-                            return true;
-
-                    // Reference types
-                    if (const auto* refType = qt->getAs<clang::ReferenceType>())
-                        if (true == TypeContainsAliasedName(refType->getPointeeType()))
-                            return true;
-
-                    // Array types: must go via Type*; getAs<ArrayType>() is forbidden.
-                    if (const clang::Type* rawType = qt.getTypePtr())
-                        if (const auto* arrayType = llvm::dyn_cast<clang::ArrayType>(rawType))
-                            if (true == TypeContainsAliasedName(arrayType->getElementType()))
-                                return true;
-
-                    // Template specialization sugar: check template arguments for alias use
-                    if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
-                        for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
-                            if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
-                                if (true == TypeContainsAliasedName(arg.getAsType()))
-                                    return true;
-
-                    return false;
-                }
-                static bool ExprContainsAliasedName(const clang::Expr* expr)
-                {   // Walks an expression subtree. Needed because a namespace alias can appear inside an
-                    // initializer's Expr nodes (e.g. sizeof(Alias::Foo), a DeclRefExpr's own qualifier, or a
-                    // MemberExpr's own qualifier) with no path back through any Decl's type.
-                    if (!expr)
-                        return false;
-
-                    if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(expr))
-                        if (true == NestedNameSpecifierContainsAliasedName(declRefExpr->getQualifier()))
-                            return true;
-
-                    if (const auto* memberExpr = llvm::dyn_cast<clang::MemberExpr>(expr))
-                        if (true == NestedNameSpecifierContainsAliasedName(memberExpr->getQualifier()))
-                            return true;
-
-                    if (const auto* traitExpr = llvm::dyn_cast<clang::UnaryExprOrTypeTraitExpr>(expr))
-                        if (traitExpr->isArgumentType())
-                            if (true == TypeContainsAliasedName(traitExpr->getArgumentTypeInfo()->getType()))
-                                return true;
-
-                    // Generic fallthrough: recurse into every child statement/expression so we don't
-                    // have to special-case every Expr subclass (CallExpr, CXXConstructExpr, etc.).
-                    for (const clang::Stmt* child : expr->children())
-                        if (const auto* childExpr = llvm::dyn_cast_or_null<clang::Expr>(child))
-                            if (true == ExprContainsAliasedName(childExpr))
-                                return true;
-
-                    return false;
-                }
-
-            public:
-                static bool OriginalNamespace(const clang::Decl* decl)
-                {
-                    // Decl-side qualifiers
-                    if (true == QualifierContainsAliasedName(decl))
-                        return true;
-
-                    // Type-side qualifiers (ValueDecls)
-                    if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
-                        if (true == TypeContainsAliasedName(valueDecl->getType()))
-                            return true;
-
-                    // Initializer-side qualifiers (VarDecls) — e.g. sizeof(Alias::Foo) in the init.
-                    if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
-                        if (true == ExprContainsAliasedName(varDecl->getInit()))
-                            return true;
-
-                    // Recursively inspect child decls (fields, nested types, etc.)
-                    if (const auto* declContext = llvm::dyn_cast<clang::DeclContext>(decl))
-                        for (const clang::Decl* child : declContext->decls())
-                            if (!child->isImplicit())
-                                if (true == Needs::OriginalNamespace(child))
-                                    return true;
-
-                    // class templates
-                    if (const auto* classTemplateDecl = llvm::dyn_cast<clang::ClassTemplateDecl>(decl))
-                        if (const auto* cxxRecord = classTemplateDecl->getTemplatedDecl())
-                            if (true == Needs::OriginalNamespace(cxxRecord))
-                                return true;
-
-                    // functions and function templates
-                    const clang::FunctionDecl* functionDecl = nullptr;
-                    if (const auto* functionTemplateDecl = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
-                        functionDecl = functionTemplateDecl->getTemplatedDecl();
-                    else
-                        functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl);
-                    if (functionDecl) {
-                        for (const clang::ParmVarDecl* parm : functionDecl->parameters())
-                            if (!parm->isImplicit())
-                                if (true == Needs::OriginalNamespace(parm))
-                                    return true;
-                        if (true == TypeContainsAliasedName(functionDecl->getReturnType()))
-                            return true;
-                    }
-                    if (const auto* conversionDecl = llvm::dyn_cast<clang::CXXConversionDecl>(decl))
-                        if (true == TypeContainsAliasedName(conversionDecl->getConversionType()))
-                            return true;
-
-                    // Base classes on CXXRecordDecl
-                    if (const auto* cxxRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
-                        for (const clang::CXXBaseSpecifier& base : cxxRecord->bases())
-                            if (true == TypeContainsAliasedName(base.getType()))
-                                return true;
-
-                    return false;
-                }
-            };
-
-            struct Semicolon
-            {
-                static std::string IfNeeded(const std::string& str, const clang::Decl* decl)
-                {
-                    switch (decl->getKind())
-                    {
-                    case clang::Decl::FunctionTemplate: return cast<clang::FunctionTemplateDecl>(decl)->getTemplatedDecl()->hasBody() ? "" : ";";
-                    case clang::Decl::CXXConstructor:
-                    case clang::Decl::CXXConversion:
-                    case clang::Decl::CXXDestructor:
-                    case clang::Decl::CXXMethod:
-                    case clang::Decl::Function:
-                        if (cast<clang::FunctionDecl>(decl)->hasBody())
-                            return "";
-                        if (str.ends_with("}"))
-                            return "";
-                        if (str.ends_with("}\n"))
-                            return "";
-                        return ";\n";
-                    default:
-                        break;
-                    }
-                    return ";\n"; // everything else needs this
-                }
-            };
 
             std::string str;
             llvm::raw_string_ostream os(str);
             clang::PrintingPolicy policy(contextItems.printPolicy);
-            if (false == Needs::OriginalNamespace(decl))
-                decl->print(os, policy);
-            else
-            {
-                switch(decl->getKind())
-                {
-              //case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;
-              //case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);              break;
-              //case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
-              //case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
-                case clang::Decl::Kind::ClassTemplate:                      if (const    ClassTemplateDecl*  ctd = dyn_cast<   ClassTemplateDecl>(decl)) return    ClassTemplateDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>(contextItems, ctd).Serialize(); break;
-                case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl * ftd = dyn_cast<FunctionTemplateDecl>(decl)) return FunctionTemplateDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>(contextItems, ftd).Serialize(); break;
-                case clang::Decl::Kind::CXXMethod: // is a subclass of FunctionDecl
-                case clang::Decl::Kind::Function:                           if (const FunctionDecl* functionDecl = dyn_cast<        FunctionDecl>(decl)) return FunctionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, functionDecl).Serialize(); break;
-                case clang::Decl::Kind::CXXConversion:                      if (const CXXConversionDecl * cxxConversionDecl  = dyn_cast< CXXConversionDecl>(decl)) return  CXXConversionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems,  cxxConversionDecl).Serialize();  break;
-                case clang::Decl::Kind::CXXConstructor:                     if (const CXXConstructorDecl* cxxConstructorDecl = dyn_cast<CXXConstructorDecl>(decl)) return CXXConstructorDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr      >(contextItems, cxxConstructorDecl).Serialize(); break;
-              //case clang::Decl::Kind::CXXDestructor:                      if (const CXXDestructorDecl*          cxxDestructorDecl = dyn_cast<CXXDestructorDecl                     >(decl)) return DeclSerializer::SerializeCXXDestructorDecl                     (contextItems, cxxDestructorDecl);  break;
-              //case clang::Decl::Kind::ParmVar:                            if (const ParmVarDecl *                             pvd = dyn_cast<ParmVarDecl                           >(decl)) return DeclSerializer::SerializeParmVarDecl                           (contextItems, pvd);                break;
-                case clang::Decl::Kind::CXXRecord:                          if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(decl)) return CXXRecordDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, cxxRecordDecl).Serialize(); break;
-                case clang::Decl::Kind::Field:                              if (const FieldDecl *        fieldDecl = dyn_cast<    FieldDecl>(decl)) return     FieldDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems,     fieldDecl).Serialize(); break;
-              //case clang::Decl::Kind::AccessSpec:                         if (const AccessSpecDecl *                   accessDecl = dyn_cast<AccessSpecDecl                        >(decl)) return DeclSerializer::SerializeAccessSpecDecl                        (contextItems, accessDecl);         break;
-                case clang::Decl::Kind::Var:                                if (const VarDecl* varDecl = dyn_cast<VarDecl>(decl)) return VarDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, varDecl).Serialize(); break;
-              //case clang::Decl::Kind::Enum:                               if (const EnumDecl*                            enumDecl = dyn_cast<EnumDecl                              >(decl)) return DeclSerializer::SerializeEnumDecl                              (contextItems, enumDecl);           break;
-              //case clang::Decl::Kind::Typedef:                            if (const TypedefDecl *                     typedefDecl = dyn_cast<TypedefDecl                           >(decl)) return DeclSerializer::SerializeTypedefDecl                           (contextItems, typedefDecl);        break;
-              //case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<TypeAliasDecl                         >(decl)) return DeclSerializer::SerializeTypeAliasDecl                         (contextItems, tad);                break;
-              //case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<TypeAliasTemplateDecl                 >(decl)) return DeclSerializer::SerializeTypeAliasTemplateDecl                 (contextItems, tatd);               break;
-              //case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<FriendDecl                            >(decl)) return DeclSerializer::SerializeFriendDecl                            (contextItems, friendDecl);         break;
-              //case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<ConceptDecl                           >(decl)) return DeclSerializer::SerializeConceptDecl                           (contextItems, conceptDecl);        break;
-                default: break;
-                }
-
-                policy.FullyQualifiedName     = true;
-                policy.SuppressUnwrittenScope = true;
-
-                if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
-                    QualType(contextItems.context.getCanonicalType(valueDecl->getType())).print(os, policy, valueDecl->getName());
-                else 
-                if (const auto* typedefDecl = llvm::dyn_cast<clang::TypedefNameDecl>(decl))
-                {
-                    clang::QualType resolvedType = contextItems.context.getCanonicalType(typedefDecl->getUnderlyingType());
-                    os << (llvm::isa<clang::TypeAliasDecl>(typedefDecl) ? "using " : "typedef ");
-                    if (llvm::isa<clang::TypeAliasDecl>(typedefDecl))
-                    {
-                        os << typedefDecl->getName() << " = ";
-                        resolvedType.print(os, policy);
-                    } else
-                        resolvedType.print(os, policy, typedefDecl->getName());
-                } else
-                if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
-                    tagDecl->print(os, policy);
-                else
-                    decl->print(os, policy);
-            }
+            decl->print(os, policy);
             os.flush();
             return str + Semicolon::IfNeeded(str, decl);
         }
