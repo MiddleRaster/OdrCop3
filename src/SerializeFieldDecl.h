@@ -18,7 +18,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FieldDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class FieldDeclSerializer
     {
         const ContextItems& contextItems;
         const FieldDecl   * fieldDecl;
@@ -89,7 +89,10 @@ namespace OdrCop3
                 std::string fieldStr;
                 clang::QualType qt = fieldDecl->getType();
                 llvm::raw_string_ostream os(fieldStr);
-                qt.print(os, contextItems.printPolicy, get_Name());
+
+                PrintingPolicy policy{contextItems.printPolicy};
+                policy.FullyQualifiedName = resolveNamespaceAliases;
+                qt.print(os, policy, get_Name());
                 os.flush();
 
                 // is it an unnamed struct/class/union/enum? If so...
