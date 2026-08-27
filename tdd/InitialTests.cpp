@@ -4362,15 +4362,15 @@ Test ExploratoryTestsOfClangAST[] =
                                 "template<typename T> struct NamespaceAliasOuterTemplate {}; template<typename T> struct NamespaceAliasInnerTemplate {}; NamespaceAliasOuterTemplate<NamespaceAliasInnerTemplate<Alias::NamespaceAliasTest>> namespaceAliasNestedTemplateArgument;\n"
                                 "using NamespaceAliasDecltypeUsing = decltype(Alias::NamespaceAliasTest{}); NamespaceAliasDecltypeUsing namespaceAliasDecltypeUsingVariable;\n"
                                 "auto namespaceAliasAutoVariable = Alias::NamespaceAliasTest{};\n"
-                                //"constexpr auto namespaceAliasSizeofValue = sizeof(Alias::NamespaceAliasTest);\n"
-                                //"constexpr auto namespaceAliasAlignofValue = alignof(Alias::NamespaceAliasTest);\n"
+                                "auto namespaceAliasSizeofValue = sizeof(Alias::NamespaceAliasTest);\n"
+                                "auto namespaceAliasAlignofValue = alignof(Alias::NamespaceAliasTest);\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
             Assert::AreEqual(12, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(26, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(28, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(20, maps.typedefMap.size(),"wrong number of typedefs in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
@@ -4422,6 +4422,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasArrayVariable[3];\n"                                                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest *namespaceAliasPointerVariable;\n"                                                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest &namespaceAliasReferenceVariable = *namespaceAliasPointerVariable;\n"                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("unsigned long long namespaceAliasAlignofValue = alignof(OriginalNamespace::NamespaceAliasTest);\n"                                      , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasAutoVariable = OriginalNamespace::NamespaceAliasTest{};\n"                          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasChainedVariable;\n"                                                                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasDecltypeUsingVariable;\n"                                                           , (*it++).second[0].fullyQualified);
@@ -4433,6 +4434,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasNestedTemplateAliasVariable;\n"                                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("NamespaceAliasOuterTemplate<NamespaceAliasInnerTemplate<OriginalNamespace::NamespaceAliasTest>> namespaceAliasNestedTemplateArgument;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasNestedVariable;\n"                                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("unsigned long long namespaceAliasSizeofValue = sizeof(OriginalNamespace::NamespaceAliasTest);\n"                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasTemplateAliasVariable;\n"                                                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("NamespaceAliasTemplateTypeArgumentTest<OriginalNamespace::NamespaceAliasTest *> namespaceAliasTemplatePointerArgument;\n"               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("NamespaceAliasTemplateTypeArgumentReferenceTest<OriginalNamespace::NamespaceAliasTest &> namespaceAliasTemplateReferenceArgument;\n"    , (*it++).second[0].fullyQualified);
@@ -4442,8 +4444,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasUsingNestedUsingLevels;\n"                                                          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasUsingVariable;\n"                                                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasVariable;\n"                                                                        , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

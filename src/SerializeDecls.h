@@ -377,17 +377,17 @@ namespace OdrCop3
             class Needs
             {
             private:
-                static bool TemplateArgsPrintingType(const clang::CXXRecordDecl* cxxRecordDecl)
+                static bool TemplateArgsContainAliasedName(const clang::CXXRecordDecl* cxxRecordDecl)
                 {   // pulls template arguments directly off a ClassTemplateSpecializationDecl,
                     // for cases where the TemplateSpecializationType sugar has already been stripped away.
                     if (const auto* specDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(cxxRecordDecl))
                         for (const clang::TemplateArgument& arg : specDecl->getTemplateArgs().asArray())
                             if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
-                                if (true == TypePrintingType(arg.getAsType()))
+                                if (true == TypeContainsAliasedName(arg.getAsType()))
                                     return true;
                     return false;
                 }
-                static bool ClassifyNestedNameSpecifier(clang::NestedNameSpecifier nestedNameSpecifier)
+                static bool NestedNameSpecifierContainsAliasedName(clang::NestedNameSpecifier nestedNameSpecifier)
                 {
                     while (nestedNameSpecifier)
                     {
@@ -402,7 +402,7 @@ namespace OdrCop3
                             // A Type-kind qualifier can itself be a template specialization carrying
                             // an aliased argument, so run it through the full TypePrintingType check.
                             if (const clang::Type* type = nestedNameSpecifier.getAsType())
-                                return TypePrintingType(clang::QualType(type, 0));
+                                return TypeContainsAliasedName(clang::QualType(type, 0));
                             return false;
                         default:
                             return false;
@@ -410,56 +410,84 @@ namespace OdrCop3
                     }
                     return false;
                 }
-                static bool DeclQualifierPrintingType(const clang::Decl* decl)
+                static bool QualifierContainsAliasedName(const clang::Decl* decl)
                 {
                     if (const auto* declaratorDecl = llvm::dyn_cast<clang::DeclaratorDecl>(decl))
-                        return ClassifyNestedNameSpecifier(declaratorDecl->getQualifier());
+                        return NestedNameSpecifierContainsAliasedName(declaratorDecl->getQualifier());
                     if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
-                        return ClassifyNestedNameSpecifier(tagDecl->getQualifier());
+                        return NestedNameSpecifierContainsAliasedName(tagDecl->getQualifier());
                     return false;
                 }
-                static bool TypePrintingType(clang::QualType qt)
+                static bool TypeContainsAliasedName(clang::QualType qt)
                 {
                     if (const auto* recordType = qt->getAs<clang::RecordType>())
                     {
-                        if (true == ClassifyNestedNameSpecifier(recordType->getQualifier()))
+                        if (true == NestedNameSpecifierContainsAliasedName(recordType->getQualifier()))
                             return true;
-                        // for template args living on the decl
                         if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(recordType->getDecl()))
-                            if (true == TemplateArgsPrintingType(cxxRecordDecl))
+                            if (true == TemplateArgsContainAliasedName(cxxRecordDecl))
                                 return true;
                     }
 
                     if (const auto* enumType = qt->getAs<clang::EnumType>())
-                        if (true == ClassifyNestedNameSpecifier(enumType->getQualifier()))
+                        if (true == NestedNameSpecifierContainsAliasedName(enumType->getQualifier()))
                             return true;
 
                     if (const auto* typedefType = qt->getAs<clang::TypedefType>())
-                        if (true == ClassifyNestedNameSpecifier(typedefType->getQualifier()))
+                        if (true == NestedNameSpecifierContainsAliasedName(typedefType->getQualifier()))
                             return true;
 
                     // Pointer types
                     if (const auto* ptrType = qt->getAs<clang::PointerType>())
-                        if (true == TypePrintingType(ptrType->getPointeeType()))
+                        if (true == TypeContainsAliasedName(ptrType->getPointeeType()))
                             return true;
 
                     // Reference types
                     if (const auto* refType = qt->getAs<clang::ReferenceType>())
-                        if (true == TypePrintingType(refType->getPointeeType()))
+                        if (true == TypeContainsAliasedName(refType->getPointeeType()))
                             return true;
 
                     // Array types: must go via Type*; getAs<ArrayType>() is forbidden.
                     if (const clang::Type* rawType = qt.getTypePtr())
                         if (const auto* arrayType = llvm::dyn_cast<clang::ArrayType>(rawType))
-                            if (true == TypePrintingType(arrayType->getElementType()))
+                            if (true == TypeContainsAliasedName(arrayType->getElementType()))
                                 return true;
 
                     // Template specialization sugar: check template arguments for alias use
                     if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
                         for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
                             if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
-                                if (true == TypePrintingType(arg.getAsType()))
+                                if (true == TypeContainsAliasedName(arg.getAsType()))
                                     return true;
+
+                    return false;
+                }
+                static bool ExprContainsAliasedName(const clang::Expr* expr)
+                {   // Walks an expression subtree. Needed because a namespace alias can appear inside an
+                    // initializer's Expr nodes (e.g. sizeof(Alias::Foo), a DeclRefExpr's own qualifier, or a
+                    // MemberExpr's own qualifier) with no path back through any Decl's type.
+                    if (!expr)
+                        return false;
+
+                    if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(expr))
+                        if (true == NestedNameSpecifierContainsAliasedName(declRefExpr->getQualifier()))
+                            return true;
+
+                    if (const auto* memberExpr = llvm::dyn_cast<clang::MemberExpr>(expr))
+                        if (true == NestedNameSpecifierContainsAliasedName(memberExpr->getQualifier()))
+                            return true;
+
+                    if (const auto* traitExpr = llvm::dyn_cast<clang::UnaryExprOrTypeTraitExpr>(expr))
+                        if (traitExpr->isArgumentType())
+                            if (true == TypeContainsAliasedName(traitExpr->getArgumentTypeInfo()->getType()))
+                                return true;
+
+                    // Generic fallthrough: recurse into every child statement/expression so we don't
+                    // have to special-case every Expr subclass (CallExpr, CXXConstructExpr, etc.).
+                    for (const clang::Stmt* child : expr->children())
+                        if (const auto* childExpr = llvm::dyn_cast_or_null<clang::Expr>(child))
+                            if (true == ExprContainsAliasedName(childExpr))
+                                return true;
 
                     return false;
                 }
@@ -468,12 +496,17 @@ namespace OdrCop3
                 static bool OriginalNamespace(const clang::Decl* decl)
                 {
                     // Decl-side qualifiers
-                    if (true == DeclQualifierPrintingType(decl))
+                    if (true == QualifierContainsAliasedName(decl))
                         return true;
 
                     // Type-side qualifiers (ValueDecls)
                     if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
-                        if (true == TypePrintingType(valueDecl->getType()))
+                        if (true == TypeContainsAliasedName(valueDecl->getType()))
+                            return true;
+
+                    // Initializer-side qualifiers (VarDecls) — e.g. sizeof(Alias::Foo) in the init.
+                    if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
+                        if (true == ExprContainsAliasedName(varDecl->getInit()))
                             return true;
 
                     // Recursively inspect child decls (fields, nested types, etc.)
@@ -484,16 +517,16 @@ namespace OdrCop3
                                     return true;
                     // the code above handle function parameters, but not return types
                     if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl))
-                        if (true == TypePrintingType(functionDecl->getReturnType()))
+                        if (true == TypeContainsAliasedName(functionDecl->getReturnType()))
                             return true;
                     if (const auto* conversionDecl = llvm::dyn_cast<clang::CXXConversionDecl>(decl))
-                        if (true == TypePrintingType(conversionDecl->getConversionType()))
+                        if (true == TypeContainsAliasedName(conversionDecl->getConversionType()))
                             return true;
 
                     // Base classes on CXXRecordDecl
                     if (const auto* cxxRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
                         for (const clang::CXXBaseSpecifier& base : cxxRecord->bases())
-                            if (true == TypePrintingType(base.getType()))
+                            if (true == TypeContainsAliasedName(base.getType()))
                                 return true;
 
                     return false;
