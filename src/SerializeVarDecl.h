@@ -122,7 +122,10 @@ namespace OdrCop3
 
             std::string e;
             llvm::raw_string_ostream os(e);
-            expr->printPretty(os, nullptr, contextItems.printPolicy);
+
+            PrintingPolicy printPolicy{contextItems.printPolicy};
+            printPolicy.FullyQualifiedName = resolveNamespaceAliases;
+            expr->printPretty(os, nullptr, printPolicy);
             os.flush();
             if (e == "")
                 return "";
