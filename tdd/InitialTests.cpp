@@ -4369,13 +4369,13 @@ Test ExploratoryTestsOfClangAST[] =
                                 "struct NamespaceAliasConstructorTest { NamespaceAliasConstructorTest(Alias::NamespaceAliasTest) {} };\n"
                                 "struct NamespaceAliasDestructorTest { ~NamespaceAliasDestructorTest() {} Alias::NamespaceAliasTest namespaceAliasDestructorField; };\n"
                                 "struct NamespaceAliasConversionTest { operator Alias::NamespaceAliasTest() const { return {}; } };\n"
-                                //"struct NamespaceAliasMethodTest { Alias::NamespaceAliasTest namespaceAliasMethod(Alias::NamespaceAliasTest) { return {}; } };\n"
-                                //"struct NamespaceAliasConstMethodTest { Alias::NamespaceAliasTest namespaceAliasConstMethod(Alias::NamespaceAliasTest) const { return {}; } };\n"
-                                //"struct NamespaceAliasRefQualifierMethodTest { Alias::NamespaceAliasTest namespaceAliasRefQualifierMethod(Alias::NamespaceAliasTest) & { return {}; } };\n"
-                                //"struct NamespaceAliasRValueRefQualifierMethodTest { Alias::NamespaceAliasTest namespaceAliasRValueRefQualifierMethod(Alias::NamespaceAliasTest) && { return {}; } };\n"
-                                //"struct NamespaceAliasOperatorPlusTest { Alias::NamespaceAliasTest operator+(const Alias::NamespaceAliasTest&) const { return {}; } };\n"
-                                //"struct NamespaceAliasOperatorCallTest { Alias::NamespaceAliasTest operator()(const Alias::NamespaceAliasTest&) const { return {}; } };\n"
-                                //"struct NamespaceAliasOperatorSubscriptTest { Alias::NamespaceAliasTest& operator[](const Alias::NamespaceAliasTest&) { static Alias::NamespaceAliasTest value; return value; } };\n"
+                                "struct NamespaceAliasMethodTest { Alias::NamespaceAliasTest namespaceAliasMethod(Alias::NamespaceAliasTest) { return {}; } };\n"
+                                "struct NamespaceAliasConstMethodTest { Alias::NamespaceAliasTest namespaceAliasConstMethod(Alias::NamespaceAliasTest) const { return {}; } };\n"
+                                "struct NamespaceAliasRefQualifierMethodTest { Alias::NamespaceAliasTest namespaceAliasRefQualifierMethod(Alias::NamespaceAliasTest) & { return {}; } };\n"
+                                "struct NamespaceAliasRValueRefQualifierMethodTest { Alias::NamespaceAliasTest namespaceAliasRValueRefQualifierMethod(Alias::NamespaceAliasTest) && { return {}; } };\n"
+                                "struct NamespaceAliasOperatorPlusTest { Alias::NamespaceAliasTest operator+(const Alias::NamespaceAliasTest&) const { return {}; } };\n"
+                                "struct NamespaceAliasOperatorCallTest { Alias::NamespaceAliasTest operator()(const Alias::NamespaceAliasTest&) const { return {}; } };\n"
+                                "struct NamespaceAliasOperatorSubscriptTest { Alias::NamespaceAliasTest& operator[](const Alias::NamespaceAliasTest&) { static Alias::NamespaceAliasTest value; return value; } };\n"
                                 //"struct NamespaceAliasOperatorEqualTest { bool operator==(const Alias::NamespaceAliasTest&) const { return true; } };\n"
                                 //"struct NamespaceAliasOperatorArrowTest { Alias::NamespaceAliasTest* operator->() { return nullptr; } };\n"
                                 //"template<typename T> Alias::NamespaceAliasTest namespaceAliasFunctionTemplate(T) { return {}; }\n"
@@ -4446,7 +4446,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(15, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(22, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(28, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(20, maps.typedefMap.size(),"wrong number of typedefs in map");
@@ -4455,6 +4455,11 @@ Test ExploratoryTestsOfClangAST[] =
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct NamespaceAliasConstMethodTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest namespaceAliasConstMethod(OriginalNamespace::NamespaceAliasTest) const {\n"
+                                 "        return {};\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasConstructorTest {\n"
                                  "    NamespaceAliasConstructorTest(OriginalNamespace::NamespaceAliasTest) {\n"
                                  "    }\n"
@@ -4477,16 +4482,47 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasInnerTemplate {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasMethodTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest namespaceAliasMethod(OriginalNamespace::NamespaceAliasTest) {\n"
+                                 "        return {};\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasNestedTemplateAlias {\n"
                                  "    using Type = T;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasOperatorCallTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest operator()(const OriginalNamespace::NamespaceAliasTest &) const {\n"
+                                 "        return {};\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasOperatorPlusTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest operator+(const OriginalNamespace::NamespaceAliasTest &) const {\n"
+                                 "        return {};\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasOperatorSubscriptTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest &operator[](const OriginalNamespace::NamespaceAliasTest &) {\n"
+                                 "        static OriginalNamespace::NamespaceAliasTest value;\n"
+                                 "        return value;\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasOuterTemplate {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasRValueRefQualifierMethodTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest namespaceAliasRValueRefQualifierMethod(OriginalNamespace::NamespaceAliasTest) && {\n"
+                                 "        return {};\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NamespaceAliasRefQualifierMethodTest {\n"
+                                 "    OriginalNamespace::NamespaceAliasTest namespaceAliasRefQualifierMethod(OriginalNamespace::NamespaceAliasTest) & {\n"
+                                 "        return {};\n"
+                                 "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasTemplate {\n"
                                  "    T value;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasTemplateTypeArgumentReferenceTest {\n"
-                                "};\n", (*it++).second[0].fullyQualified);
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasTemplateTypeArgumentTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTestStruct {\n"
@@ -4500,6 +4536,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

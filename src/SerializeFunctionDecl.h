@@ -215,7 +215,9 @@ namespace OdrCop3
         {
             std::string body;
             llvm::raw_string_ostream os(body);
-            funcDecl->getBody()->printPretty(os, nullptr, contextItems.printPolicy);
+            PrintingPolicy policy{contextItems.printPolicy};
+            policy.FullyQualifiedName = resolveNamespaceAliases;
+            funcDecl->getBody()->printPretty(os, nullptr, policy);
             os.flush();
             return body;
         }
