@@ -129,10 +129,9 @@ namespace OdrCop3
             os.flush();
             if (e == "")
                 return "";
-            if ((e.starts_with("{")) || e.starts_with("("))
-                return e;
-            else
+            if (varDecl->getInitStyle() == VarDecl::InitializationStyle::CInit)
                 return " = " + e;
+            return e;
         }
 
         std::string GetInlineStaticConstAndConstexpr() const
