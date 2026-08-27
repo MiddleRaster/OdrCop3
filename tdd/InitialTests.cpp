@@ -4424,7 +4424,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasMixedAliasLevels;\n"                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("NamespaceAliasNestedTemplateAlias<Alias::NamespaceAliasTest>::Type namespaceAliasNestedTemplateAliasVariable;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasNestedVariable;\n"                                          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("NamespaceAliasTemplateAlias<OriginalNamespace::NamespaceAliasTest> namespaceAliasTemplateAliasVariable;\n"      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasTemplateAliasVariable;\n"                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("NamespaceAliasTemplate<OriginalNamespace::NamespaceAliasTest> namespaceAliasTemplateVariable;\n"                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasTypedefVariable;\n"                                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasUsingNestedUsingLevels;\n"                                  , (*it++).second[0].fullyQualified);
@@ -4477,9 +4477,9 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("void OriginalNamespace::namespaceAliasParameterFunction(OriginalNamespace::NamespaceAliasTest value) {\n"
+                Assert::AreEqual("void namespaceAliasParameterFunction(OriginalNamespace::NamespaceAliasTest value) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest OriginalNamespace::namespaceAliasReturnFunction() {\n"
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasReturnFunction() {\n"
                                  "    return {};\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> void namespaceAliasTemplateFunction(T) {\n"

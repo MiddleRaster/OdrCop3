@@ -98,7 +98,11 @@ namespace OdrCop3
                     switch (qualType.getTypePtr()->getTypeClass())
                     { // some types must be manually serialized, no matter what. E.g., typedefs
                     case clang::Type::TypeClass::Typedef: return false;
-                    case clang::Type::TypeClass::Enum:    return false;
+                    case clang::Type::TypeClass::Enum:
+                        if (const EnumType* enumType = dyn_cast<EnumType>(qualType.getTypePtr()))
+                            if (enumType->getDecl()->getName().empty())
+                                return false;
+                        break;
                     case clang::Type::TypeClass::Record:
                         if (const RecordType* recordType = dyn_cast<RecordType>(qualType.getTypePtr()))
                             if (recordType->getDecl()->getName().empty())

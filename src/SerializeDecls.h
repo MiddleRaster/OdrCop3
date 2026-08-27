@@ -376,131 +376,107 @@ namespace OdrCop3
 
             class Needs
             {
-            public:
-                enum class PrintingType
+                static bool ClassifyNestedNameSpecifier(clang::NestedNameSpecifier nestedNameSpecifier)
                 {
-                    IsOrdinary,
-                    HasNamespaceAlias,
-                    HasNamespaceAliasAndTypedefOrUsingAlias
-                };
-            private:
-                static PrintingType Combine(PrintingType a, PrintingType b) { return (a > b) ? a : b; }
-                static PrintingType ClassifyNestedNameSpecifier(clang::NestedNameSpecifier nestedNameSpecifier)
-                {
-                    bool hasNamespaceAlias      = false;
-                    bool hasTypedefOrUsingAlias = false;
-
-                    bool keepGoing = static_cast<bool>(nestedNameSpecifier);
-                    while (keepGoing)
+                    while (nestedNameSpecifier)
                     {
                         switch (nestedNameSpecifier.getKind())
                         {
                         case clang::NestedNameSpecifier::Kind::Namespace:
                             if (llvm::isa<clang::NamespaceAliasDecl>(nestedNameSpecifier.getAsNamespaceAndPrefix().Namespace))
-                                hasNamespaceAlias = true;
-                            nestedNameSpecifier   = nestedNameSpecifier.getAsNamespaceAndPrefix().Prefix;
-                            keepGoing             = static_cast<bool>(nestedNameSpecifier);
+                                return true;
+                            nestedNameSpecifier = nestedNameSpecifier.getAsNamespaceAndPrefix().Prefix;
                             break;
                         case clang::NestedNameSpecifier::Kind::Type:
-                            keepGoing = false;
                             if (const clang::Type* type = nestedNameSpecifier.getAsType())
-                            if (const auto* typedefType = llvm::dyn_cast<clang::TypedefType>(type))
-                            {
-                                hasTypedefOrUsingAlias = true;
-                                nestedNameSpecifier    = typedefType->getQualifier();
-                                keepGoing              = static_cast<bool>(nestedNameSpecifier);
-                            }
-                            break;
+                                return llvm::isa<clang::TypedefType>(type);
+                            return false;
                         default:
-                            keepGoing = false;
-                            break;
+                            return false;
                         }
                     }
-
-                    if (hasNamespaceAlias && hasTypedefOrUsingAlias)
-                        return PrintingType::HasNamespaceAliasAndTypedefOrUsingAlias;
-
-                    if (hasNamespaceAlias)
-                        return PrintingType::HasNamespaceAlias;
-
-                    return PrintingType::IsOrdinary;
+                    return false;
                 }
-                static PrintingType DeclQualifierPrintingType(const clang::Decl* decl)
+                static bool DeclQualifierPrintingType(const clang::Decl* decl)
                 {
                     if (const auto* declaratorDecl = llvm::dyn_cast<clang::DeclaratorDecl>(decl))
                         return ClassifyNestedNameSpecifier(declaratorDecl->getQualifier());
                     if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
                         return ClassifyNestedNameSpecifier(tagDecl->getQualifier());
-                    return PrintingType::IsOrdinary;
+                    return false;
                 }
-                static PrintingType TypePrintingType(clang::QualType qt)
+                static bool TypePrintingType(clang::QualType qt)
                 {
-                    PrintingType result      = PrintingType::IsOrdinary;
-                    bool         sawTypedef  = (qt->getAs<clang::TypedefType>() != nullptr);
-
                     if (const auto* recordType = qt->getAs<clang::RecordType>())
-                        result = Combine(result, ClassifyNestedNameSpecifier(recordType->getQualifier()));
+                        if (true == ClassifyNestedNameSpecifier(recordType->getQualifier()))
+                            return true;
 
                     if (const auto* enumType = qt->getAs<clang::EnumType>())
-                        result = Combine(result, ClassifyNestedNameSpecifier(enumType->getQualifier()));
+                        if (true == ClassifyNestedNameSpecifier(enumType->getQualifier()))
+                            return true;
 
                     if (const auto* typedefType = qt->getAs<clang::TypedefType>())
-                        result = Combine(result, ClassifyNestedNameSpecifier(typedefType->getQualifier()));
+                        if (true == ClassifyNestedNameSpecifier(typedefType->getQualifier()))
+                            return true;
 
                     // Pointer types
                     if (const auto* ptrType = qt->getAs<clang::PointerType>())
-                        result = Combine(result, TypePrintingType(ptrType->getPointeeType()));
+                        if (true == TypePrintingType(ptrType->getPointeeType()))
+                            return true;
 
                     // Reference types
                     if (const auto* refType = qt->getAs<clang::ReferenceType>())
-                        result = Combine(result, TypePrintingType(refType->getPointeeType()));
+                        if (true == TypePrintingType(refType->getPointeeType()))
+                            return true;
 
                     // Array types: must go via Type*; getAs<ArrayType>() is forbidden.
                     if (const clang::Type* rawType = qt.getTypePtr())
                         if (const auto* arrayType = llvm::dyn_cast<clang::ArrayType>(rawType))
-                            result = Combine(result, TypePrintingType(arrayType->getElementType()));
+                            if (true == TypePrintingType(arrayType->getElementType()))
+                                return true;
 
                     // Template specialization: check template arguments for alias use
                     if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
                         for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
                             if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
-                                result = Combine(result, TypePrintingType(arg.getAsType()));
+                                if (true == TypePrintingType(arg.getAsType()))
+                                    return true;
 
-                    if (sawTypedef && result == PrintingType::HasNamespaceAlias)
-                        result = PrintingType::HasNamespaceAliasAndTypedefOrUsingAlias;
-
-                    return result;
+                    return false;
                 }
-
             public:
-                static PrintingType OriginalNamespace(const clang::Decl* decl)
+                static bool OriginalNamespace(const clang::Decl* decl)
                 {
-                    PrintingType result = PrintingType::IsOrdinary;
-
                     // Decl-side qualifiers
-                    result = Combine(result, DeclQualifierPrintingType(decl));
+                    if (true == DeclQualifierPrintingType(decl))
+                        return true;
 
                     // Type-side qualifiers (ValueDecls)
                     if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
-                        result = Combine(result, TypePrintingType(valueDecl->getType()));
+                        if (true == TypePrintingType(valueDecl->getType()))
+                            return true;
 
                     // Recursively inspect child decls (fields, nested types, etc.)
                     if (const auto* declContext = llvm::dyn_cast<clang::DeclContext>(decl))
                         for (const clang::Decl* child : declContext->decls())
                             if (!child->isImplicit())
-                                result = Combine(result, Needs::OriginalNamespace(child));
-                    // the code above handle function parameters, but not return types
+                                if (true == Needs::OriginalNamespace(child))
+                                    return true;
+                    // the code above handles function parameters, but not return types
                     if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl))
-                        result = Combine(result, TypePrintingType(functionDecl->getReturnType()));
+                        if (true == TypePrintingType(functionDecl->getReturnType()))
+                            return true;
                     if (const auto* conversionDecl = llvm::dyn_cast<clang::CXXConversionDecl>(decl))
-                        result = Combine(result, TypePrintingType(conversionDecl->getConversionType()));
+                        if (true == TypePrintingType(conversionDecl->getConversionType()))
+                            return true;
 
                     // Base classes on CXXRecordDecl
                     if (const auto* cxxRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
                         for (const clang::CXXBaseSpecifier& base : cxxRecord->bases())
-                            result = Combine(result, TypePrintingType(base.getType()));
+                            if (true == TypePrintingType(base.getType()))
+                                return true;
 
-                    return result;
+                    return false;
                 }
             };
 
@@ -533,15 +509,40 @@ namespace OdrCop3
             std::string str;
             llvm::raw_string_ostream os(str);
             clang::PrintingPolicy policy(contextItems.printPolicy);
-            switch (Needs::OriginalNamespace(decl))
+            if (false == Needs::OriginalNamespace(decl))
+                decl->print(os, policy);
+            else
             {
-            case Needs::PrintingType::HasNamespaceAliasAndTypedefOrUsingAlias:
+                switch(decl->getKind())
+                {
+              //case clang::Decl::Kind::VarTemplateSpecialization:          if (const VarTemplateSpecializationDecl*           vtsd = dyn_cast<VarTemplateSpecializationDecl         >(decl)) return DeclSerializer::SerializeVarTemplateSpecializationDecl         (contextItems, vtsd);               break;
+              //case clang::Decl::Kind::VarTemplatePartialSpecialization:   if (const VarTemplatePartialSpecializationDecl*   vtpsd = dyn_cast<VarTemplatePartialSpecializationDecl  >(decl)) return DeclSerializer::SerializeVarTemplatePartialSpecializationDecl  (contextItems, vtpsd);              break;
+              //case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
+              //case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
+              //case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
+              //case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
+                case clang::Decl::Kind::CXXMethod: // is a subclass of FunctionDecl
+                case clang::Decl::Kind::Function:                           if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(decl)) return FunctionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, functionDecl).Serialize(); break;
+              //case clang::Decl::Kind::CXXConversion:                      if (const CXXConversionDecl*          cxxConversionDecl = dyn_cast<CXXConversionDecl                     >(decl)) return DeclSerializer::SerializeCXXConversionDecl                     (contextItems, cxxConversionDecl);  break;
+              //case clang::Decl::Kind::CXXConstructor:                     if (const CXXConstructorDecl*        cxxConstructorDecl = dyn_cast<CXXConstructorDecl                    >(decl)) return DeclSerializer::SerializeCXXConstructorDecl                    (contextItems, cxxConstructorDecl); break;
+              //case clang::Decl::Kind::CXXDestructor:                      if (const CXXDestructorDecl*          cxxDestructorDecl = dyn_cast<CXXDestructorDecl                     >(decl)) return DeclSerializer::SerializeCXXDestructorDecl                     (contextItems, cxxDestructorDecl);  break;
+              //case clang::Decl::Kind::ParmVar:                            if (const ParmVarDecl *                             pvd = dyn_cast<ParmVarDecl                           >(decl)) return DeclSerializer::SerializeParmVarDecl                           (contextItems, pvd);                break;
+                case clang::Decl::Kind::CXXRecord:                          if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(decl)) return CXXRecordDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, cxxRecordDecl).Serialize(); break;
+              //case clang::Decl::Kind::Field:                              if (const FieldDecl *                         fieldDecl = dyn_cast<FieldDecl                             >(decl)) return DeclSerializer::SerializeFieldDecl                             (contextItems, fieldDecl);          break;
+              //case clang::Decl::Kind::AccessSpec:                         if (const AccessSpecDecl *                   accessDecl = dyn_cast<AccessSpecDecl                        >(decl)) return DeclSerializer::SerializeAccessSpecDecl                        (contextItems, accessDecl);         break;
+                case clang::Decl::Kind::Var:                                if (const VarDecl* varDecl = dyn_cast<VarDecl>(decl)) return VarDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, varDecl).Serialize(); break;
+              //case clang::Decl::Kind::Enum:                               if (const EnumDecl*                            enumDecl = dyn_cast<EnumDecl                              >(decl)) return DeclSerializer::SerializeEnumDecl                              (contextItems, enumDecl);           break;
+              //case clang::Decl::Kind::Typedef:                            if (const TypedefDecl *                     typedefDecl = dyn_cast<TypedefDecl                           >(decl)) return DeclSerializer::SerializeTypedefDecl                           (contextItems, typedefDecl);        break;
+              //case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<TypeAliasDecl                         >(decl)) return DeclSerializer::SerializeTypeAliasDecl                         (contextItems, tad);                break;
+              //case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<TypeAliasTemplateDecl                 >(decl)) return DeclSerializer::SerializeTypeAliasTemplateDecl                 (contextItems, tatd);               break;
+              //case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<FriendDecl                            >(decl)) return DeclSerializer::SerializeFriendDecl                            (contextItems, friendDecl);         break;
+              //case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<ConceptDecl                           >(decl)) return DeclSerializer::SerializeConceptDecl                           (contextItems, conceptDecl);        break;
+                default: break;
+                }
+
                 policy.FullyQualifiedName     = true;
                 policy.SuppressUnwrittenScope = true;
 
-                if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl))
-                    return FunctionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, functionDecl).Serialize();
-                else
                 if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
                     QualType(contextItems.context.getCanonicalType(valueDecl->getType())).print(os, policy, valueDecl->getName());
                 else 
@@ -556,20 +557,10 @@ namespace OdrCop3
                     } else
                         resolvedType.print(os, policy, typedefDecl->getName());
                 } else
-                if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
-                    return CXXRecordDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, cxxRecordDecl).Serialize();
-                else
                 if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
                     tagDecl->print(os, policy);
                 else
                     decl->print(os, policy);
-                break;
-
-            case Needs::PrintingType::HasNamespaceAlias: policy.FullyQualifiedName = true; [[fallthrough]];
-            case Needs::PrintingType::IsOrdinary:
-            default:
-                decl->print(os, policy);
-                break;
             }
             os.flush();
             return str + Semicolon::IfNeeded(str, decl);
