@@ -515,7 +515,12 @@ namespace OdrCop3
                             if (!child->isImplicit())
                                 if (true == Needs::OriginalNamespace(child))
                                     return true;
-                    if (const auto* functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+                    const clang::FunctionDecl* functionDecl = nullptr;
+                    if (const auto* functionTemplateDecl = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
+                        functionDecl = functionTemplateDecl->getTemplatedDecl();
+                    else
+                        functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl);
+                    if (functionDecl) {
                         for (const clang::ParmVarDecl* parm : functionDecl->parameters())
                             if (!parm->isImplicit())
                                 if (true == Needs::OriginalNamespace(parm))
@@ -577,9 +582,9 @@ namespace OdrCop3
               //case clang::Decl::Kind::ClassTemplatePartialSpecialization: if (const ClassTemplatePartialSpecializationDecl* ctpsd = dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) return DeclSerializer::SerializeClassTemplatePartialSpecializationDecl(contextItems, ctpsd);              break;
               //case clang::Decl::Kind::ClassTemplateSpecialization:        if (const ClassTemplateSpecializationDecl*         ctsd = dyn_cast<ClassTemplateSpecializationDecl       >(decl)) return DeclSerializer::SerializeClassTemplateSpecializationDecl       (contextItems, ctsd);               break;
               //case clang::Decl::Kind::ClassTemplate:                      if (const ClassTemplateDecl*                        ctd = dyn_cast<ClassTemplateDecl                     >(decl)) return DeclSerializer::SerializeClassTemplateDecl                     (contextItems, ctd);                break;
-              //case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl *                    ftd = dyn_cast<FunctionTemplateDecl                  >(decl)) return DeclSerializer::SerializeFunctionTemplateDecl                  (contextItems, ftd);                break;
+                case clang::Decl::Kind::FunctionTemplate:                   if (const FunctionTemplateDecl * ftd = dyn_cast<FunctionTemplateDecl>(decl)) return FunctionTemplateDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr>(contextItems, ftd).Serialize(); break;
                 case clang::Decl::Kind::CXXMethod: // is a subclass of FunctionDecl
-                case clang::Decl::Kind::Function:                           if (const FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(decl)) return FunctionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, functionDecl).Serialize(); break;
+                case clang::Decl::Kind::Function:                           if (const FunctionDecl* functionDecl = dyn_cast<        FunctionDecl>(decl)) return FunctionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems, functionDecl).Serialize(); break;
                 case clang::Decl::Kind::CXXConversion:                      if (const CXXConversionDecl * cxxConversionDecl  = dyn_cast< CXXConversionDecl>(decl)) return  CXXConversionDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true>(contextItems,  cxxConversionDecl).Serialize();  break;
                 case clang::Decl::Kind::CXXConstructor:                     if (const CXXConstructorDecl* cxxConstructorDecl = dyn_cast<CXXConstructorDecl>(decl)) return CXXConstructorDeclSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr      >(contextItems, cxxConstructorDecl).Serialize(); break;
               //case clang::Decl::Kind::CXXDestructor:                      if (const CXXDestructorDecl*          cxxDestructorDecl = dyn_cast<CXXDestructorDecl                     >(decl)) return DeclSerializer::SerializeCXXDestructorDecl                     (contextItems, cxxDestructorDecl);  break;
