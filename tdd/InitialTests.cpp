@@ -4767,31 +4767,31 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest Level1;\n"                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest Level2;\n"                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level1 = OriginalNamespace::NamespaceAliasTest;\n"                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level2 = OriginalNamespace::NamespaceAliasTest;\n"                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using NamespaceAliasAliasTemplate = Alias::NamespaceAliasTest;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasBaseTypedefAlias;\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasBaseUsingAlias = OriginalNamespace::NamespaceAliasTest;\n"         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasDecltypeUsing = OriginalNamespace::NamespaceAliasTest;\n"          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using NamespaceAliasDependentAliasTemplate = T;\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTestEnum NamespaceAliasEnumTypedefAlias;\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasEnumUsingAlias = OriginalNamespace::NamespaceAliasTestEnum;\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasFunctionTypedefAlias;\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasFunctionUsingAlias = OriginalNamespace::NamespaceAliasTest;\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasMixedLevel1 = OriginalNamespace::NamespaceAliasTest;\n"            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasMixedLevel2;\n"            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasMixedLevel3 = OriginalNamespace::NamespaceAliasTest;\n"            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using NamespaceAliasTemplateAlias = T;\n"                        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasTypedefFromUsingTest;\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasTypedefTest;\n"            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level2 = OriginalNamespace::NamespaceAliasTest;\n"                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level1 = OriginalNamespace::NamespaceAliasTest;\n"                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasUsingTest = OriginalNamespace::NamespaceAliasTest;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasUsingTest2 = OriginalNamespace::NamespaceAliasTest;\n"             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NestedNamespaceAliasTest = OriginalNamespace::NamespaceAliasTest;\n"             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasInt = unsigned int;\n"                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest Level1;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest Level2;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Level1 = OriginalNamespace::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Level2 = OriginalNamespace::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> using NamespaceAliasAliasTemplate = OriginalNamespace::NamespaceAliasTest;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasBaseTypedefAlias;\n"                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasBaseUsingAlias = OriginalNamespace::NamespaceAliasTest;\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasDecltypeUsing = OriginalNamespace::NamespaceAliasTest;\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> using NamespaceAliasDependentAliasTemplate = T;\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTestEnum NamespaceAliasEnumTypedefAlias;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasEnumUsingAlias = OriginalNamespace::NamespaceAliasTestEnum;\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasFunctionTypedefAlias;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasFunctionUsingAlias = OriginalNamespace::NamespaceAliasTest;\n"                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasMixedLevel1 = OriginalNamespace::NamespaceAliasTest;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasMixedLevel2;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasMixedLevel3 = OriginalNamespace::NamespaceAliasTest;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> using NamespaceAliasTemplateAlias = T;\n"                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasTypedefFromUsingTest;\n"               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasTypedefTest;\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Level2 = OriginalNamespace::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using Level1 = OriginalNamespace::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasUsingTest = OriginalNamespace::NamespaceAliasTest;\n"                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasUsingTest2 = OriginalNamespace::NamespaceAliasTest;\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NestedNamespaceAliasTest = OriginalNamespace::NamespaceAliasTest;\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NamespaceAliasInt = unsigned int;\n"                                                         , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();

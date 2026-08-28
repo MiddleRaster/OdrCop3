@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class TypeAliasTemplateDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class TypeAliasTemplateDeclSerializer
     {
         const ContextItems         & contextItems;
         const TypeAliasTemplateDecl* typeAliasTemplateDecl;
@@ -27,7 +27,11 @@ namespace OdrCop3
             std::string fqtd;
             fqtd  = ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, typeAliasTemplateDecl->getTemplateParameters());
             fqtd += "using " + typeAliasTemplateDecl->getNameAsString() + " = ";
-            fqtd += IndentBlock(SerializeType(contextItems, typeAliasTemplateDecl->getTemplatedDecl()->getUnderlyingType()), fqtd.size());
+
+            QualType qt = typeAliasTemplateDecl->getTemplatedDecl()->getUnderlyingType();
+            if (resolveNamespaceAliases)
+                qt = qt.getCanonicalType();
+            fqtd += IndentBlock(SerializeType(contextItems, qt), fqtd.size());
             fqtd  = TrimRightIf(fqtd, ";");
             fqtd += ";\n";
             return fqtd;

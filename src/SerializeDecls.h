@@ -477,6 +477,10 @@ namespace OdrCop3
                 if (const auto* typedefNameDecl = llvm::dyn_cast<clang::TypedefNameDecl>(decl))
                     if (true == TypeContainsAliasedName(typedefNameDecl->getUnderlyingType()))
                         return true;
+                // template using aliases
+                if (const auto* typeAliasTemplateDecl = llvm::dyn_cast<clang::TypeAliasTemplateDecl>(decl))
+                    if (true == Needs::OriginalNamespace(typeAliasTemplateDecl->getTemplatedDecl()))
+                        return true;
 
                 // Recursively inspect child decls (fields, nested types, etc.)
                 if (const auto* declContext = llvm::dyn_cast<clang::DeclContext>(decl))
@@ -588,7 +592,7 @@ namespace OdrCop3
             case clang::Decl::Kind::Enum:                               if (const EnumDecl*                            enumDecl = dyn_cast<                              EnumDecl>(decl)) return                               EnumDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,           enumDecl).Serialize(); break;
             case clang::Decl::Kind::Typedef:                            if (const TypedefDecl *                     typedefDecl = dyn_cast<                           TypedefDecl>(decl)) return                            TypedefDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,        typedefDecl).Serialize(); break;
             case clang::Decl::Kind::TypeAlias:                          if (const TypeAliasDecl *                           tad = dyn_cast<                         TypeAliasDecl>(decl)) return                          TypeAliasDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,                tad).Serialize(); break;
-            case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<                 TypeAliasTemplateDecl>(decl)) return                  TypeAliasTemplateDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,               tatd).Serialize(); break;
+            case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<                 TypeAliasTemplateDecl>(decl)) return                  TypeAliasTemplateDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,               tatd).Serialize(); break;
             case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<                            FriendDecl>(decl)) return                             FriendDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,         friendDecl).Serialize(); break;
             case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<                           ConceptDecl>(decl)) return                            ConceptDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,        conceptDecl).Serialize(); break;
             default: break;
