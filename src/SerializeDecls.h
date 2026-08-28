@@ -490,15 +490,25 @@ namespace OdrCop3
                 }
 
                 // concepts
-                if (const auto* conceptDecl = llvm::dyn_cast<clang::ConceptDecl>(decl))
+                if (const auto* conceptDecl = llvm::dyn_cast<clang::ConceptDecl>(decl)) {
+                    if (true == TemplateParametersContainAliasedName(conceptDecl->getTemplateParameters()))
+                        return true;
                     if (true == ExprContainsAliasedName(conceptDecl->getConstraintExpr()))
                         return true;
+                }
 
                 // functions and function templates
                 const clang::FunctionDecl* functionDecl = nullptr;
-                if (const auto* functionTemplateDecl = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
+                if (const auto* functionTemplateDecl = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl)) {
+                    llvm::SmallVector<clang::AssociatedConstraint,4> constraints;
+                    functionTemplateDecl->getAssociatedConstraints(constraints);
+                    for (const AssociatedConstraint& constraint : constraints)
+                        if (constraint.ConstraintExpr != nullptr)
+                            if (true == ExprContainsAliasedName(constraint.ConstraintExpr))
+                                return true;
+
                     functionDecl = functionTemplateDecl->getTemplatedDecl();
-                else
+                } else
                     functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl);
                 if (functionDecl) {
                     for (const clang::ParmVarDecl* parm : functionDecl->parameters())

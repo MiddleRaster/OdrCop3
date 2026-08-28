@@ -4444,30 +4444,30 @@ Test ExploratoryTestsOfClangAST[] =
                                 "template<typename T> concept NamespaceAliasConceptParameterTest = requires (Alias::NamespaceAliasTest value) { sizeof(value); };\n"
                                 "template<typename T> concept NamespaceAliasConceptNestedRequirementTest = requires { requires (sizeof(Alias::NamespaceAliasTest) > 0); };\n"
                                 "template<typename T> concept NamespaceAliasConceptCompoundRequirementTest = requires { { Alias::NamespaceAliasTest{} }; };\n"
-                                //"template<typename T> concept NamespaceAliasConceptSizeTest = (sizeof(Alias::NamespaceAliasTest) > 0);\n"
-                                //"template<typename T> concept NamespaceAliasConceptAlignmentTest = (alignof(Alias::NamespaceAliasTest) > 0);\n"
-                                //"template<typename T> concept NamespaceAliasConceptCombinedConstraintTest = (__is_same(T, Alias::NamespaceAliasTest) && sizeof(Alias::NamespaceAliasTest) > 0);\n"
-                                //"template<typename T> requires (__is_same(T, Alias::NamespaceAliasTest)) void namespaceAliasRequiresClauseFunctionTest(T) {}\n"
-                                //"template<typename T> requires requires { typename Alias::NamespaceAliasTest; } void namespaceAliasRequiresExpressionClauseFunctionTest(T) {}\n"
-                                //"template<typename T> concept NamespaceAliasConceptHelperTest = __is_same(T, Alias::NamespaceAliasTest);\n"
-                                //"template<typename T> requires NamespaceAliasConceptHelperTest<T> void namespaceAliasConceptIdConstraintTest(T) {}\n"
-                                //"template<typename T> requires (NamespaceAliasConceptHelperTest<T> && sizeof(Alias::NamespaceAliasTest) > 0) void namespaceAliasCombinedConceptConstraintTest(T) {}\n"
-                                //"template<typename T> concept NamespaceAliasConceptNestedConceptTest = requires { requires NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>; };\n"
-                                //"template<Alias::NamespaceAliasInt N> concept NamespaceAliasNonTypeConceptParameterTest = (N > 0);\n"
-                                //"template<typename T> concept NamespaceAliasConceptTemplateArgumentTest = NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>;\n"
-                                //"template<typename T> concept NamespaceAliasConceptRequiresExpressionConceptArgumentTest = requires { requires NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>; };\n"
-                                //"namespace NamespaceAliasConceptUsingDeclarationTest { using Alias::NamespaceAliasTest; NamespaceAliasTest value; }\n"
+                                "template<typename T> concept NamespaceAliasConceptSizeTest = (sizeof(Alias::NamespaceAliasTest) > 0);\n"
+                                "template<typename T> concept NamespaceAliasConceptAlignmentTest = (alignof(Alias::NamespaceAliasTest) > 0);\n"
+                                "template<typename T> concept NamespaceAliasConceptCombinedConstraintTest = (__is_same(T, Alias::NamespaceAliasTest) && sizeof(Alias::NamespaceAliasTest) > 0);\n"
+                                "template<typename T> requires (__is_same(T, Alias::NamespaceAliasTest)) void namespaceAliasRequiresClauseFunctionTest(T) {}\n"
+                                "template<typename T> requires requires { typename Alias::NamespaceAliasTest; } void namespaceAliasRequiresExpressionClauseFunctionTest(T) {}\n"
+                                "template<typename T> concept NamespaceAliasConceptHelperTest = __is_same(T, Alias::NamespaceAliasTest);\n"
+                                "template<typename T> requires NamespaceAliasConceptHelperTest<T> void namespaceAliasConceptIdConstraintTest(T) {}\n"
+                                "template<typename T> requires (NamespaceAliasConceptHelperTest<T> && sizeof(Alias::NamespaceAliasTest) > 0) void namespaceAliasCombinedConceptConstraintTest(T) {}\n"
+                                "template<typename T> concept NamespaceAliasConceptNestedConceptTest = requires { requires NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>; };\n"
+                                "template<Alias::NamespaceAliasInt N> concept NamespaceAliasNonTypeConceptParameterTest = (N > 0);\n"
+                                "template<typename T> concept NamespaceAliasConceptTemplateArgumentTest = NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>;\n"
+                                "template<typename T> concept NamespaceAliasConceptRequiresExpressionConceptArgumentTest = requires { requires NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>; };\n"
+                                "namespace NamespaceAliasConceptUsingDeclarationTest { using Alias::NamespaceAliasTest; NamespaceAliasTest value; }\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
             Assert::AreEqual(65, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(32, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(33, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 3, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(25, maps.typedefMap.size(),"wrong number of typedefs in map");
-            Assert::AreEqual( 6, maps.conceptMap.size(), "wrong number of comcepts in map");
-            Assert::AreEqual(18, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(14, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(22, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -4712,21 +4712,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasTypedefTwoLevels;\n"                                                                , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasUsingTwoLevels;\n"                                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("OriginalNamespace::NamespaceAliasTest value;\n"                                                                                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest NamespaceAliasStaticFieldTest::value{};\n"                                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasArray2DVariable[2][3];\n"                                                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasArrayVariable[3];\n"                                                                , (*it++).second[0].fullyQualified);
@@ -4757,14 +4748,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> OriginalNamespace::NamespaceAliasTest namespaceAliasVariableTemplate = {};\n"                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> OriginalNamespace::NamespaceAliasTest namespaceAliasVariableTemplateSpecializationTest = {};\n"                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> OriginalNamespace::NamespaceAliasTest namespaceAliasVariableTemplateSpecializationTest<OriginalNamespace::NamespaceAliasTest> = {};\n"   , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -4781,8 +4764,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    NamespaceAliasTestGreen,\n"
                                  "    NamespaceAliasTestBlue\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.typedefMap.begin();
@@ -4811,31 +4792,23 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("using NamespaceAliasUsingTest2 = NamespaceAliasUsingTest;\n"                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using NestedNamespaceAliasTest = Alias::NamespaceAliasTest;\n"                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using NamespaceAliasInt = unsigned int;\n"                                             , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
-                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptCompoundRequirementTest = requires { { OriginalNamespace::NamespaceAliasTest{} }; };\n"                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptNestedRequirementTest = requires { requires (sizeof(OriginalNamespace::NamespaceAliasTest) > 0); };\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptParameterTest = requires (Alias::NamespaceAliasTest value) { sizeof (value); };\n"                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTest = requires { sizeof(OriginalNamespace::NamespaceAliasTest); };\n"                                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTypeRequirementTest = requires { typename OriginalNamespace::NamespaceAliasTest; };\n"                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTypeTest = __is_same(T, OriginalNamespace::NamespaceAliasTest);\n"                                    , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptAlignmentTest = (alignof(OriginalNamespace::NamespaceAliasTest) > 0);\n"                                                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptCombinedConstraintTest = (__is_same(T, OriginalNamespace::NamespaceAliasTest) && sizeof(OriginalNamespace::NamespaceAliasTest) > 0);\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptCompoundRequirementTest = requires { { OriginalNamespace::NamespaceAliasTest{} }; };\n"                                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptHelperTest = __is_same(T, OriginalNamespace::NamespaceAliasTest);\n"                                                                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptNestedConceptTest = requires { requires NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>; };\n"                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptNestedRequirementTest = requires { requires (sizeof(OriginalNamespace::NamespaceAliasTest) > 0); };\n"                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptParameterTest = requires (Alias::NamespaceAliasTest value) { sizeof (value); };\n"                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptRequiresExpressionConceptArgumentTest = requires { requires NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>; };\n"          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptSizeTest = (sizeof(OriginalNamespace::NamespaceAliasTest) > 0);\n"                                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTemplateArgumentTest = NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>;\n"                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTest = requires { sizeof(OriginalNamespace::NamespaceAliasTest); };\n"                                                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTypeRequirementTest = requires { typename OriginalNamespace::NamespaceAliasTest; };\n"                                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTypeTest = __is_same(T, OriginalNamespace::NamespaceAliasTest);\n"                                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <OriginalNamespace::NamespaceAliasInt N> concept NamespaceAliasNonTypeConceptParameterTest = (N > 0);\n"                                                                                     , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -4847,6 +4820,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return {};\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void namespaceAliasArrayParameterTest(OriginalNamespace::NamespaceAliasTest namespaceAliasArrayParameter[3]) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires (NamespaceAliasConceptHelperTest<T> && sizeof(OriginalNamespace::NamespaceAliasTest) > 0) void namespaceAliasCombinedConceptConstraintTest(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires NamespaceAliasConceptHelperTest<T> void namespaceAliasConceptIdConstraintTest(T) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> requires (sizeof(T) > 0) OriginalNamespace::NamespaceAliasTest namespaceAliasConstrainedFunctionTemplate(T) {\n"
                                  "    return {};\n"
@@ -4872,6 +4849,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void namespaceAliasReferenceParameterTest(const OriginalNamespace::NamespaceAliasTest &namespaceAliasReferenceParameter) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires (__is_same(T, OriginalNamespace::NamespaceAliasTest)) void namespaceAliasRequiresClauseFunctionTest(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires requires { typename OriginalNamespace::NamespaceAliasTest; } void namespaceAliasRequiresExpressionClauseFunctionTest(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> void namespaceAliasTemplateFunction(T) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void namespaceAliasTemplateInstantiation(OriginalNamespace::NamespaceAliasTest value) {\n"
@@ -4881,11 +4862,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void namespaceAliasUsingAliasParameter(OriginalNamespace::NamespaceAliasTest value) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },
