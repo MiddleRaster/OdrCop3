@@ -105,7 +105,11 @@ namespace OdrCop3
 
         std::string                 templatePrefix;
         llvm::raw_string_ostream os(templatePrefix);
-        templateParameterList->print(os, contextItems.context, contextItems.printPolicy);
+
+        clang::PrintingPolicy policy{contextItems.printPolicy};
+        policy.FullyQualifiedName     = true;
+        policy.SuppressUnwrittenScope = true;
+        templateParameterList->print(os, contextItems.context, policy);
         os.flush();
         return templatePrefix;
     }

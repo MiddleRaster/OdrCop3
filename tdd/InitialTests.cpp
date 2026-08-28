@@ -4411,8 +4411,8 @@ Test ExploratoryTestsOfClangAST[] =
                                 "struct NamespaceAliasNestedAliasTest { using NestedAlias = Alias::NamespaceAliasTest; };\n"
                                 "template<typename T> concept NamespaceAliasConceptTest = requires { sizeof(Alias::NamespaceAliasTest); };\n"
                                 "template<typename T> concept NamespaceAliasConceptTypeTest = __is_same(T, Alias::NamespaceAliasTest);\n"
-                                //"template<typename NamespaceAliasTemplateTypeParameterTest> struct NamespaceAliasTemplateTypeParameterHolder {};\n"
-                                //"template<Alias::NamespaceAliasTest* NamespaceAliasNonTypeParameterTest> struct NamespaceAliasNonTypeParameterHolder {};\n"
+                                "template<typename NamespaceAliasTemplateTypeParameterTest> struct NamespaceAliasTemplateTypeParameterHolder {};\n"
+                                "template<Alias::NamespaceAliasTest* NamespaceAliasNonTypeParameterTest> struct NamespaceAliasNonTypeParameterHolder {};\n"
                                 //"struct NamespaceAliasFriendTest { friend void namespaceAliasFriend(Alias::NamespaceAliasTest); };\n"
                                 //"struct NamespaceAliasFriendClassTest { friend struct NamespaceAliasFriendClass; Alias::NamespaceAliasTest value; };\n"
                                 //"struct NamespaceAliasFriendTemplateTest { template<typename T> friend void namespaceAliasFriendTemplate(Alias::NamespaceAliasTest, T); };\n"
@@ -4444,7 +4444,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(41, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(43, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(31, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 3, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(24, maps.typedefMap.size(),"wrong number of typedefs in map");
@@ -4527,6 +4527,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        OriginalNamespace::NamespaceAliasTest value;\n"
                                  "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <OriginalNamespace::NamespaceAliasTest *NamespaceAliasNonTypeParameterTest> struct NamespaceAliasNonTypeParameterHolder {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasOperatorArrowTest {\n"
                                  "    OriginalNamespace::NamespaceAliasTest *operator->() {\n"
                                  "        return nullptr;\n"
@@ -4587,6 +4589,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct NamespaceAliasTemplateTypeArgumentTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename NamespaceAliasTemplateTypeParameterTest> struct NamespaceAliasTemplateTypeParameterHolder {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTestStruct {\n"
                                  "    OriginalNamespace::NamespaceAliasTest namespaceAliasField;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -4601,7 +4605,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

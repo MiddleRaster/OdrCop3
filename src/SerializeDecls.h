@@ -445,6 +445,15 @@ namespace OdrCop3
                 }
                 return false;
             }
+            static bool TemplateParametersContainAliasedName(const clang::TemplateParameterList* params)
+            {
+                if (params)
+                    for (const clang::NamedDecl* param : *params)
+                        if (const auto* ntp = llvm::dyn_cast<clang::NonTypeTemplateParmDecl>(param))
+                            if (true == TypeContainsAliasedName(ntp->getType()))
+                                return true;
+                return false;
+            }
 
         public:
             static bool OriginalNamespace(const clang::Decl* decl)
@@ -471,10 +480,13 @@ namespace OdrCop3
                                 return true;
 
                 // class templates
-                if (const auto* classTemplateDecl = llvm::dyn_cast<clang::ClassTemplateDecl>(decl))
+                if (const auto* classTemplateDecl = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
+                    if (true == TemplateParametersContainAliasedName(classTemplateDecl->getTemplateParameters()))
+                        return true;
                     if (const auto* cxxRecord = classTemplateDecl->getTemplatedDecl())
                         if (true == Needs::OriginalNamespace(cxxRecord))
                             return true;
+                }
 
                 // concepts
                 if (const auto* conceptDecl = llvm::dyn_cast<clang::ConceptDecl>(decl))
