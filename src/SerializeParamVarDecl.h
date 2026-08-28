@@ -71,7 +71,10 @@ namespace OdrCop3
             {
                 std::string s;
                 llvm::raw_string_ostream os(s);
-                parmVarDecl->getDefaultArg()->printPretty(os, nullptr, contextItems.printPolicy);
+                PrintingPolicy policy{contextItems.printPolicy};
+                policy.FullyQualifiedName     = true;
+                policy.SuppressUnwrittenScope = true;
+                parmVarDecl->getDefaultArg()->printPretty(os, nullptr, policy);
                 os.flush();
                 out += " = " + s;
             }
