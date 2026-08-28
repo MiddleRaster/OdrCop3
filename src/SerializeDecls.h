@@ -370,44 +370,42 @@ namespace OdrCop3
             {   // Walks an expression subtree. Needed because a namespace alias can appear inside an
                 // initializer's Expr nodes (e.g. sizeof(Alias::Foo), a DeclRefExpr's own qualifier, or a
                 // MemberExpr's own qualifier) with no path back through any Decl's type.
-                if (!expr)
-                    return false;
-
-                if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(expr))
-                    if (true == NestedNameSpecifierContainsAliasedName(declRefExpr->getQualifier()))
-                        return true;
-
-                if (const auto* memberExpr = llvm::dyn_cast<clang::MemberExpr>(expr))
-                    if (true == NestedNameSpecifierContainsAliasedName(memberExpr->getQualifier()))
-                        return true;
-
-                if (const auto* conceptSpecExpr = llvm::dyn_cast<clang::ConceptSpecializationExpr>(expr))
-                    if (const clang::ConceptReference* conceptRef = conceptSpecExpr->getConceptReference())
-                        if (true == NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
+                if (expr) {
+                    if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(expr))
+                        if (true == NestedNameSpecifierContainsAliasedName(declRefExpr->getQualifier()))
                             return true;
 
-                if (const auto* requiresExpr = llvm::dyn_cast<clang::RequiresExpr>(expr))
-                    for (const clang::concepts::Requirement* requirement : requiresExpr->getRequirements())
-                        if (true == RequirementContainsAliasedName(requirement))
+                    if (const auto* memberExpr = llvm::dyn_cast<clang::MemberExpr>(expr))
+                        if (true == NestedNameSpecifierContainsAliasedName(memberExpr->getQualifier()))
                             return true;
 
-                if (const auto* traitExpr = llvm::dyn_cast<clang::UnaryExprOrTypeTraitExpr>(expr))
-                    if (traitExpr->isArgumentType())
-                        if (true == TypeContainsAliasedName(traitExpr->getArgumentTypeInfo()->getType()))
-                            return true;
+                    if (const auto* conceptSpecExpr = llvm::dyn_cast<clang::ConceptSpecializationExpr>(expr))
+                        if (const clang::ConceptReference* conceptRef = conceptSpecExpr->getConceptReference())
+                            if (true == NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
+                                return true;
 
-                if (const auto* typeTraitExpr = llvm::dyn_cast<clang::TypeTraitExpr>(expr))
-                    for (const clang::TypeSourceInfo* argTypeSourceInfo : typeTraitExpr->getArgs())
-                        if (true == TypeContainsAliasedName(argTypeSourceInfo->getType()))
-                            return true;
+                    if (const auto* requiresExpr = llvm::dyn_cast<clang::RequiresExpr>(expr))
+                        for (const clang::concepts::Requirement* requirement : requiresExpr->getRequirements())
+                            if (true == RequirementContainsAliasedName(requirement))
+                                return true;
 
-                // Generic fallthrough: recurse into every child statement/expression so we don't
-                // have to special-case every Expr subclass (CallExpr, CXXConstructExpr, etc.).
-                for (const clang::Stmt* child : expr->children())
-                    if (const auto* childExpr = llvm::dyn_cast_or_null<clang::Expr>(child))
-                        if (true == ExprContainsAliasedName(childExpr))
-                            return true;
+                    if (const auto* traitExpr = llvm::dyn_cast<clang::UnaryExprOrTypeTraitExpr>(expr))
+                        if (traitExpr->isArgumentType())
+                            if (true == TypeContainsAliasedName(traitExpr->getArgumentTypeInfo()->getType()))
+                                return true;
 
+                    if (const auto* typeTraitExpr = llvm::dyn_cast<clang::TypeTraitExpr>(expr))
+                        for (const clang::TypeSourceInfo* argTypeSourceInfo : typeTraitExpr->getArgs())
+                            if (true == TypeContainsAliasedName(argTypeSourceInfo->getType()))
+                                return true;
+
+                    // Generic fallthrough: recurse into every child statement/expression so we don't
+                    // have to special-case every Expr subclass (CallExpr, CXXConstructExpr, etc.).
+                    for (const clang::Stmt* child : expr->children())
+                        if (const auto* childExpr = llvm::dyn_cast_or_null<clang::Expr>(child))
+                            if (true == ExprContainsAliasedName(childExpr))
+                                return true;
+                }
                 return false;
             }
             static bool TypeConstraintContainsAliasedName(const clang::TypeConstraint* typeConstraint)
@@ -431,6 +429,9 @@ namespace OdrCop3
                 if (const auto* exprRequirement = llvm::dyn_cast<clang::concepts::ExprRequirement>(requirement)) {
                     if (!exprRequirement->isExprSubstitutionFailure())
                         if (true == ExprContainsAliasedName(exprRequirement->getExpr()))
+                            return true;
+                    if (const clang::Expr* expr = exprRequirement->getExpr())
+                        if (true == TypeContainsAliasedName(expr->getType()))
                             return true;
                     if (exprRequirement->getReturnTypeRequirement().isTypeConstraint())
                         if (true == TypeConstraintContainsAliasedName(exprRequirement->getReturnTypeRequirement().getTypeConstraint()))
