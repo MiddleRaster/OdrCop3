@@ -396,6 +396,11 @@ namespace OdrCop3
                         if (true == TypeContainsAliasedName(traitExpr->getArgumentTypeInfo()->getType()))
                             return true;
 
+                if (const auto* typeTraitExpr = llvm::dyn_cast<clang::TypeTraitExpr>(expr))
+                    for (const clang::TypeSourceInfo* argTypeSourceInfo : typeTraitExpr->getArgs())
+                        if (true == TypeContainsAliasedName(argTypeSourceInfo->getType()))
+                            return true;
+
                 // Generic fallthrough: recurse into every child statement/expression so we don't
                 // have to special-case every Expr subclass (CallExpr, CXXConstructExpr, etc.).
                 for (const clang::Stmt* child : expr->children())

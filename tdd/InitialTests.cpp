@@ -4410,7 +4410,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 "struct NamespaceAliasNestedEnumTest { enum Nested { NamespaceAliasNestedEnumA, NamespaceAliasNestedEnumB }; Alias::NamespaceAliasTest value; };\n"
                                 "struct NamespaceAliasNestedAliasTest { using NestedAlias = Alias::NamespaceAliasTest; };\n"
                                 "template<typename T> concept NamespaceAliasConceptTest = requires { sizeof(Alias::NamespaceAliasTest); };\n"
-                                //"template<typename T> concept NamespaceAliasConceptTypeTest = __is_same(T, Alias::NamespaceAliasTest);\n"
+                                "template<typename T> concept NamespaceAliasConceptTypeTest = __is_same(T, Alias::NamespaceAliasTest);\n"
                                 //"template<typename NamespaceAliasTemplateTypeParameterTest> struct NamespaceAliasTemplateTypeParameterHolder {};\n"
                                 //"template<Alias::NamespaceAliasTest* NamespaceAliasNonTypeParameterTest> struct NamespaceAliasNonTypeParameterHolder {};\n"
                                 //"struct NamespaceAliasFriendTest { friend void namespaceAliasFriend(Alias::NamespaceAliasTest); };\n"
@@ -4448,7 +4448,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(31, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 3, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(24, maps.typedefMap.size(),"wrong number of typedefs in map");
-            Assert::AreEqual( 1, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 2, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(15, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -4704,6 +4704,12 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.conceptMap.begin();
                 Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTest = requires { sizeof(OriginalNamespace::NamespaceAliasTest); };\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTypeTest = __is_same(T, OriginalNamespace::NamespaceAliasTest);\n"    , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
