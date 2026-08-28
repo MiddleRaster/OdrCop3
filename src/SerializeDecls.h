@@ -381,6 +381,16 @@ namespace OdrCop3
                     if (true == NestedNameSpecifierContainsAliasedName(memberExpr->getQualifier()))
                         return true;
 
+                if (const auto* conceptSpecExpr = llvm::dyn_cast<clang::ConceptSpecializationExpr>(expr))
+                    if (const clang::ConceptReference* conceptRef = conceptSpecExpr->getConceptReference())
+                        if (true == NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
+                            return true;
+
+                if (const auto* requiresExpr = llvm::dyn_cast<clang::RequiresExpr>(expr))
+                    for (const clang::concepts::Requirement* requirement : requiresExpr->getRequirements())
+                        if (true == RequirementContainsAliasedName(requirement))
+                            return true;
+
                 if (const auto* traitExpr = llvm::dyn_cast<clang::UnaryExprOrTypeTraitExpr>(expr))
                     if (traitExpr->isArgumentType())
                         if (true == TypeContainsAliasedName(traitExpr->getArgumentTypeInfo()->getType()))
@@ -393,6 +403,41 @@ namespace OdrCop3
                         if (true == ExprContainsAliasedName(childExpr))
                             return true;
 
+                return false;
+            }
+            static bool TypeConstraintContainsAliasedName(const clang::TypeConstraint* typeConstraint)
+            {   // Handles `Alias::Foo auto x`, `template<Alias::Foo T>`, and a requirement's trailing `-> Alias::Foo` return-type-requirement;
+                // none of these carry the concept reference as a walkable Expr child.
+                if (typeConstraint)
+                    if (const clang::ConceptReference* conceptRef = typeConstraint->getConceptReference())
+                        if (true == NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
+                            return true;
+                return false;
+            }
+            static bool RequirementContainsAliasedName(const clang::concepts::Requirement* requirement)
+            {   // Requirements aren't Stmt nodes — each kind has to be unpacked by hand.
+                if (const auto* typeRequirement = llvm::dyn_cast<clang::concepts::TypeRequirement>(requirement)) {
+                    if (!typeRequirement->isSubstitutionFailure())
+                        if (const clang::TypeSourceInfo* typeSourceInfo = typeRequirement->getType())
+                            if (true == TypeContainsAliasedName(typeSourceInfo->getType()))
+                                return true;
+                    return false;
+                }
+                if (const auto* exprRequirement = llvm::dyn_cast<clang::concepts::ExprRequirement>(requirement)) {
+                    if (!exprRequirement->isExprSubstitutionFailure())
+                        if (true == ExprContainsAliasedName(exprRequirement->getExpr()))
+                            return true;
+                    if (exprRequirement->getReturnTypeRequirement().isTypeConstraint())
+                        if (true == TypeConstraintContainsAliasedName(exprRequirement->getReturnTypeRequirement().getTypeConstraint()))
+                            return true;
+                    return false;
+                }
+                if (const auto* nestedRequirement = llvm::dyn_cast<clang::concepts::NestedRequirement>(requirement)) {
+                    if (!nestedRequirement->hasInvalidConstraint())
+                        if (true == ExprContainsAliasedName(nestedRequirement->getConstraintExpr()))
+                            return true;
+                    return false;
+                }
                 return false;
             }
 
@@ -425,6 +470,11 @@ namespace OdrCop3
                     if (const auto* cxxRecord = classTemplateDecl->getTemplatedDecl())
                         if (true == Needs::OriginalNamespace(cxxRecord))
                             return true;
+
+                // concepts
+                if (const auto* conceptDecl = llvm::dyn_cast<clang::ConceptDecl>(decl))
+                    if (true == ExprContainsAliasedName(conceptDecl->getConstraintExpr()))
+                        return true;
 
                 // functions and function templates
                 const clang::FunctionDecl* functionDecl = nullptr;
