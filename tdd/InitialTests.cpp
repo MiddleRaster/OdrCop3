@@ -4865,6 +4865,196 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Noexcept specifiers", []
+        {
+            std::string code =
+                                "void simpleNoexceptTest() noexcept {}\n"
+                                "void noexceptFalseTest() noexcept(false) {}\n"
+                                "void noexceptTrueTest() noexcept(true) {}\n"
+                                "template<typename T> void conditionalNoexceptTest() noexcept(sizeof(T) == 4) {}\n"
+                                "template<typename T> void conditionalNoexceptNotTest() noexcept(sizeof(T) != 4) {}\n"
+                                "template<typename T> void conditionalNoexceptFunctionTest(T value) noexcept(noexcept(value + value)) {}\n"
+                                "template<typename T> void conditionalNoexceptPointerTest(T* value) noexcept(noexcept(*value)) {}\n"
+                                "template<typename T> void conditionalNoexceptCallTest(T value) noexcept(noexcept(value.foo())) {}\n"
+
+                                "using NoexceptFunctionType = void() noexcept;\n"
+                                "using PotentiallyThrowingFunctionType = void();\n"
+                                "void noexceptFunctionPointerParameterTest(void (*p)() noexcept) {}\n"
+                                "void potentiallyThrowingFunctionPointerParameterTest(void (*p)()) {}\n"
+                                "void noexceptFunctionReferenceParameterTest(void (&f)() noexcept) {}\n"
+                                "void noexceptLambdaTest() { auto f = []() noexcept {}; }\n"
+                                "void conditionalNoexceptLambdaTest() { auto f = []() noexcept(noexcept(1 + 1)) {}; }\n"
+                                "void (*noexceptReturningFunctionTest())() noexcept { return nullptr; }\n"
+
+                                "struct MemberNoexceptTest { void f() noexcept {} };\n"
+                                "struct MemberNoexceptConstTest { void f() const noexcept {} };\n"
+                                "struct MemberNoexceptVolatileTest { void f() volatile noexcept {} };\n"
+                                "struct MemberNoexceptRefQualifiedTest { void f() & noexcept {} };\n"
+                                "struct MemberNoexceptRvalueRefQualifiedTest { void f() && noexcept {} };\n"
+                                "struct VirtualNoexceptTest { virtual void f() noexcept {} };\n"
+                                "struct VirtualNoexceptOverrideTest : VirtualNoexceptTest { void f() noexcept override {} };\n"
+                                "struct ConstructorNoexceptTest { ConstructorNoexceptTest() noexcept {} };\n"
+                                "struct DestructorNoexceptTest { ~DestructorNoexceptTest() noexcept {} };\n"
+                                "struct CopyConstructorNoexceptTest { CopyConstructorNoexceptTest(const CopyConstructorNoexceptTest&) noexcept {} };\n"
+                                //"struct MoveConstructorNoexceptTest { MoveConstructorNoexceptTest(CopyConstructorNoexceptTest&&) noexcept {} };\n"
+                                //"struct DefaultedCtorNoexceptTest { DefaultedCtorNoexceptTest() noexcept = default; };\n"
+                                //"struct DefaultedDtorNoexceptTest { ~DefaultedDtorNoexceptTest() noexcept = default; };\n"
+                                //"template<typename T> struct ConditionalCtorNoexceptTest { ConditionalCtorNoexceptTest() noexcept(sizeof(T) == 8) {} };\n"
+                                //"using NoexceptFunctionTypeAliasTest = void() noexcept;\n"
+                                //"using ThrowingFunctionTypeAliasTest = void();\n"
+                                //"struct FunctorNoexceptTest { void operator()() noexcept {} };\n"
+                                //"struct FunctorConditionalNoexceptTest { void operator()() noexcept(noexcept(1 + 1)) {} };\n"
+                                //"struct ConversionOperatorNoexceptTest { operator int() noexcept { return 0; } };\n"
+                                //"struct ConditionalConversionOperatorNoexceptTest { operator int() noexcept(noexcept(1 + 1)) { return 0; } };\n"
+                                //"void deletedNoexceptTest() noexcept = delete;\n"
+                                //"void deletedThrowingTest() = delete;\n"
+                                //"auto trailingReturnNoexceptTest() noexcept -> int { return 0; }\n"
+                                //"auto conditionalTrailingReturnNoexceptTest() noexcept(noexcept(1 + 1)) -> int { return 0; }\n"
+                                //"struct FriendNoexceptTest { friend void friendNoexceptFunction() noexcept {} };\n"
+                                //"struct FriendThrowingTest { friend void friendThrowingFunction() {} };\n"
+                                //"template<typename T> void explicitInstantiationNoexceptTest() noexcept {}\n"
+                                //"template void explicitInstantiationNoexceptTest<int>();\n"
+                                //"constexpr void constexprNoexceptTest() noexcept {}\n"
+                                //"constexpr void constexprThrowingTest() {}\n"
+                                //"inline void (*inlineNoexceptFunctionPointerTest())() noexcept { return nullptr; }\n"
+                                //"inline void (*inlineThrowingFunctionPointerTest())() { return nullptr; }\n"
+                                //"struct MemberFunctionPointerNoexceptTest { void f() noexcept {} };\n"
+                                //"void memberFunctionPointerNoexceptTest() { void (MemberFunctionPointerNoexceptTest::*p)() noexcept = &MemberFunctionPointerNoexceptTest::f; }\n"
+                                //"void noexceptOperatorArithmeticTest() { bool b = noexcept(1 + 2); }\n"
+                                //"void noexceptOperatorFunctionCallTest() { bool b = noexcept(noexceptOperatorFunctionCallTest()); }\n"
+                                //"void noexceptOperatorMemberAccessTest() { struct X { int a; }; X x; bool b = noexcept(x.a); }\n"
+                                //"void noexceptOperatorPointerDereferenceTest() { int* p = nullptr; bool b = noexcept(*p); }\n"
+                                //"template<typename T> auto templateReturningFunctionPointerNoexceptTest() noexcept -> void(*)() { return nullptr; }\n"
+                                //"struct CoroutineNoexceptTest { auto f() noexcept -> std::coroutine_handle<> { return {}; } };\n"
+
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(10, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual( 2, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(14, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ConstructorNoexceptTest {\n"
+                                 "    ConstructorNoexceptTest() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct CopyConstructorNoexceptTest {\n"
+                                 "    CopyConstructorNoexceptTest(const CopyConstructorNoexceptTest &) noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct DestructorNoexceptTest {\n"
+                                 "    ~DestructorNoexceptTest() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MemberNoexceptConstTest {\n"
+                                 "    void f() const noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MemberNoexceptRefQualifiedTest {\n"
+                                 "    void f() & noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MemberNoexceptRvalueRefQualifiedTest {\n"
+                                 "    void f() && noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MemberNoexceptTest {\n"
+                                 "    void f() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MemberNoexceptVolatileTest {\n"
+                                 "    void f() volatile noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct VirtualNoexceptOverrideTest : VirtualNoexceptTest {\n"
+                                 "    void f() noexcept override {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct VirtualNoexceptTest {\n"
+                                 "    virtual void f() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+                Assert::AreEqual("using NoexceptFunctionType = void () noexcept;\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using PotentiallyThrowingFunctionType = void ();\n", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("template <typename T> void conditionalNoexceptCallTest(T value) noexcept(noexcept(value.foo())) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void conditionalNoexceptFunctionTest(T value) noexcept(noexcept(value + value)) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void conditionalNoexceptLambdaTest() {\n"
+                                 "    auto f = []() noexcept(noexcept(1 + 1)) {\n"
+                                 "    };\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void conditionalNoexceptNotTest() noexcept(sizeof(T) != 4) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void conditionalNoexceptPointerTest(T *value) noexcept(noexcept(*value)) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void conditionalNoexceptTest() noexcept(sizeof(T) == 4) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptFalseTest() noexcept(false) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptFunctionPointerParameterTest(void (*p)() noexcept) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptFunctionReferenceParameterTest(void (&f)() noexcept) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptLambdaTest() {\n"
+                                 "    auto f = []() noexcept {\n"
+                                 "    };\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void (*noexceptReturningFunctionTest())() noexcept {\n"
+                                 "    return nullptr;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptTrueTest() noexcept(true) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void potentiallyThrowingFunctionPointerParameterTest(void (*p)()) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void simpleNoexceptTest() noexcept {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
 
 };
 /* some missing test cases
@@ -4874,9 +5064,6 @@ Test ExploratoryTestsOfClangAST[] =
 
 
 /////////////////////////////////////////////////////////////////////////// namespace
-
-37. Namespace aliases
-            namespace N = M;
 
 38. Using declarations
             using Base::foo;
