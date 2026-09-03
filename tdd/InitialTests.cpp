@@ -4896,20 +4896,20 @@ Test ExploratoryTestsOfClangAST[] =
                                 "struct ConstructorNoexceptTest { ConstructorNoexceptTest() noexcept {} };\n"
                                 "struct DestructorNoexceptTest { ~DestructorNoexceptTest() noexcept {} };\n"
                                 "struct CopyConstructorNoexceptTest { CopyConstructorNoexceptTest(const CopyConstructorNoexceptTest&) noexcept {} };\n"
-                                //"struct MoveConstructorNoexceptTest { MoveConstructorNoexceptTest(CopyConstructorNoexceptTest&&) noexcept {} };\n"
-                                //"struct DefaultedCtorNoexceptTest { DefaultedCtorNoexceptTest() noexcept = default; };\n"
-                                //"struct DefaultedDtorNoexceptTest { ~DefaultedDtorNoexceptTest() noexcept = default; };\n"
-                                //"template<typename T> struct ConditionalCtorNoexceptTest { ConditionalCtorNoexceptTest() noexcept(sizeof(T) == 8) {} };\n"
-                                //"using NoexceptFunctionTypeAliasTest = void() noexcept;\n"
-                                //"using ThrowingFunctionTypeAliasTest = void();\n"
-                                //"struct FunctorNoexceptTest { void operator()() noexcept {} };\n"
-                                //"struct FunctorConditionalNoexceptTest { void operator()() noexcept(noexcept(1 + 1)) {} };\n"
-                                //"struct ConversionOperatorNoexceptTest { operator int() noexcept { return 0; } };\n"
-                                //"struct ConditionalConversionOperatorNoexceptTest { operator int() noexcept(noexcept(1 + 1)) { return 0; } };\n"
-                                //"void deletedNoexceptTest() noexcept = delete;\n"
-                                //"void deletedThrowingTest() = delete;\n"
-                                //"auto trailingReturnNoexceptTest() noexcept -> int { return 0; }\n"
-                                //"auto conditionalTrailingReturnNoexceptTest() noexcept(noexcept(1 + 1)) -> int { return 0; }\n"
+                                "struct MoveConstructorNoexceptTest { MoveConstructorNoexceptTest(MoveConstructorNoexceptTest&&) noexcept {} };\n"
+                                "struct DefaultedCtorNoexceptTest { DefaultedCtorNoexceptTest() noexcept = default; };\n"
+                                "struct DefaultedDtorNoexceptTest { ~DefaultedDtorNoexceptTest() noexcept = default; };\n"
+                                "template<typename T> struct ConditionalCtorNoexceptTest { ConditionalCtorNoexceptTest() noexcept(sizeof(T) == 8) {} };\n"
+                                "using NoexceptFunctionTypeAliasTest = void() noexcept;\n"
+                                "using ThrowingFunctionTypeAliasTest = void();\n"
+                                "struct FunctorNoexceptTest { void operator()() noexcept {} };\n"
+                                "struct FunctorConditionalNoexceptTest { void operator()() noexcept(noexcept(1 + 1)) {} };\n"
+                                "struct ConversionOperatorNoexceptTest { operator int() noexcept { return 0; } };\n"
+                                "struct ConditionalConversionOperatorNoexceptTest { operator int() noexcept(noexcept(1 + 1)) { return 0; } };\n"
+                                "void deletedNoexceptTest() noexcept = delete;\n"
+                                "void deletedThrowingTest() = delete;\n"
+                                "auto trailingReturnNoexceptTest() noexcept -> int { return 0; }\n"
+                                "auto conditionalTrailingReturnNoexceptTest() noexcept(noexcept(1 + 1)) -> int { return 0; }\n"
                                 //"struct FriendNoexceptTest { friend void friendNoexceptFunction() noexcept {} };\n"
                                 //"struct FriendThrowingTest { friend void friendThrowingFunction() {} };\n"
                                 //"template<typename T> void explicitInstantiationNoexceptTest() noexcept {}\n"
@@ -4932,25 +4932,53 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(10, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(18, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 2, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            Assert::AreEqual(14, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(18, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ConditionalConversionOperatorNoexceptTest {\n"
+                                 "    operator int() noexcept(noexcept(1 + 1)) {\n"
+                                 "        return 0;\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct ConditionalCtorNoexceptTest {\n"
+                                 "    ConditionalCtorNoexceptTest<T>() noexcept(sizeof(T) == 8) {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConstructorNoexceptTest {\n"
                                  "    ConstructorNoexceptTest() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorNoexceptTest {\n"
+                                 "    operator int() noexcept {\n"
+                                 "        return 0;\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct CopyConstructorNoexceptTest {\n"
                                  "    CopyConstructorNoexceptTest(const CopyConstructorNoexceptTest &) noexcept {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct DefaultedCtorNoexceptTest {\n"
+                                 "    DefaultedCtorNoexceptTest() noexcept = default;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct DefaultedDtorNoexceptTest {\n"
+                                 "    ~DefaultedDtorNoexceptTest() noexcept = default;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct DestructorNoexceptTest {\n"
                                  "    ~DestructorNoexceptTest() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FunctorConditionalNoexceptTest {\n"
+                                 "    void operator()() noexcept(noexcept(1 + 1)) {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FunctorNoexceptTest {\n"
+                                 "    void operator()() noexcept {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct MemberNoexceptConstTest {\n"
@@ -4973,6 +5001,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    void f() volatile noexcept {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MoveConstructorNoexceptTest {\n"
+                                 "    MoveConstructorNoexceptTest(MoveConstructorNoexceptTest &&) noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct VirtualNoexceptOverrideTest : VirtualNoexceptTest {\n"
                                  "    void f() noexcept override {\n"
                                  "    }\n"
@@ -4981,6 +5013,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    virtual void f() noexcept {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -5002,8 +5044,17 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using NoexceptFunctionType = void () noexcept;\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using PotentiallyThrowingFunctionType = void ();\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NoexceptFunctionType = void () noexcept;\n"         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using NoexceptFunctionTypeAliasTest = void () noexcept;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using PotentiallyThrowingFunctionType = void ();\n"       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("using ThrowingFunctionTypeAliasTest = void ();\n"         , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -5024,6 +5075,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> void conditionalNoexceptTest() noexcept(sizeof(T) == 4) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("auto conditionalTrailingReturnNoexceptTest() noexcept(noexcept(1 + 1)) -> int {\n"
+                                 "    return 0;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void deletedNoexceptTest() noexcept = delete;\n"
+                                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void deletedThrowingTest() = delete;\n"
+                                      , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void noexceptFalseTest() noexcept(false) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void noexceptFunctionPointerParameterTest(void (*p)() noexcept) {\n"
@@ -5043,10 +5101,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void simpleNoexceptTest() noexcept {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("auto trailingReturnNoexceptTest() noexcept -> int {\n"
+                                 "    return 0;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

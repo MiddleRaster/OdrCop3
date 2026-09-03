@@ -126,10 +126,10 @@ namespace OdrCop3
             }
             return result + ") ";
         }
+        case EST_NoexceptTrue:      //return "noexcept(true) ";
+        case EST_NoexceptFalse:     //return "noexcept(false) ";
         case EST_DependentNoexcept: return "noexcept(" + IndentBlock(SerializeExpr(contextItems, functionProtoType->getNoexceptExpr()), 9) + ") ";
         case EST_BasicNoexcept:     return "noexcept ";
-        case EST_NoexceptTrue:      return "noexcept(true) ";
-        case EST_NoexceptFalse:     return "noexcept(false) ";
         case EST_DynamicNone:       return "throw() ";
         case EST_MSAny:             return "throw(...) ";
         case EST_None:
