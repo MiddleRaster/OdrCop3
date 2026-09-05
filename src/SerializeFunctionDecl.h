@@ -64,7 +64,7 @@ namespace OdrCop3
 
         std::string get_ReturnType()      const
         {
-            if (IsType::EventuallyArrayOrFunctionPointer(funcDecl->getReturnType()))
+            if (IsType::EventuallyArrayOrFunctionPointer(funcDecl->getReturnType()) && !hasTrailingReturn())
             {
                 // if a function returning a reference to an array, the syntax is tricky:
                 // int (&ReturningReferenceTo1DArrayOfInts(int,double) noexcept)[3] { return blah; }
@@ -235,7 +235,7 @@ namespace OdrCop3
             if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row
                 fqn += " ";                      // e.g., "int" does
 
-            if (false == IsType::EventuallyArrayOrFunctionPointer(funcDecl->getReturnType())) // if not that returning-reference-to-array syntax
+            if (hasTrailingReturn() || (false == IsType::EventuallyArrayOrFunctionPointer(funcDecl->getReturnType()))) // if not that returning-reference-to-array syntax
                 fqn += IndentBlock(SerializeFromCallingConventionToTrailingReturn(returnType, functionName), LengthOfLastLine(fqn));
 
             fqn += get_TrailingRequiresClause();

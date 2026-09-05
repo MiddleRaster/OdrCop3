@@ -144,6 +144,8 @@ namespace OdrCop3
 
             if (!cxxRecordDecl->isThisDeclarationADefinition())
                 return true;
+            if (cxxRecordDecl->getDeclContext()->isFunctionOrMethod()) // defined inside function or method: can't be the cause of an ODR violation
+                return true;                                           // (except in the containing function, which is checked elsewhere)
 
             if (cxxRecordDecl->isCXXClassMember())
                 return true; // already defined nested inside another UDT

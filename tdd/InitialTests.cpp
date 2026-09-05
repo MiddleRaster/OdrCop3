@@ -4917,26 +4917,27 @@ Test ExploratoryTestsOfClangAST[] =
                                 "constexpr void constexprNoexceptTest() noexcept {}\n"
                                 "constexpr void constexprThrowingTest() {}\n"
                                 "inline void (*inlineNoexceptFunctionPointerTest())() noexcept { return nullptr; }\n"
-                                //"inline void (*inlineThrowingFunctionPointerTest())() { return nullptr; }\n"
-                                //"struct MemberFunctionPointerNoexceptTest { void f() noexcept {} };\n"
-                                //"void memberFunctionPointerNoexceptTest() { void (MemberFunctionPointerNoexceptTest::*p)() noexcept = &MemberFunctionPointerNoexceptTest::f; }\n"
-                                //"void noexceptOperatorArithmeticTest() { bool b = noexcept(1 + 2); }\n"
-                                //"void noexceptOperatorFunctionCallTest() { bool b = noexcept(noexceptOperatorFunctionCallTest()); }\n"
-                                //"void noexceptOperatorMemberAccessTest() { struct X { int a; }; X x; bool b = noexcept(x.a); }\n"
-                                //"void noexceptOperatorPointerDereferenceTest() { int* p = nullptr; bool b = noexcept(*p); }\n"
-                                //"template<typename T> auto templateReturningFunctionPointerNoexceptTest() noexcept -> void(*)() { return nullptr; }\n"
-                                //"struct CoroutineNoexceptTest { auto f() noexcept -> std::coroutine_handle<> { return {}; } };\n"
+                                "inline void (*inlineThrowingFunctionPointerTest())() { return nullptr; }\n"
+                                "struct MemberFunctionPointerNoexceptTest { void f() noexcept {} };\n"
+                                "void memberFunctionPointerNoexceptTest() { void (MemberFunctionPointerNoexceptTest::*p)() noexcept = &MemberFunctionPointerNoexceptTest::f; }\n"
+                                "void noexceptOperatorArithmeticTest() { bool b = noexcept(1 + 2); }\n"
+                                "void noexceptOperatorFunctionCallTest() { bool b = noexcept(noexceptOperatorFunctionCallTest()); }\n"
+                                "void noexceptOperatorMemberAccessTest() { struct X { int a; }; X x; bool b = noexcept(x.a); }\n"
+                                "void noexceptOperatorPointerDereferenceTest() { int* p = nullptr; bool b = noexcept(*p); }\n"
+                                "template<typename T> auto templateReturningFunctionPointerNoexceptTest() noexcept -> void(*)() { return nullptr; }\n"
+                                "namespace { struct AnonType {}; }\ntemplate<typename T> auto templateReturningFunctionPointerToAnonNamespaceTypeTest() noexcept -> AnonType(*)() { return nullptr; }\n"
+                                "struct MemberWithTrailingReturnTypeNoexceptTest { auto f() noexcept -> int { return {}; } };\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(20, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(22, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            Assert::AreEqual(25, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(33, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -4988,6 +4989,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    void operator()() noexcept {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MemberFunctionPointerNoexceptTest {\n"
+                                 "    void f() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct MemberNoexceptConstTest {\n"
                                  "    void f() const noexcept {\n"
                                  "    }\n"
@@ -5008,6 +5013,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    void f() volatile noexcept {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MemberWithTrailingReturnTypeNoexceptTest {\n"
+                                 "    auto f() noexcept -> int {\n"
+                                 "        return {};\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct MoveConstructorNoexceptTest {\n"
                                  "    MoveConstructorNoexceptTest(MoveConstructorNoexceptTest &&) noexcept {\n"
                                  "    }\n"
@@ -5020,26 +5030,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    virtual void f() noexcept {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -5053,13 +5043,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("using NoexceptFunctionTypeAliasTest = void () noexcept;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using PotentiallyThrowingFunctionType = void ();\n"       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("using ThrowingFunctionTypeAliasTest = void ();\n"         , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -5102,6 +5085,12 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline void (*inlineNoexceptFunctionPointerTest())() noexcept {\n"
                                  "    return nullptr;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void (*inlineThrowingFunctionPointerTest())() {\n"
+                                 "    return nullptr;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void memberFunctionPointerNoexceptTest() {\n"
+                                 "    void (MemberFunctionPointerNoexceptTest::*p)() noexcept = &MemberFunctionPointerNoexceptTest::f;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void noexceptFalseTest() noexcept(false) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void noexceptFunctionPointerParameterTest(void (*p)() noexcept) {\n"
@@ -5112,6 +5101,23 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    auto f = []() noexcept {\n"
                                  "    };\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptOperatorArithmeticTest() {\n"
+                                 "    bool b = noexcept(1 + 2);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptOperatorFunctionCallTest() {\n"
+                                 "    bool b = noexcept(noexceptOperatorFunctionCallTest());\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptOperatorMemberAccessTest() {\n"
+                                 "    struct X {\n"
+                                 "        int a;\n"
+                                 "    };\n"
+                                 "    X x;\n"
+                                 "    bool b = noexcept(x.a);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void noexceptOperatorPointerDereferenceTest() {\n"
+                                 "    int *p = nullptr;\n"
+                                 "    bool b = noexcept(*p);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void (*noexceptReturningFunctionTest())() noexcept {\n"
                                  "    return nullptr;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -5121,22 +5127,20 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void simpleNoexceptTest() noexcept {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> auto templateReturningFunctionPointerNoexceptTest() noexcept -> void (*)() {\n"
+                                 "    return nullptr;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> auto templateReturningFunctionPointerToAnonNamespaceTypeTest() noexcept -> struct (anonymous namespace)::AnonType {\n"
+                                 "                                                                                                 } (*)() {\n"
+                                 "                          return nullptr;\n"
+                                 "                      }\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("auto trailingReturnNoexceptTest() noexcept -> int {\n"
                                  "    return 0;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },
-    {"single test", []
+    {"anonymous namespace conversion operators tests", []
         {
             std::string code =
                                 "namespace { struct HiddenNoexceptType {}; } template<class T> struct ConversionOperatorClass_AnonymousNoexceptExpression { operator int() const noexcept(sizeof(HiddenNoexceptType) == sizeof(T)); };\n"
@@ -5242,6 +5246,12 @@ Test ExploratoryTestsOfClangAST[] =
         or
             export using
 
+// conversion operators with trailing return types:
+struct S {
+    auto operator int() -> int;
+    auto operator std::string() const -> std::string;
+    auto operator std::vector<int>() && -> std::vector<int>;
+};
 
 // concepts don't handle namespace using aliases properly, for example:
 dd\InitialTests.cpp(4802) : warning unit-test: "Namespace aliases" failed with:
