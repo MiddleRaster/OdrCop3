@@ -2473,13 +2473,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "         int member(double) {\n"
                                  "             return 42;\n"
                                  "         }\n"
-                                 "     }::*)(double) var4 = &FooAnon::member;\n"
+                                 "     }::*var4)(double) = &FooAnon::member;\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int (struct (anonymous namespace)::FooAnon {\n"
                                  "         int member(double) {\n"
                                  "             return 42;\n"
                                  "         }\n"
-                                 "     }::*)(double) var5 = &FooAnon::member;\n"
+                                 "     }::*var5)(double) = &FooAnon::member;\n"
                               , (*it++).second[0].fullyQualified);
             }
             {
@@ -2523,7 +2523,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "         int member(double) {\n"
                                  "             return 42;\n"
                                  "         }\n"
-                                 "     }::*)(double) FunctionReturningPointerToMember4() {\n"
+                                 "     }::*FunctionReturningPointerToMember4())(double) {\n"
                                  "    return &FooAnon::member;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
@@ -2531,7 +2531,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "         int member(double) {\n"
                                  "             return 42;\n"
                                  "         }\n"
-                                 "     }::*)(double) FunctionReturningPointerToMember5() {\n"
+                                 "     }::*FunctionReturningPointerToMember5())(double) {\n"
                                  "    return &FooAnon::member;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
@@ -2555,7 +2555,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                           int member(double) {\n"
                                  "                               return 42;\n"
                                  "                           }\n"
-                                 "                       }::*)(double) pmf) {\n"
+                                 "                       }::*pmf)(double)) {\n"
                                  "    return (foo .* pmf)(3.1400000000000001);\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
@@ -2567,7 +2567,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                           int member(double) {\n"
                                  "                               return 42;\n"
                                  "                           }\n"
-                                 "                       }::*)(double) pmf) {\n"
+                                 "                       }::*pmf)(double)) {\n"
                                  "    return (foo .* pmf)(3.1400000000000001);\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
@@ -4910,13 +4910,13 @@ Test ExploratoryTestsOfClangAST[] =
                                 "void deletedThrowingTest() = delete;\n"
                                 "auto trailingReturnNoexceptTest() noexcept -> int { return 0; }\n"
                                 "auto conditionalTrailingReturnNoexceptTest() noexcept(noexcept(1 + 1)) -> int { return 0; }\n"
-                                //"struct FriendNoexceptTest { friend void friendNoexceptFunction() noexcept {} };\n"
-                                //"struct FriendThrowingTest { friend void friendThrowingFunction() {} };\n"
-                                //"template<typename T> void explicitInstantiationNoexceptTest() noexcept {}\n"
-                                //"template void explicitInstantiationNoexceptTest<int>();\n"
-                                //"constexpr void constexprNoexceptTest() noexcept {}\n"
-                                //"constexpr void constexprThrowingTest() {}\n"
-                                //"inline void (*inlineNoexceptFunctionPointerTest())() noexcept { return nullptr; }\n"
+                                "struct FriendNoexceptTest { friend void friendNoexceptFunction() noexcept {} };\n"
+                                "struct FriendThrowingTest { friend void friendThrowingFunction() {} };\n"
+                                "template<typename T> void explicitInstantiationNoexceptTest() noexcept {}\n"
+                                "template<> void explicitInstantiationNoexceptTest<int>() noexcept {}\n"
+                                "constexpr void constexprNoexceptTest() noexcept {}\n"
+                                "constexpr void constexprThrowingTest() {}\n"
+                                "inline void (*inlineNoexceptFunctionPointerTest())() noexcept { return nullptr; }\n"
                                 //"inline void (*inlineThrowingFunctionPointerTest())() { return nullptr; }\n"
                                 //"struct MemberFunctionPointerNoexceptTest { void f() noexcept {} };\n"
                                 //"void memberFunctionPointerNoexceptTest() { void (MemberFunctionPointerNoexceptTest::*p)() noexcept = &MemberFunctionPointerNoexceptTest::f; }\n"
@@ -4926,18 +4926,17 @@ Test ExploratoryTestsOfClangAST[] =
                                 //"void noexceptOperatorPointerDereferenceTest() { int* p = nullptr; bool b = noexcept(*p); }\n"
                                 //"template<typename T> auto templateReturningFunctionPointerNoexceptTest() noexcept -> void(*)() { return nullptr; }\n"
                                 //"struct CoroutineNoexceptTest { auto f() noexcept -> std::coroutine_handle<> { return {}; } };\n"
-
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(18, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(20, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
-            Assert::AreEqual(18, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(25, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -4971,6 +4970,14 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct DestructorNoexceptTest {\n"
                                  "    ~DestructorNoexceptTest() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendNoexceptTest {\n"
+                                 "    friend void friendNoexceptFunction() noexcept {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendThrowingTest {\n"
+                                 "    friend void friendThrowingFunction() {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FunctorConditionalNoexceptTest {\n"
@@ -5013,8 +5020,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    virtual void f() noexcept {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -5078,10 +5083,25 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("auto conditionalTrailingReturnNoexceptTest() noexcept(noexcept(1 + 1)) -> int {\n"
                                  "    return 0;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr void constexprNoexceptTest() noexcept {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr void constexprThrowingTest() {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void deletedNoexceptTest() noexcept = delete;\n"
                                       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void deletedThrowingTest() = delete;\n"
                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> void explicitInstantiationNoexceptTest<int>() noexcept {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void explicitInstantiationNoexceptTest() noexcept {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void friendNoexceptFunction() noexcept {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void friendThrowingFunction() {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void (*inlineNoexceptFunctionPointerTest())() noexcept {\n"
+                                 "    return nullptr;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void noexceptFalseTest() noexcept(false) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void noexceptFunctionPointerParameterTest(void (*p)() noexcept) {\n"
@@ -5104,6 +5124,93 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("auto trailingReturnNoexceptTest() noexcept -> int {\n"
                                  "    return 0;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+    {"single test", []
+        {
+            std::string code =
+                                "namespace { struct HiddenNoexceptType {}; } template<class T> struct ConversionOperatorClass_AnonymousNoexceptExpression { operator int() const noexcept(sizeof(HiddenNoexceptType) == sizeof(T)); };\n"
+                                "namespace { struct HiddenFunctionReturn {}; using HiddenFunctionPointer = HiddenFunctionReturn(*)(); } struct ConversionOperatorClass_AnonymousFunctionPointer { operator HiddenFunctionPointer() const; };\n"
+                                "namespace { struct ArrayElementType {}; using ArrayReferenceType = ArrayElementType(&)[4]; } struct ConversionOperatorClass_AnonymousArrayReference { operator ArrayReferenceType() const { static ArrayElementType instance[4]; return  instance; } };\n"
+                                "namespace {                             using ArrayPointerType   = ArrayElementType(*)[4]; } struct ConversionOperatorClass_AnonymousArrayPointer   { operator ArrayPointerType  () const { static ArrayElementType instance[4]; return &instance; } };\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousArrayPointer {\n"
+                                 "    operator struct (anonymous namespace)::ArrayElementType {\n"
+                                 "             } (*)[4]() const {\n"
+                                 "        static ArrayElementType instance[4];\n"
+                                 "        return &instance;\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousArrayReference {\n"
+                                 "    operator struct (anonymous namespace)::ArrayElementType {\n"
+                                 "             } (&)[4]() const {\n"
+                                 "        static ArrayElementType instance[4];\n"
+                                 "        return instance;\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ConversionOperatorClass_AnonymousFunctionPointer {\n"
+                                 "    operator struct (anonymous namespace)::HiddenFunctionReturn {\n"
+                                 "             } (*)()() const;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <class T> struct ConversionOperatorClass_AnonymousNoexceptExpression {\n"
+                                 "    operator int() const noexcept(sizeof(struct (anonymous namespace)::HiddenNoexceptType {\n"
+                                 "                                         }) == sizeof(T));\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+            }
+            {
+                auto it = maps.enumMap.begin();
+            }
+            {
+                auto it = maps.typedefMap.begin();
+            }
+            {
+                auto it = maps.conceptMap.begin();
+            }
+            {
+                auto it = maps.functionMap.begin();
+                //Assert::AreEqual("inline void (*inlineNoexceptFunctionPointerTest())() noexcept {\n"
+                //                 "    return nullptr;\n"
+                //                 "}\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -5135,5 +5242,10 @@ Test ExploratoryTestsOfClangAST[] =
         or
             export using
 
+
+// concepts don't handle namespace using aliases properly, for example:
+dd\InitialTests.cpp(4802) : warning unit-test: "Namespace aliases" failed with:
+template <typename T> concept NamespaceAliasConceptNestedConceptTest = requires { requires NamespaceAliasConceptHelperTest<Alias::NamespaceAliasTest>; };
+template <typename T> concept NamespaceAliasConceptNestedConceptTest = requires { requires NamespaceAliasConceptHelperTest<OriginalNamespace::NamespaceAliasTest>; };
 
 */

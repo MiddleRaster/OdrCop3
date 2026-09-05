@@ -195,19 +195,15 @@ namespace OdrCop3
         return argStr;
     }
 
-    inline bool IsEventuallyArrayOrFunctionProtoType(QualType qt)
+    struct IsType
     {
-        if (const auto* pointerType = qt->getAs<PointerType>())
-            return IsEventuallyArrayOrFunctionProtoType(pointerType->getPointeeType());
+        static bool EventuallyArrayOrFunctionPointer(QualType qt)
+        {
+            if (const auto*       pointerType = qt->getAs<      PointerType>()) return EventuallyArrayOrFunctionPointer(      pointerType->getPointeeType());
+            if (const auto*     referenceType = qt->getAs<    ReferenceType>()) return EventuallyArrayOrFunctionPointer(    referenceType->getPointeeType());
+            if (const auto* memberPointerType = qt->getAs<MemberPointerType>()) return EventuallyArrayOrFunctionPointer(memberPointerType->getPointeeType());
 
-        if (const auto* referenceType = qt->getAs<ReferenceType>())
-            return IsEventuallyArrayOrFunctionProtoType(referenceType->getPointeeType());
-
-        if (qt->isArrayType())
-            return true;
-        if (qt->isFunctionProtoType())
-            return true;
-
-        return false;
-    }
+            return qt->isArrayType() || qt->isFunctionType();
+        }
+    };
 }

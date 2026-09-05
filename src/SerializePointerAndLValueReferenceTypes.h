@@ -25,7 +25,7 @@ namespace OdrCop3
         PointerAndLValueReferenceTypesSerializer(const ContextItems& contextItems, QualType qt) : contextItems(contextItems), qt(qt) {}
         std::string Serialize(const std::string& starOrAmpersand) const
         {
-            bool pointerToFunctionOrArraySyntax = IsEventuallyArrayOrFunctionProtoType(qt->getPointeeType());
+            bool pointerToFunctionOrArraySyntax = IsType::EventuallyArrayOrFunctionPointer(qt->getPointeeType());
             ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls,  pointerToFunctionOrArraySyntax ? starOrAmpersand + contextItems.aux : "");
             std::string out;
             out = SerializeType(ci2, qt->getPointeeType());

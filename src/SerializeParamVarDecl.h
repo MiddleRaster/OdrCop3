@@ -36,7 +36,7 @@ namespace OdrCop3
             }
             auto startOfParm = out.size();
 
-            if (IsEventuallyArrayOrFunctionProtoType(parmVarDecl->getOriginalType()))
+            if (IsType::EventuallyArrayOrFunctionPointer(parmVarDecl->getOriginalType()))
             {
                 QualType qualType = parmVarDecl->getOriginalType();
                 if (resolveNamespaceAliases)

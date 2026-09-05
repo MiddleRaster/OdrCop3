@@ -62,26 +62,9 @@ namespace OdrCop3
             return "";
         }
 
-        struct IsReturnType
-        {
-            static bool EventuallyArray(QualType qt)
-            {
-                if (const auto* pointerType = qt->getAs<PointerType>())
-                    return EventuallyArray(pointerType->getPointeeType());
-
-                if (const auto* referenceType = qt->getAs<ReferenceType>())
-                    return EventuallyArray(referenceType->getPointeeType());
-
-                if (qt->isArrayType())
-                    return true;
-
-                return false;
-            }
-        };
-
         std::string get_ReturnType()      const
         {
-            if (IsReturnType::EventuallyArray(funcDecl->getReturnType()))
+            if (IsType::EventuallyArrayOrFunctionPointer(funcDecl->getReturnType()))
             {
                 // if a function returning a reference to an array, the syntax is tricky:
                 // int (&ReturningReferenceTo1DArrayOfInts(int,double) noexcept)[3] { return blah; }
@@ -228,7 +211,56 @@ namespace OdrCop3
             return false; // K&R, pre-C99, etc.
         }
 
+        std::string SerializePastFriend(auto returnType, auto functionName) const
+        {
+            CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
 
+            std::string fqn;
+            fqn += get_Register();
+            fqn += get_Static();
+            fqn += get_Extern();
+            fqn += get_Virtual();
+            fqn += IndentBlock(get_Explicit(), LengthOfLastLine(fqn));
+            fqn += get_InlineSpecified();
+            fqn += get_Constexpr();
+            fqn += get_ConstEval();
+
+            if (true == hasTrailingReturn())
+                fqn += "auto "; // has trailing-return syntax
+            else
+                fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
+            if (fqn.empty() == false)
+            if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
+            if (fqn.substr(fqn.size()-1) != "&") // e.g., ditto &
+            if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row
+                fqn += " ";                      // e.g., "int" does
+
+            if (false == IsType::EventuallyArrayOrFunctionPointer(funcDecl->getReturnType())) // if not that returning-reference-to-array syntax
+                fqn += IndentBlock(SerializeFromCallingConventionToTrailingReturn(returnType, functionName), LengthOfLastLine(fqn));
+
+            fqn += get_TrailingRequiresClause();
+            fqn += method.get_PureVirtual();
+            fqn += get_Defaulted();
+            fqn += get_Deleted();
+            fqn += get_ConstructorInitializers(); // if it's a ctor and if it has any initializers
+
+            if (!(funcDecl->hasBody() && funcDecl->getBody()) || !contextItems.wantFunctionBody) // either there is no body, or we don't want to serialize the body
+                fqn = TrimRightIf(fqn, " ") + ";"; // no body:  end prototype with ';'
+            else
+                fqn += TrimRightIf(get_Body(), "\n");
+            return fqn + "\n";
+        }
+        std::string SerializeUpToFriend() const
+        {
+            std::string fqn;
+            fqn += get_TemplateSpecializationHeader();
+            fqn += get_LeadingAttributes();
+            fqn += get_Friend();
+            return fqn;
+        }
+    public:
+        FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}
+    protected:
         std::string SerializeFromCallingConventionToTrailingReturn(auto returnType, auto functionName) const
         {
             CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
@@ -257,57 +289,6 @@ namespace OdrCop3
             }
             return fqn;
         }
-
-        std::string SerializePastFriend(auto returnType, auto functionName) const
-        {
-            CXXMethodDeclSerializer method(contextItems, dyn_cast<CXXMethodDecl>(funcDecl));
-
-            std::string fqn;
-            fqn += get_Register();
-            fqn += get_Static();
-            fqn += get_Extern();
-            fqn += get_Virtual();
-            fqn += IndentBlock(get_Explicit(), LengthOfLastLine(fqn));
-            fqn += get_InlineSpecified();
-            fqn += get_Constexpr();
-            fqn += get_ConstEval();
-
-            if (true == hasTrailingReturn())
-                fqn += "auto "; // has trailing-return syntax
-            else
-                fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
-            if (fqn.empty() == false)
-            if (fqn.substr(fqn.size()-1) != "*") // e.g., "void *" gets no space
-            if (fqn.substr(fqn.size()-1) != "&") // e.g., ditto &
-            if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row
-                fqn += " ";                      // e.g., "int" does
-
-            if (false == IsReturnType::EventuallyArray(funcDecl->getReturnType())) // if not that returning-reference-to-array syntax
-                fqn += IndentBlock(SerializeFromCallingConventionToTrailingReturn(returnType, functionName), LengthOfLastLine(fqn));
-
-            fqn += get_TrailingRequiresClause();
-            fqn += method.get_PureVirtual();
-            fqn += get_Defaulted();
-            fqn += get_Deleted();
-            fqn += get_ConstructorInitializers(); // if it's a ctor and if it has any initializers
-
-            if (!(funcDecl->hasBody() && funcDecl->getBody()) || !contextItems.wantFunctionBody) // either there is no body, or we don't want to serialize the body
-                fqn = TrimRightIf(fqn, " ") + ";"; // no body:  end prototype with ';'
-            else
-                fqn += TrimRightIf(get_Body(), "\n");
-            return fqn + "\n";
-        }
-        std::string SerializeUpToFriend() const
-        {
-            std::string fqn;
-            fqn += get_TemplateSpecializationHeader();
-            fqn += get_LeadingAttributes();
-            fqn += get_Friend();
-            return fqn;
-        }
-    public:
-        FunctionDeclSerializer(const ContextItems& contextItems, const FunctionDecl* funcDecl) : contextItems(contextItems), funcDecl(funcDecl) {}
-    protected:
         std::string get_FunctionName() const
         {
             std::string name = funcDecl->getNameAsString();

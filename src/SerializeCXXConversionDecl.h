@@ -21,6 +21,18 @@ namespace OdrCop3
         const ContextItems     & contextItems;
         const CXXConversionDecl* cxxConversionDecl;
 
+        std::string get_ReturnType() const
+        {
+            if (IsType::EventuallyArrayOrFunctionPointer(cxxConversionDecl->getReturnType()))
+            {
+                // if a function returning a reference to an array, the syntax is tricky:
+                // int (&ReturningReferenceTo1DArrayOfInts(int,double) noexcept)[3] { return blah; }
+                // Everything from the "int" to the closing ) before the "[3]" goes into aux.
+                std::string aux = this->SerializeFromCallingConventionToTrailingReturn([&]() { return ""; }, [&]() { return get_FunctionName(); });
+                return TrimRightIf(aux, " ");
+            }
+            return {};
+        }
         std::string get_FunctionName() const
         {
             clang::QualType qualType = cxxConversionDecl->getConversionType();
@@ -45,7 +57,7 @@ namespace OdrCop3
         {}
         std::string Serialize() const
         {
-            return FunctionDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>::Serialize([&](){ return ""; }, [&](){ return get_FunctionName(); });
+            return FunctionDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>::Serialize([&](){ return get_ReturnType(); }, [&](){ return get_FunctionName(); });
         }
     };
 }
