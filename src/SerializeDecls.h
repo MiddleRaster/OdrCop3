@@ -380,14 +380,27 @@ namespace OdrCop3
                             return true;
 
                     if (const auto* conceptSpecExpr = llvm::dyn_cast<clang::ConceptSpecializationExpr>(expr))
+                    {
                         if (const clang::ConceptReference* conceptRef = conceptSpecExpr->getConceptReference())
                             if (true == NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
                                 return true;
 
+                        for (const clang::TemplateArgument& arg : conceptSpecExpr->getTemplateArguments())
+                            if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                                if (true == TypeContainsAliasedName(arg.getAsType()))
+                                    return true;
+                    }
+
                     if (const auto* requiresExpr = llvm::dyn_cast<clang::RequiresExpr>(expr))
+                    {
                         for (const clang::concepts::Requirement* requirement : requiresExpr->getRequirements())
                             if (true == RequirementContainsAliasedName(requirement))
                                 return true;
+
+                        for (const clang::ParmVarDecl* parm : requiresExpr->getLocalParameters())
+                            if (true == TypeContainsAliasedName(parm->getType()))
+                                return true;
+                    }
 
                     if (const auto* traitExpr = llvm::dyn_cast<clang::UnaryExprOrTypeTraitExpr>(expr))
                         if (traitExpr->isArgumentType())
