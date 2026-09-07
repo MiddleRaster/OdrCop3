@@ -26,7 +26,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(7, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -97,7 +97,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(1, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -161,7 +161,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(6, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -221,7 +221,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(1, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -270,7 +270,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(1, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(2, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -284,15 +284,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified, "should have gotten the typedef");
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef enum (unnamed enum at input.cc:2:9) {\n"
-                                 "            Red,\n"
-                                 "            Green,\n"
-                                 "            Blue\n"
-                                 "        } Color;\n"
-                              , (*it++).second[0].fullyQualified, "should have gotten the typedef");
-                Assert::AreEqual("typedef int MyInt;\n"
-                               , (*it++).second[0].fullyQualified, "should have gotten the typedef");
+                auto it = maps.guideMap.begin();
             }
         }
     },
@@ -311,7 +303,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(3, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -411,45 +403,15 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual( 5, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
-            Assert::AreEqual( 2, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(12, maps.typedefMap.size(),"wrong number of typedefs in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
-            Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(5, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(2, maps.enumMap.size(),  "wrong number of enums in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
+            Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("input.cc",                                                    it->second[0].TU, "should have gotten the TU name");
-
-                Assert::AreEqual("using Alias = S;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef S Alias2;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <auto F, auto ...Fs> using AllTrue = decltype((F() && ... && Fs()));\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (unnamed enum at input.cc:2:13) {\n"
-                                 "            Red,\n"
-                                 "            Green,\n"
-                                 "            Blue\n"
-                                 "        } Color;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename C, typename R, typename ...Args> using MemberFuncPtr = R (C::*)(Args...);\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename R, typename ...Args> using NoexceptFuncPtr = R (*)(Args...) noexcept;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <template <template <typename T> class Inner, typename U> class Outer, template <typename X> class Wrap> using RecursiveAlias = typename Outer<Wrap, int>::type;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <auto F, typename ...Args> using ReturnTypeOf = decltype(F(Args{}...));\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename R, typename ...Args> using TemplateUsingAliasToPointerToFunction = R (*)(Args...);\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef int (*TypedefForPointerToFunction)(double, const char *);\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using UsingAliasForPointerToFunction = int (*)(double, const char *);\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename R, typename ...Args> using VariadicFuncPtr = R (*)(Args..., ...);\n"
-                             , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.udtMap.begin();
@@ -555,7 +517,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(9, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(2, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -668,7 +630,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(14, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -721,7 +683,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(19, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 2, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -844,7 +806,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -868,22 +830,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using AT = struct (anonymous namespace)::AnonType {\n"
-                                 "           };\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using Alias = template <typename T> struct (anonymous namespace)::Invisible {\n"
-                                 "                                        using type = T *;\n"
-                                 "                                    };\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::Deeply::Nested::Struct::Enum {\n"
-                                 "            Alpha,\n"
-                                 "            Beta\n"
-                                 "        } DeeplyNestedEnum;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonType {\n"
-                                 "        } TDA;\n"
-                              , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
         }
     },
@@ -905,7 +852,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(3, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(2, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(3, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(1, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -967,13 +914,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("int x = A<int>::X;\n", (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef enum (unnamed enum at input.cc:5:9) {\n"
-                                 "            R,\n"
-                                 "            G,\n"
-                                 "            B = 3\n"
-                                 "        } CStyleColor;\n"
-                              , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
         }
     },
@@ -993,7 +934,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(3, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1034,7 +975,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(4, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1107,7 +1048,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(3, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(1, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(2, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(3, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(8, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1146,15 +1087,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("void ExternC(int, char **) {\n}\n"                                                                          , (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("A::B::C::MyThreeDeep"                                           , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("using MyThreeDeep = A::B::C::SThreeDeep;\n"                     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::MyInvisible"                                              , (*it).first, "should have gotten proper key");
-                Assert::AreEqual("typedef enum A::B::C::(anonymous namespace)::EInvisible {\n"
-                                 "            Zero\n"
-                                 "        } MyInvisible;\n"                                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("A::B::MyTwoDeep"                                                , (*it  ).first, "should have gotten proper key");
-                Assert::AreEqual("typedef A::B::STwoDeep MyTwoDeep;\n"                            , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.enumMap.begin();
@@ -1185,7 +1118,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1193,7 +1126,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.udtMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
         }
     },
@@ -1232,7 +1165,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(11, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(11, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 2, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 3, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1284,10 +1217,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using MyHiddenWrapper = AWrapper<struct (anonymous namespace)::Hidden {\n"
-                                 "                                 }>;\n"    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using Ptr = T *;\n"  , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.enumMap.begin();
@@ -1329,7 +1259,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(3, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1357,7 +1287,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.functionMap.begin();
@@ -1376,7 +1306,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(3, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1390,7 +1320,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.functionMap.begin();
@@ -1415,7 +1345,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(1, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1440,7 +1370,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.functionMap.begin();
@@ -1475,7 +1405,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(5, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(3, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(3, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1510,7 +1440,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.functionMap.begin();
@@ -1588,7 +1518,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(31, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 2, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 3, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -1753,10 +1683,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using FunctionPointer = int (*)();\n"    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using FunctionReference = int (&)();\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using IntArrayReference = int (&)[3];\n" , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.functionMap.begin();
@@ -1809,7 +1736,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(13, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 5, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(11, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -1953,38 +1880,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef int A;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual(  "using B = A;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual(  "typedef B C;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual(  "using D = C;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (unnamed struct at input.cc:24:9) {\n"
-                                 "            int x;\n"
-                                 "        } E;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using F = struct (unnamed struct at input.cc:24:9) {\n"
-                                 "              int x;\n"
-                                 "          };\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (unnamed struct at input.cc:24:9) {\n"
-                                 "            int x;\n"
-                                 "        } G;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using H = struct (unnamed struct at input.cc:24:9) {\n"
-                                 "              int x;\n"
-                                 "          };\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (unnamed enum at input.cc:27:9) {\n"
-                                 "            One,\n"
-                                 "            Two\n"
-                                 "        } UnnamedEnum;\n"
-                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (unnamed struct at input.cc:25:9) {\n"
-                                 "            int x;\n"
-                                 "        } UnnamedStruct;\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using UnnamedStructAlias = T;\n"
-                              , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.functionMap.begin();
@@ -2049,7 +1945,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 2, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 3, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(31, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 7, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -2078,7 +1974,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -2153,7 +2049,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(8, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -2167,7 +2063,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -2251,7 +2147,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(14, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 4, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 8, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -2362,7 +2258,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -2451,7 +2347,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 1, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 7, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(10, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -2486,21 +2382,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef int (struct (anonymous namespace)::FooAnon {\n"
-                                 "                 int member(double) {\n"
-                                 "                     return 42;\n"
-                                 "                 }\n"
-                                 "             }::*FooAnonMemberPtr)(double);\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using FooAnonMemberPtr2 = int (struct (anonymous namespace)::FooAnon {\n"
-                                 "                                   int member(double) {\n"
-                                 "                                       return 42;\n"
-                                 "                                   }\n"
-                                 "                               }::*)(double);\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef int (Foo::*FooMemberPtr)(double);\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using FooMemberPtr2 = int (Foo::*)(double);\n", (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -2597,7 +2479,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(6, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -2615,17 +2497,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef Foo ArrayType1[2][3];\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ArrayType2 = Foo[2][3];\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::FooAnon {\n"
-                                 "            int value;\n"
-                                 "        } ArrayType3[2][3];\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ArrayType4 = struct (anonymous namespace)::FooAnon {\n"
-                                 "                       int value;\n"
-                                 "                   } [2][3];\n"
-                              , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -2714,7 +2586,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(18, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 8, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 8, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -2792,35 +2664,7 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using ColorArray1D = Color[3];\n"           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef ColorArray1D ColorArray1DTypedef;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ColorArray2D = ColorArray2DTypedef;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef Color ColorArray2DTypedef[2][3];\n" , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using InvisibleColorArray1D = enum (anonymous namespace)::InvisibleColor {\n"
-                                 "                                  InvisibleRed,\n"
-                                 "                                  InvisibleGreen,\n"
-                                 "                                  InvisibleBlue\n"
-                                 "                              }[3];\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::InvisibleColor {\n"
-                                 "            InvisibleRed,\n"
-                                 "            InvisibleGreen,\n"
-                                 "            InvisibleBlue\n"
-                                 "        } InvisibleColorArray1DTypedef[3];\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using InvisibleColorArray2D = enum (anonymous namespace)::InvisibleColor {\n"
-                                 "                                  InvisibleRed,\n"
-                                 "                                  InvisibleGreen,\n"
-                                 "                                  InvisibleBlue\n"
-                                 "                              }[2][3];\n"
-                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::InvisibleColor {\n"
-                                 "            InvisibleRed,\n"
-                                 "            InvisibleGreen,\n"
-                                 "            InvisibleBlue\n"
-                                 "        } InvisibleColorArray2DTypedef[2][3];\n"
-                              , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -2948,7 +2792,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(20, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(12, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(12, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -3010,39 +2854,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousReturnType {\n"
-                                 "        } AnonymousFunctionTypedef(struct (anonymous namespace)::AnonymousArgumentType {\n"
-                                 "                                   });\n"                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using AnonymousFunctionUsing = struct (anonymous namespace)::AnonymousReturnType {\n"
-                                 "                               } (&)(struct (anonymous namespace)::AnonymousArgumentType {\n"
-                                 "                                     });\n"                     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousNoexceptReturnType {\n"
-                                 "        } AnonymousNoexceptFunctionTypedef(struct (anonymous namespace)::AnonymousNoexceptArgumentType {\n"
-                                 "                                           }) noexcept;\n"      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using AnonymousNoexceptFunctionUsing = struct (anonymous namespace)::AnonymousNoexceptReturnType {\n"
-                                 "                                       } (struct (anonymous namespace)::AnonymousNoexceptArgumentType {\n"
-                                 "                                          }) noexcept;\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousRvalueReturnType {\n"
-                                 "        } AnonymousRvalueFunctionTypedef(struct (anonymous namespace)::AnonymousRvalueArgumentType {\n"
-                                 "                                         });\n"                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using AnonymousRvalueFunctionUsing = struct (anonymous namespace)::AnonymousRvalueReturnType {\n"
-                                 "                                     } (struct (anonymous namespace)::AnonymousRvalueArgumentType {\n"
-                                 "                                        });\n"                  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousRvalueNoexceptReturnType {\n"
-                                 "        } AnonymousRvalueNoexceptFunctionTypedef(struct (anonymous namespace)::AnonymousRvalueNoexceptArgumentType {\n"
-                                 "                                                 }) noexcept;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using AnonymousRvalueNoexceptFunctionUsing = struct (anonymous namespace)::AnonymousRvalueNoexceptReturnType {\n"
-                                 "                                             } (struct (anonymous namespace)::AnonymousRvalueNoexceptArgumentType {\n"
-                                 "                                                }) noexcept;\n" , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousVariadicReturnType {\n"
-                                 "        } AnonymousVariadicFunctionTypedef(struct (anonymous namespace)::AnonymousVariadicArgumentType {\n"
-                                 "                                           },...);\n"           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using AnonymousVariadicFunctionUsing = struct (anonymous namespace)::AnonymousVariadicReturnType {\n"
-                                 "                                       } (struct (anonymous namespace)::AnonymousVariadicArgumentType {\n"
-                                 "                                          },...);\n"            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef void (FunctionTypedef)();\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using FunctionUsing = void ();\n"                               , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -3169,7 +2981,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 1, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(16, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(38, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(10, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -3227,112 +3039,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "            AnonymousEnumValue\n"
-                                 "        } AnonymousEnumTypedef;\n"                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using AnonymousStructAlias = struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                             };\n"                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ArrayReferenceFunctionPointer = IntArray3Again &(*)();\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ArrayReturningFunctionPointer = IntArray3 &(*)();\n"     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using BazFunctionPointerAlias1 = struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                                 } (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "                                           AnonymousEnumValue\n"
-                                 "                                       } );\n"                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using BazFunctionPointerAlias2 = struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                                 } (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "                                           AnonymousEnumValue\n"
-                                 "                                       } );\n"                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using BazFunctionPointerAlias3 = struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                                 } (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "                                           AnonymousEnumValue\n"
-                                 "                                       } );\n"                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "        } *BazFunctionPointerTypedef(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "                                         AnonymousEnumValue\n"
-                                 "                                     } );\n"                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "        } *BazFunctionPointerTypedef2(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "                                          AnonymousEnumValue\n"
-                                 "                                      } );\n"                  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "        } *BazFunctionPointerTypedef3(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "                                          AnonymousEnumValue\n"
-                                 "                                      } );\n"                  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "            DeepAnonymousRed,\n"
-                                 "            DeepAnonymousGreen,\n"
-                                 "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef1;\n"                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "            DeepAnonymousRed,\n"
-                                 "            DeepAnonymousGreen,\n"
-                                 "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef2;\n"                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "            DeepAnonymousRed,\n"
-                                 "            DeepAnonymousGreen,\n"
-                                 "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef3;\n"                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "            DeepAnonymousRed,\n"
-                                 "            DeepAnonymousGreen,\n"
-                                 "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef4;\n"                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "            DeepAnonymousRed,\n"
-                                 "            DeepAnonymousGreen,\n"
-                                 "            DeepAnonymousBlue\n"
-                                 "        } DeepEnumTypedef5;\n"                                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepEnumUsing1 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "                           DeepAnonymousRed,\n"
-                                 "                           DeepAnonymousGreen,\n"
-                                 "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepEnumUsing2 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "                           DeepAnonymousRed,\n"
-                                 "                           DeepAnonymousGreen,\n"
-                                 "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepEnumUsing3 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "                           DeepAnonymousRed,\n"
-                                 "                           DeepAnonymousGreen,\n"
-                                 "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepEnumUsing4 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "                           DeepAnonymousRed,\n"
-                                 "                           DeepAnonymousGreen,\n"
-                                 "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepEnumUsing5 = enum (anonymous namespace)::DeepAnonymousEnum {\n"
-                                 "                           DeepAnonymousRed,\n"
-                                 "                           DeepAnonymousGreen,\n"
-                                 "                           DeepAnonymousBlue\n"
-                                 "                       };\n"                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepAliasType DeepTypedef1;\n"                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepUsing1 DeepTypedef2;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepUsing2 DeepTypedef3;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepUsing3 DeepTypedef4;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef DeepUsing4 DeepTypedef5;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing1 = DeepTypedef1;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing2 = DeepTypedef2;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing3 = DeepTypedef3;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing4 = DeepTypedef4;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using DeepUsing5 = DeepTypedef5;\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using FunctionReferenceAlias = FunctionReferenceTypedef;\n"    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef int (&FunctionReferenceTypedef)(int);\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using IntAlias = int;\n"                                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using IntArray3 = int[3];\n"                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using IntArray3Again = int[3];\n"                              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef int IntTypedef;\n"                                     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using UniquePointerParameterFunctionType = struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                                           } * (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "                                                       AnonymousEnumValue\n"
-                                 "                                                   } *);\n"    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using UniqueReferenceParameterFunctionType = struct (anonymous namespace)::AnonymousStructForAlias {\n"
-                                 "                                             } & (*)(enum (anonymous namespace)::AnonymousEnumForTypedef {\n"
-                                 "                                                         AnonymousEnumValue\n"
-                                 "                                                     } &);\n"  , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -3418,7 +3125,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(1, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -3456,7 +3163,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -3502,7 +3209,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 2, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 9, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(18, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 2, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -3643,13 +3350,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"   , (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef enum (unnamed enum at input.cc:23:9) {\n"
-                                 "            TypedefA,\n"
-                                 "            TypedefB,\n"
-                                 "            TypedefC\n"
-                                 "        } AnonymousEnumTypedef;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using SHORT = short;\n"           , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -3685,7 +3386,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(2, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(9, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -3732,21 +3433,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using InlineEnumAlias4 = enum (anonymous namespace)::InlineEnum4 {\n"
-                                 "                             InlineEnum4A,\n"
-                                 "                             InlineEnum4B\n"
-                                 "                         };\n"   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef enum (anonymous namespace)::InlineEnum3 {\n"
-                                 "            InlineEnum3A,\n"
-                                 "            InlineEnum3B\n"
-                                 "        } InlineEnumTypedef3;\n" , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using InlineStructAlias = struct (anonymous namespace)::InlineStructAliasSource {\n"
-                                 "                              int value;\n"
-                                 "                          };\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::InlineStructTypedefSource {\n"
-                                 "            int value;\n"
-                                 "        } InlineStructTypedef;\n", (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -3772,7 +3459,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(4, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -3793,7 +3480,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -3831,7 +3518,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(11, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -3865,17 +3552,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef enum (anonymous namespace)::AnonymousConstinitTypedefEnum {\n"
-                                 "            AnonymousConstinitTypedefValue\n"
-                                 "        } AnonymousConstinitEnumTypedef;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using AnonymousConstinitEnumUsing = enum (anonymous namespace)::AnonymousConstinitUsingEnum {\n"
-                                 "                                        AnonymousConstinitUsingValue\n"
-                                 "                                    };\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef struct (anonymous namespace)::AnonymousConstinitTypedefStruct {\n"
-                                 "        } AnonymousConstinitTypedef;\n"    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using AnonymousConstinitUsing = struct (anonymous namespace)::AnonymousConstinitUsingStruct {\n"
-                                 "                                };\n"      , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -3912,7 +3589,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(15, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -3982,13 +3659,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef struct (anonymous namespace)::ConstexprStaticTypedefAnonymousType {\n"
-                                 "        } ConstexprStaticTypedefAnonymousAlias;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef int ConstexprStaticTypedefInt;\n"         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ConstexprStaticUsingAnonymousAlias = struct (anonymous namespace)::ConstexprStaticUsingAnonymousType {\n"
-                                 "                                           };\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ConstexprStaticUsingInt = int;\n"           , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -4015,7 +3686,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -4042,7 +3713,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -4082,7 +3753,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(12, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 1, maps.functionMap.size(), "wrong number of functions in map");
             
@@ -4136,7 +3807,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -4169,7 +3840,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(18, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -4239,7 +3910,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -4268,7 +3939,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 4, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(15, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -4311,7 +3982,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -4465,7 +4136,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(65, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(33, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 3, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(25, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(14, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(22, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -4766,32 +4437,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest Level1;\n"                                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest Level2;\n"                                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level1 = OriginalNamespace::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level2 = OriginalNamespace::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using NamespaceAliasAliasTemplate = OriginalNamespace::NamespaceAliasTest;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasBaseTypedefAlias;\n"                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasBaseUsingAlias = OriginalNamespace::NamespaceAliasTest;\n"                     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasDecltypeUsing = OriginalNamespace::NamespaceAliasTest;\n"                      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using NamespaceAliasDependentAliasTemplate = T;\n"                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTestEnum NamespaceAliasEnumTypedefAlias;\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasEnumUsingAlias = OriginalNamespace::NamespaceAliasTestEnum;\n"                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasFunctionTypedefAlias;\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasFunctionUsingAlias = OriginalNamespace::NamespaceAliasTest;\n"                 , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasMixedLevel1 = OriginalNamespace::NamespaceAliasTest;\n"                        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasMixedLevel2;\n"                        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasMixedLevel3 = OriginalNamespace::NamespaceAliasTest;\n"                        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> using NamespaceAliasTemplateAlias = T;\n"                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasTypedefFromUsingTest;\n"               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("typedef OriginalNamespace::NamespaceAliasTest NamespaceAliasTypedefTest;\n"                        , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level2 = OriginalNamespace::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using Level1 = OriginalNamespace::NamespaceAliasTest;\n"                                           , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasUsingTest = OriginalNamespace::NamespaceAliasTest;\n"                          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasUsingTest2 = OriginalNamespace::NamespaceAliasTest;\n"                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NestedNamespaceAliasTest = OriginalNamespace::NamespaceAliasTest;\n"                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NamespaceAliasInt = unsigned int;\n"                                                         , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -4935,7 +4581,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(22, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual( 4, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(33, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -5038,11 +4684,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
-                Assert::AreEqual("using NoexceptFunctionType = void () noexcept;\n"         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using NoexceptFunctionTypeAliasTest = void () noexcept;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using PotentiallyThrowingFunctionType = void ();\n"       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("using ThrowingFunctionTypeAliasTest = void ();\n"         , (*it++).second[0].fullyQualified);
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -5155,7 +4797,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(4, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
-            Assert::AreEqual(0, maps.typedefMap.size(),"wrong number of typedefs in map");
+            Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
@@ -5191,7 +4833,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
             }
             {
-                auto it = maps.typedefMap.begin();
+                auto it = maps.guideMap.begin();
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -5201,7 +4843,55 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"deduction guides", []
+        {
+            std::string code =  ";"
+                                //"template<typename T> struct DeductionGuideBasicTest { DeductionGuideBasicTest(T); }; template<typename T> DeductionGuideBasicTest(T) -> DeductionGuideBasicTest<T>;\n"
+                                //"template<typename T> struct DeductionGuideTransformTest { DeductionGuideTransformTest(T); }; DeductionGuideTransformTest(const char*) -> DeductionGuideTransformTest<int>;\n"
+                                //"template<typename T> struct DeductionGuideNonTemplateTest { DeductionGuideNonTemplateTest(T); }; DeductionGuideNonTemplateTest(int) -> DeductionGuideNonTemplateTest<long>;\n"
+                                //"template<typename T> struct DeductionGuideMultipleTest { DeductionGuideMultipleTest(T); }; DeductionGuideMultipleTest(int) -> DeductionGuideMultipleTest<int>; DeductionGuideMultipleTest(double) -> DeductionGuideMultipleTest<double>;\n"
+                                //"template<typename T> struct DeductionGuidePointerTest { DeductionGuidePointerTest(T*); }; template<typename T> DeductionGuidePointerTest(T*) -> DeductionGuidePointerTest<T>;\n"
+                                //"template<typename T> struct DeductionGuideTwoParametersTest { DeductionGuideTwoParametersTest(T, T); }; template<typename T> DeductionGuideTwoParametersTest(T, T) -> DeductionGuideTwoParametersTest<T>;\n"
+                                //"template<typename T, int N> struct DeductionGuideNonTypeTest { DeductionGuideNonTypeTest(T (&)[N]); }; template<typename T, int N> DeductionGuideNonTypeTest(T (&)[N]) -> DeductionGuideNonTypeTest<T, N>;\n"
+                                //"namespace DeductionGuideNamespaceTest { struct X {}; } template<typename T> struct DeductionGuideQualifiedTypeTest { DeductionGuideQualifiedTypeTest(T); }; DeductionGuideQualifiedTypeTest(DeductionGuideNamespaceTest::X) -> DeductionGuideQualifiedTypeTest<DeductionGuideNamespaceTest::X>;\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
 
+            Assert::AreEqual(0, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.functionMap.size(),"wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.guideMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 };
 /* some missing test cases
 

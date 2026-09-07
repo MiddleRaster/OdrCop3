@@ -11,7 +11,7 @@
 
 namespace OdrCop3
 {
-    enum InfoKind { Function, Typedef, Concept, Enum, Udt, Var };
+    enum InfoKind { Function, Concept, Guide, Enum, Udt, Var };
     template<InfoKind K> struct InfoBase
     {
         const std::string TU;
@@ -19,8 +19,8 @@ namespace OdrCop3
         bool operator==(const InfoBase& other) const { return fullyQualified == other.fullyQualified; }
     };
     using FunctionInfo = InfoBase<InfoKind::Function>;
-    using  TypedefInfo = InfoBase<InfoKind::Typedef>;
     using  ConceptInfo = InfoBase<InfoKind::Concept>;
+    using    GuideInfo = InfoBase<InfoKind::Guide>;
     using     EnumInfo = InfoBase<InfoKind::Enum>;
     using      UdtInfo = InfoBase<InfoKind::Udt>;
     using      VarInfo = InfoBase<InfoKind::Var>;
@@ -30,7 +30,7 @@ namespace OdrCop3
         std::map<std::string,std::vector<     UdtInfo>>      udtMap;
         std::map<std::string,std::vector<     VarInfo>>      varMap;
         std::map<std::string,std::vector<    EnumInfo>>     enumMap;
-        std::map<std::string,std::vector< TypedefInfo>>  typedefMap;
+        std::map<std::string,std::vector<   GuideInfo>>    guideMap;
         std::map<std::string,std::vector< ConceptInfo>>  conceptMap;
         std::map<std::string,std::vector<FunctionInfo>> functionMap;
     };
@@ -184,41 +184,13 @@ namespace OdrCop3
             maps.enumMap[key].push_back({TU, SerializeDecls(contextItems, enumDecl)});
             return true;
         }
-        bool VisitTypedefNameDecl(clang::TypedefNameDecl* typedefDecl)
+        bool VisitCXXDeductionGuideDecl(clang::CXXDeductionGuideDecl* cxxDeductionGuideDecl)
         {
-            if (context->getSourceManager().isInSystemHeader(typedefDecl->getLocation()))
-                return true; // skip anything not in the main file or a user header
-
-            if (typedefDecl->isImplicit())
+            if (context->getSourceManager().isInSystemHeader(cxxDeductionGuideDecl->getLocation()))
                 return true;
 
-            if (typedefDecl->isInAnonymousNamespace())
-                return true; // TU-local, not an ODR candidate
-
-            if (const auto* tad = llvm::dyn_cast<TypeAliasDecl>(typedefDecl))
-                if (tad->getDescribedAliasTemplate() != nullptr)
-                    return true; // Skip the templated decl inside a TypeAliasTemplateDecl - handled below
-
-            if (typedefDecl->getDeclContext()->isRecord())
-                return true; // nested, not a top-level typedef
-
-            std::string aliasName = typedefDecl->getQualifiedNameAsString();
-            maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, typedefDecl)});
-            return true;
-        }
-        bool VisitTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* typeAliasTemplateDecl)
-        {
-            if (context->getSourceManager().isInSystemHeader(typeAliasTemplateDecl->getLocation()))
-                return true;
-
-            if (typeAliasTemplateDecl->isInAnonymousNamespace())
-                return true;
-
-            if (typeAliasTemplateDecl->getDeclContext()->isRecord())
-                return true; // nested, not a top-level using alias
-
-            std::string     aliasName = typeAliasTemplateDecl->getQualifiedNameAsString();
-            maps.typedefMap[aliasName].push_back({TU, SerializeDecls(contextItems, typeAliasTemplateDecl)});
+            std::string key = cxxDeductionGuideDecl->getQualifiedNameAsString();
+            maps.guideMap[key].push_back({TU, SerializeDecls(contextItems, cxxDeductionGuideDecl)});
             return true;
         }
 
@@ -486,9 +458,9 @@ namespace OdrCop3
         template<typename Out> static int ReportOdrViolations(const AllMaps& maps, Out&& out)
         {
             int violations = 0;
-            violations += OdrCop3::OdrViolationReporter::ReportOdrViolations(maps.    enumMap, out);
             violations += OdrCop3::OdrViolationReporter::ReportOdrViolations(maps.functionMap, out);
-            violations += OdrCop3::OdrViolationReporter::ReportOdrViolations(maps. typedefMap, out);
+            violations += OdrCop3::OdrViolationReporter::ReportOdrViolations(maps.   guideMap, out);
+            violations += OdrCop3::OdrViolationReporter::ReportOdrViolations(maps.    enumMap, out);
             violations += OdrCop3::OdrViolationReporter::ReportOdrViolations(maps.     udtMap, out);
             violations += OdrCop3::OdrViolationReporter::ReportOdrViolations(maps.     varMap, out);
             return violations;
