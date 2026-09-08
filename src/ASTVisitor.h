@@ -189,11 +189,47 @@ namespace OdrCop3
             if (context->getSourceManager().isInSystemHeader(cxxDeductionGuideDecl->getLocation()))
                 return true;
 
-            std::string key = cxxDeductionGuideDecl->getQualifiedNameAsString();
-            maps.guideMap[key].push_back({TU, SerializeDecls(contextItems, cxxDeductionGuideDecl)});
+            if (cxxDeductionGuideDecl->isImplicit())
+                return true;
+
+            if (cxxDeductionGuideDecl->isInAnonymousNamespace())
+                return true; // TU-local, not an ODR candidate
+
+            std::string key      = cxxDeductionGuideDecl->getQualifiedNameAsString();
+            std::string newGuide = SerializeDecls(contextItems, cxxDeductionGuideDecl);
+            auto &        values = maps.guideMap[key];
+            auto it = std::find_if(values.begin(), values.end(), [this](const auto& value) { return value.TU == TU; });
+            if (it == values.end())
+            {   // it's the first deduction guide encountered for this TU.
+                values.push_back({TU, std::move(newGuide)});
+                return true;
+            }
+
+            std::vector<std::string> guides;
+            {   // parse up existing string of concatenated guides
+                std::istringstream stream(it->fullyQualified);
+                std::string guide;
+                while (std::getline(stream, guide))
+                    guides.push_back(guide + "\n");
+            }
+            guides.push_back(std::move(newGuide)); // add this one
+            std::sort(guides.begin(), guides.end());
+
+            std::string combined;
+            for (const auto& guide : guides) // reconstruct the newline-delimited representation.
+                combined += guide;
+
+            // since InfoBase has const members, it cannot be assigned to so build a new vector
+            std::vector<GuideInfo> newValues;
+            newValues.reserve(values.size());
+            for (const auto& value : values)
+                if (&value == &*it)
+                    newValues.emplace_back(TU, std::move(combined));
+                else
+                    newValues.emplace_back(value.TU, value.fullyQualified);
+            values = std::move(newValues);
             return true;
         }
-
         bool VisitVarDecl(const VarDecl* varDecl)
         {
             if (context->getSourceManager().isInSystemHeader(varDecl->getLocation()))
