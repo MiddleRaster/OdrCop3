@@ -41,10 +41,7 @@ namespace OdrCop3
                 QualType qualType = parmVarDecl->getOriginalType();
                 if (resolveNamespaceAliases)
                     qualType = qualType.getCanonicalType();
-
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-                ci2.aux = parmVarDecl->getName().str();
-                out += IndentBlock(SerializeType(ci2, qualType), LengthOfLastLine(out));
+                out += IndentBlock(SerializeType(contextItems.withAux(parmVarDecl->getName().str()), qualType), LengthOfLastLine(out));
             } else {
                 QualType qualType = parmVarDecl->getType();
                 if (resolveNamespaceAliases)

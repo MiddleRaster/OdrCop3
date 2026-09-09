@@ -34,8 +34,8 @@ namespace OdrCop3
                     qt = qt.getCanonicalType();
                     if (const auto* recordType = qt->getAs<clang::RecordType>())
                     {
-                        ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls); // don't use aux yet (e.g., mp2 test)
-                        out += IndentBlock(SerializeDecl(ci2, memberPointerType->getQualifier().getAsRecordDecl()), LengthOfLastLine(out));
+                        // don't use aux yet (e.g., mp2 test)
+                        out += IndentBlock(SerializeDecl(contextItems.withAux(""), memberPointerType->getQualifier().getAsRecordDecl()), LengthOfLastLine(out));
                         out  = TrimRightIf(out, ";");
                     }
                 }
@@ -51,8 +51,7 @@ namespace OdrCop3
             std::string anonQualifier   = GetQualifierIfAnonymousNamespace();
             if (anonQualifier.find("\n") != std::string::npos)
             {   // if multiline, do this twice: first to figure out what the indentation needs to be; then again with the right indentation
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, "::*?????");
-                std::string placeHolder = SerializeType(ci2, memberPointerType->getPointeeType());
+                std::string placeHolder = SerializeType(contextItems.withAux("::*?????"), memberPointerType->getPointeeType());
                 indentation             = static_cast<int>(placeHolder.find("::*?????"));
                 qualifierName           = anonQualifier;
             }
@@ -64,8 +63,7 @@ namespace OdrCop3
                 os.flush();
                 qualifierName = TrimRightIf(s, "::");
             }
-            ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, qualifierName + "::*" + contextItems.aux);
-            return IndentBlock(SerializeType(ci, memberPointerType->getPointeeType()), indentation);
+            return IndentBlock(SerializeType(contextItems.withAux(qualifierName + "::*" + contextItems.aux), memberPointerType->getPointeeType()), indentation);
         }
     };
 }

@@ -24,8 +24,8 @@ namespace OdrCop3
 
         std::string Output(QualType qualType) const
         {
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls); // strip off any aux (not for return value or args)
-            std::string out = SerializeType(ci2, qualType);
+            // strip off any aux (not for return value or args)
+            std::string out = SerializeType(contextItems.withAux(""), qualType);
             out = TrimRightIf(out, "\n");
             out = TrimRightIf(out, ";");
             return out;

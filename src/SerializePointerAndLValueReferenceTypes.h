@@ -26,9 +26,8 @@ namespace OdrCop3
         std::string Serialize(const std::string& starOrAmpersand) const
         {
             bool pointerToFunctionOrArraySyntax = IsType::EventuallyArrayOrFunctionPointer(qt->getPointeeType());
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls,  pointerToFunctionOrArraySyntax ? starOrAmpersand + contextItems.aux : "");
             std::string out;
-            out = SerializeType(ci2, qt->getPointeeType());
+            out = SerializeType(contextItems.withAux(pointerToFunctionOrArraySyntax ? starOrAmpersand + contextItems.aux : ""), qt->getPointeeType());
             out = TrimRightIf(out, "\n");
             out = TrimRightIf(out, ";");
             if (true == pointerToFunctionOrArraySyntax)

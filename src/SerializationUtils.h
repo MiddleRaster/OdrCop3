@@ -38,6 +38,31 @@ namespace OdrCop3
             , recursingDecls(recursingDecls)
             , aux           (aux)
         {}
+
+        ContextItems withWantFunctionBody(bool value) const
+        {
+            auto result = *this;
+            result.wantFunctionBody = value;
+            return result;
+        }
+        ContextItems withNeedsFriend(bool value = true) const
+        {
+            auto result = *this;
+            result.needsFriend = value;
+            return result;
+        }
+        ContextItems withSuppressTemplatePrefix(bool value = true) const
+        {
+            auto result = *this;
+            result.suppressTemplatePrefix = value;
+            return result;
+        }
+        ContextItems withAux(std::string value) const
+        {
+            auto result = *this;
+            result.aux = std::move(value);
+            return result;
+        }
     };
 
 	struct UnhandledException : public std::exception
@@ -164,11 +189,7 @@ namespace OdrCop3
         std::string Serialize(const clang::TemplateParameterList* templateParameterList, const clang::Decl* decl) const
         {
             std::string prefix = GetTemplateHeader<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList);
-
-            ContextItems ci2(contextItems);
-            ci2.suppressTemplatePrefix = true;
-            std::string block  = SerializeDecl(ci2, decl);
-
+            std::string block  = SerializeDecl(contextItems.withSuppressTemplatePrefix(true), decl);
             return prefix + IndentBlock(block, GetIndentation(prefix, block)) + "\n";
         }
     };

@@ -70,9 +70,8 @@ namespace OdrCop3
                 // int (&ReturningReferenceTo1DArrayOfInts(int,double) noexcept)[3] { return blah; }
                 // Everything from the "int" to the closing ) before the "[3]" goes into aux.
 
-                std::string aux = SerializeFromCallingConventionToTrailingReturn([&]() { return ""; }, [&]() { return get_FunctionName(); });
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, TrimRightIf(aux, " "));
-                std::string out = SerializeType(ci2, funcDecl->getReturnType());
+                std::string aux = TrimRightIf(SerializeFromCallingConventionToTrailingReturn([&]() { return ""; }, [&]() { return get_FunctionName(); }), " ");
+                std::string out = SerializeType(contextItems.withAux(aux), funcDecl->getReturnType());
                 return TrimRightIf(out, " ");
             }
             return TrimRightIf(SerializeType(contextItems, resolveNamespaceAliases ? funcDecl->getReturnType().getCanonicalType() : funcDecl->getReturnType()), " ");
@@ -340,13 +339,8 @@ namespace OdrCop3
         {
             std::string fqn;
             fqn += SerializeUpToFriend();
-
             // turn off ContextItems::needsFriend so that Can::Print() can return true
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, contextItems.aux);
-            ci2.needsFriend      = false;
-            ci2.wantFunctionBody = contextItems.wantFunctionBody;
-            std::string block    = FunctionDeclSerializer(ci2, funcDecl).SerializePastFriend(returnType, functionName);
-
+            std::string block = FunctionDeclSerializer(contextItems.withNeedsFriend(false), funcDecl).SerializePastFriend(returnType, functionName);
             fqn += IndentBlock(block, GetIndentation(fqn, block));
             return fqn + "\n";
         }

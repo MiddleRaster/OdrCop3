@@ -25,9 +25,7 @@ namespace OdrCop3
         ConstantArrayTypeSerializer(const ContextItems& contextItems, QualType qt, const ConstantArrayType* constantArrayType) : contextItems(contextItems), qt(qt), constantArrayType(constantArrayType) {}
         std::string Serialize() const
         {
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy,contextItems.TU, contextItems.recursingDecls);
-            ci2.aux = contextItems.aux + "[" + std::to_string(constantArrayType->getSize().getZExtValue()) + "]";
-            std::string out = IndentBlock(SerializeType(ci2, constantArrayType->getElementType()), 0);
+            std::string out = IndentBlock(SerializeType(contextItems.withAux(contextItems.aux + "[" + std::to_string(constantArrayType->getSize().getZExtValue()) + "]"), constantArrayType->getElementType()), 0);
             return TrimRightIf(out, ";");
         }
     };

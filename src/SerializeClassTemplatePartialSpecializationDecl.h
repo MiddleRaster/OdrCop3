@@ -30,9 +30,9 @@ namespace OdrCop3
                 classTemplatePartialSpecializationDecl->getTemplateParameters()->print(os, contextItems.context, contextItems.printPolicy);
                 os.flush();
             }
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, TemplateArgsToString(contextItems, classTemplatePartialSpecializationDecl));
             // a classTemplatePartialSpecializationDecl* "is a" CXXRecordDecl, so I can't call SerializeDecl, as the RecursionPreventor will kick in. So call the right serializer directly.
-            out += CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(ci2, static_cast<const clang::CXXRecordDecl*>(classTemplatePartialSpecializationDecl)).Serialize();
+            out += CXXRecordDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems.withAux(TemplateArgsToString(contextItems, classTemplatePartialSpecializationDecl)),
+                                                                                        static_cast<const clang::CXXRecordDecl*>(classTemplatePartialSpecializationDecl)).Serialize();
             return out;
         }
     };

@@ -25,12 +25,8 @@ namespace OdrCop3
         ParenTypeSerializer(const ContextItems& contextItems, QualType qt, const ParenType* parenType) : contextItems(contextItems), qt(qt), parenType(parenType) {}
         std::string Serialize() const
         {
-            if (parenType->getInnerType()->isFunctionProtoType() ||
-                parenType->getInnerType()->isArrayType        () )
-            {
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, "(" + contextItems.aux + ")");
-                return SerializeType(ci2, parenType->getInnerType());
-            }
+            if (parenType->getInnerType()->isFunctionProtoType() || parenType->getInnerType()->isArrayType())
+                return SerializeType(contextItems.withAux("(" + contextItems.aux + ")"), parenType->getInnerType());
             return "(" + SerializeType(contextItems, parenType->getInnerType()) + ")";
         }
     };

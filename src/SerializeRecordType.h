@@ -25,11 +25,12 @@ namespace OdrCop3
         RecordTypeSerializer(const ContextItems& contextItems, QualType qt, const RecordType* recordType) : contextItems(contextItems), qt(qt), recordType(recordType) {}
         std::string Serialize() const
         {
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
             std::string out;
             if (qt.isConstQualified   ()) out += "const ";
             if (qt.isVolatileQualified()) out += "volatile ";
-            out += IndentBlock(SerializeDecl(ci2, recordType->getDecl()), LengthOfLastLine(out));
+
+            ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls); // defaults for aux, friend, etc.
+            out += IndentBlock(SerializeDecl(ci, recordType->getDecl()), LengthOfLastLine(out));
             out  = TrimRightIf(out, ";");
             out += (contextItems.aux.size() > 0 ? " " + contextItems.aux : "");
             return out;

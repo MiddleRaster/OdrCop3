@@ -26,23 +26,13 @@ namespace OdrCop3
         {
             if (const NamedDecl* namedDecl = friendDecl->getFriendDecl())
             {
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-                ci2.needsFriend = true; // can't just prepend:  "friend" needs to be inserted between the template header and the function
-
-                if (const FunctionTemplateDecl* functionTemplateDecl = dyn_cast<FunctionTemplateDecl>(namedDecl)) {
-                    if (const FunctionDecl    * functionDecl = functionTemplateDecl->getTemplatedDecl())
-                        ci2.wantFunctionBody  = functionDecl->doesThisDeclarationHaveABody();
-                    return SerializeDecl(ci2, functionTemplateDecl);
-                }
-                if (const FunctionDecl        * functionDecl = dyn_cast<FunctionDecl>(namedDecl)) {
-                    ci2.wantFunctionBody      = functionDecl->doesThisDeclarationHaveABody();
-                    return SerializeDecl(ci2, functionDecl);
-                }
-                if (const ClassTemplateDecl   * classTemplateDecl = dyn_cast<ClassTemplateDecl>(namedDecl)) {
-                    return SerializeDecl(ci2, classTemplateDecl);
-                }
-                if (const CXXRecordDecl* cxxRecordDecl = dyn_cast<CXXRecordDecl>(namedDecl))
-                    return SerializeDecl(contextItems, cxxRecordDecl);
+                ContextItems friendContextItems = contextItems.withNeedsFriend(true);
+                if (const FunctionTemplateDecl* functionTemplateDecl = dyn_cast<FunctionTemplateDecl>(namedDecl))
+                    if (const FunctionDecl  *      functionDecl = functionTemplateDecl->getTemplatedDecl()) return SerializeDecl(friendContextItems.withWantFunctionBody(functionDecl->doesThisDeclarationHaveABody()), functionTemplateDecl);
+                    else                                                                                    return SerializeDecl(friendContextItems, functionTemplateDecl);
+                if (const      FunctionDecl *      functionDecl = dyn_cast<     FunctionDecl>(namedDecl))   return SerializeDecl(friendContextItems.withWantFunctionBody(functionDecl->doesThisDeclarationHaveABody()), functionDecl);
+                if (const ClassTemplateDecl * classTemplateDecl = dyn_cast<ClassTemplateDecl>(namedDecl))   return SerializeDecl(friendContextItems, classTemplateDecl);
+                if (const CXXRecordDecl     *     cxxRecordDecl = dyn_cast<    CXXRecordDecl>(namedDecl))   return SerializeDecl(contextItems, cxxRecordDecl);
             }
             if (const TypeSourceInfo* typeSourceInfo = friendDecl->getFriendType())
                 return "friend " + SerializeType(contextItems, friendDecl->getFriendType()->getType()) + ";";

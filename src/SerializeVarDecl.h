@@ -168,14 +168,12 @@ namespace OdrCop3
             if (varDecl->isConstexpr())
                 qualType = qualType.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const. Just like DeclPrinter does.
 
-            std::string aux = IsType::EventuallyArrayOrFunctionPointer(qualType) ? name : contextItems.aux;
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, aux);
-
             std::string out;
             out += get_TemplateHeader();
             out += get_Attributes();
             out += GetInlineStaticConstAndConstexpr();
-            out += TrimRightIf(IndentBlock(SerializeType(ci2, qualType), LengthOfLastLine(out)), " ");
+            std::string aux = IsType::EventuallyArrayOrFunctionPointer(qualType) ? name : contextItems.aux;
+            out += TrimRightIf(IndentBlock(SerializeType(contextItems.withAux(aux), qualType), LengthOfLastLine(out)), " ");
             if (true == aux.empty())
             {
                 out += SnugUpPointersAndReferences(out);

@@ -35,10 +35,9 @@ namespace OdrCop3
             if (true == contextItems.aux.empty())
             {
                 fqtd += "typedef ";
-                ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls, typedefDecl->getNameAsString());
-                fqtd += IndentBlock(SerializeType(ci2,          typedefDecl->getUnderlyingType().getCanonicalType()), LengthOfLastLine(fqtd));
+                fqtd += IndentBlock(SerializeType(contextItems.withAux(typedefDecl->getNameAsString()), typedefDecl->getUnderlyingType().getCanonicalType()), LengthOfLastLine(fqtd));
             } else
-                fqtd += IndentBlock(SerializeType(contextItems, typedefDecl->getUnderlyingType().getCanonicalType()), LengthOfLastLine(fqtd));
+                fqtd += IndentBlock(SerializeType(contextItems,                                         typedefDecl->getUnderlyingType().getCanonicalType()), LengthOfLastLine(fqtd));
             fqtd  = TrimRightIf(fqtd, " "); // for enums
             fqtd  = TrimRightIf(fqtd, ";"); // for UDTs
             return fqtd + ";\n";

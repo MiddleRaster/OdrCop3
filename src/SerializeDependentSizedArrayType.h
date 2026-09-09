@@ -26,8 +26,7 @@ namespace OdrCop3
         std::string Serialize() const
         {
             std::string out;
-            ContextItems ci2(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls);
-            out += IndentBlock(SerializeType(ci2, dependentSizedArrayType->getElementType()), 0);
+            out += IndentBlock(SerializeType(contextItems.withAux(""), dependentSizedArrayType->getElementType()), 0);
             out += " " + contextItems.aux;
             out += "[";
             {
