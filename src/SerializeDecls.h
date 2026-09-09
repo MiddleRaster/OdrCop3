@@ -555,9 +555,9 @@ namespace OdrCop3
             }
         };
 
-        struct Semicolon
+        class Print
         {
-            static std::string IfNeeded(const std::string& str, const clang::Decl* decl)
+            static std::string AddSemiColonIfNeeded(const std::string& str, const clang::Decl* decl)
             {
                 switch (decl->getKind())
                 {
@@ -578,6 +578,18 @@ namespace OdrCop3
                     break;
                 }
                 return ";\n"; // everything else needs this
+            }
+        public:
+            static std::string Decl(const ContextItems& contextItems, const Decl* decl)
+            {
+                std::string str;
+                llvm::raw_string_ostream os(str);
+                if (const TemplateDecl* templateDecl = decl->getDescribedTemplate(); templateDecl && !contextItems.suppressTemplatePrefix)
+                    templateDecl->print(os, contextItems.printPolicy);
+                else
+                    decl->print(os, contextItems.printPolicy);
+                os.flush();
+                return str + AddSemiColonIfNeeded(str, decl);
             }
         };
 
@@ -613,12 +625,7 @@ namespace OdrCop3
             // when this is released, comment out the next two lines, so that it won't throw but will print something
             decl->dump();
             throw OdrCop3::UnhandledException(std::string("unhandled decl::getKind: ") + enum_name(decl->getKind()));
-
-            std::string str;
-            llvm::raw_string_ostream os(str);
-            decl->print(os, contextItems.printPolicy);
-            os.flush();
-            return str + Semicolon::IfNeeded(str, decl);
+            return Print::Decl(contextItems, decl);
         }
 
         template<auto SerializeType, auto SerializeExpr>
@@ -666,12 +673,7 @@ namespace OdrCop3
                     return CallSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, false>(contextItems, decl);
             }
 
-            std::string str;
-            llvm::raw_string_ostream os(str);
-            clang::PrintingPolicy policy(contextItems.printPolicy);
-            decl->print(os, policy);
-            os.flush();
-            return str + Semicolon::IfNeeded(str, decl);
+            return Print::Decl(contextItems, decl);
         }
     }
 }

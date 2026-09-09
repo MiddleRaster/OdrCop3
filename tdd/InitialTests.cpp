@@ -4846,26 +4846,34 @@ Test ExploratoryTestsOfClangAST[] =
     {"deduction guides", []
         {
             std::string code =
-                                "                          template<typename T> struct DeductionGuideBasicTest { DeductionGuideBasicTest(T); }; template<typename T>      DeductionGuideBasicTest(T) -> DeductionGuideBasicTest<T>;\n"
-                                "namespace SomeNamespace { template<typename T> struct DeductionGuideBasicTest { DeductionGuideBasicTest(T); }; template<typename T>      DeductionGuideBasicTest(T) -> DeductionGuideBasicTest<T>; }\n"
-                                "namespace               { template<typename T> struct DeductionGuideBasicTest { DeductionGuideBasicTest(T); }; template<typename T>      DeductionGuideBasicTest(T) -> DeductionGuideBasicTest<T>; }\n"
-                                "template<typename T> struct DeductionGuideTransformTest      { DeductionGuideTransformTest    (T);        };                             DeductionGuideTransformTest  (const char*) -> DeductionGuideTransformTest<int>;\n"
-                                "template<typename T> struct DeductionGuideNonTemplateTest    { DeductionGuideNonTemplateTest  (T);        };                             DeductionGuideNonTemplateTest(int)         -> DeductionGuideNonTemplateTest<long>;\n"
-                                "template<typename T> struct DeductionGuideMultipleTest       { DeductionGuideMultipleTest     (T);        };                             DeductionGuideMultipleTest   (int)         -> DeductionGuideMultipleTest<int>; DeductionGuideMultipleTest(double) -> DeductionGuideMultipleTest<double>;\n"
-                                "template<typename T> struct DeductionGuidePointerTest        { DeductionGuidePointerTest      (T*);       }; template<typename T>        DeductionGuidePointerTest    (T*)          -> DeductionGuidePointerTest<T>;\n"
-                                "template<typename T> struct DeductionGuideTwoParametersTest  { DeductionGuideTwoParametersTest(T, T);     }; template<typename T>        DeductionGuideTwoParametersTest(T, T)      -> DeductionGuideTwoParametersTest<T>;\n"
-                                "template<typename T, int N> struct DeductionGuideNonTypeTest { DeductionGuideNonTypeTest      (T (&)[N]); }; template<typename T, int N> DeductionGuideNonTypeTest(T (&)[N])        -> DeductionGuideNonTypeTest<T, N>;\n"
+                                "                          template<typename T> struct DeductionGuideBasicTest { DeductionGuideBasicTest(T); }; template<typename T>                             DeductionGuideBasicTest(T)                 -> DeductionGuideBasicTest<T>;\n"
+                                "namespace SomeNamespace { template<typename T> struct DeductionGuideBasicTest { DeductionGuideBasicTest(T); }; template<typename T>                             DeductionGuideBasicTest(T)                 -> DeductionGuideBasicTest<T>; }\n"
+                                "namespace               { template<typename T> struct DeductionGuideBasicTest { DeductionGuideBasicTest(T); }; template<typename T>                             DeductionGuideBasicTest(T)                 -> DeductionGuideBasicTest<T>; }\n"
+                                "template<typename T> struct DeductionGuideTransformTest           { DeductionGuideTransformTest    (T);        };                                               DeductionGuideTransformTest  (const char*) -> DeductionGuideTransformTest<int>;\n"
+                                "template<typename T> struct DeductionGuideNonTemplateTest         { DeductionGuideNonTemplateTest  (T);        };                                               DeductionGuideNonTemplateTest(int)         -> DeductionGuideNonTemplateTest<long>;\n"
+                                "template<typename T> struct DeductionGuideMultipleTest            { DeductionGuideMultipleTest     (T);        };                                               DeductionGuideMultipleTest   (int)         -> DeductionGuideMultipleTest<int>;                             DeductionGuideMultipleTest(double) -> DeductionGuideMultipleTest<double>;\n"
+                                "template<typename T> struct DeductionGuidePointerTest             { DeductionGuidePointerTest      (T*);       }; template<typename T>                          DeductionGuidePointerTest    (T*)          -> DeductionGuidePointerTest<T>;\n"
+                                "template<typename T> struct DeductionGuideTwoParametersTest       { DeductionGuideTwoParametersTest(T, T);     }; template<typename T>                          DeductionGuideTwoParametersTest(T, T)      -> DeductionGuideTwoParametersTest<T>;\n"
+                                "template<typename T, int N> struct DeductionGuideNonTypeTest      { DeductionGuideNonTypeTest      (T (&)[N]); }; template<typename T, int N>                   DeductionGuideNonTypeTest(T (&)[N])        -> DeductionGuideNonTypeTest<T, N>;\n"
                                 "namespace DeductionGuideNamespaceTest { struct X {}; } template<typename T> struct DeductionGuideQualifiedTypeTest { DeductionGuideQualifiedTypeTest(T); }; DeductionGuideQualifiedTypeTest(DeductionGuideNamespaceTest::X) -> DeductionGuideQualifiedTypeTest<DeductionGuideNamespaceTest::X>;\n"
-                                // constrained? requires?
+                                "template<typename T> struct DeductionGuideMultipleExpandedTest    { DeductionGuideMultipleExpandedTest(T);     };                                               DeductionGuideMultipleExpandedTest   (int) -> DeductionGuideMultipleExpandedTest<int>;                     DeductionGuideMultipleExpandedTest(long) -> DeductionGuideMultipleExpandedTest<long>;                    DeductionGuideMultipleExpandedTest   (double) -> DeductionGuideMultipleExpandedTest<double>;\n"
+                                "template<typename T> struct DeductionGuideMultiplePatternsTest    { DeductionGuideMultiplePatternsTest(T);     }; template<typename T>                          DeductionGuideMultiplePatternsTest   (T*)  -> DeductionGuideMultiplePatternsTest<T>;                       DeductionGuideMultiplePatternsTest (int) -> DeductionGuideMultiplePatternsTest<int>;                     DeductionGuideMultiplePatternsTest   (double) -> DeductionGuideMultiplePatternsTest<double>;\n"
+                                "template<typename T> struct DeductionGuideMultipleTemplatesTest   { DeductionGuideMultipleTemplatesTest(T);    }; template<typename T>                          DeductionGuideMultipleTemplatesTest  (T*)  -> DeductionGuideMultipleTemplatesTest<T>; template<typename T> DeductionGuideMultipleTemplatesTest (T&) -> DeductionGuideMultipleTemplatesTest<T>; template<typename T> DeductionGuideMultipleTemplatesTest(const T&) -> DeductionGuideMultipleTemplatesTest<T>;\n"
+                                "template<typename T> struct DeductionGuideMultipleFirstTest       { DeductionGuideMultipleFirstTest(T);        };                                               DeductionGuideMultipleFirstTest      (int) -> DeductionGuideMultipleFirstTest<int>;                        DeductionGuideMultipleFirstTest   (long) -> DeductionGuideMultipleFirstTest<long>;\n"
+                                "template<typename T> struct DeductionGuideMultipleSecondTest      { DeductionGuideMultipleSecondTest(T);       };                                               DeductionGuideMultipleSecondTest     (int) -> DeductionGuideMultipleSecondTest<int>;                       DeductionGuideMultipleSecondTest  (long) -> DeductionGuideMultipleSecondTest<long>;\n"
+                                "template<typename T> struct DeductionGuideOrderTest               { DeductionGuideOrderTest(T);                };                                               DeductionGuideOrderTest              (int) -> DeductionGuideOrderTest<int>;                                DeductionGuideOrderTest           (long) -> DeductionGuideOrderTest<long>;                               DeductionGuideOrderTest              (double) -> DeductionGuideOrderTest<double>;\n"
+                                "template<typename T> struct DeductionGuideRequiresTest            { DeductionGuideRequiresTest(T);             }; template<typename T>                          DeductionGuideRequiresTest           (T)   -> DeductionGuideRequiresTest<T> requires (sizeof(T) > 4);\n"
+                                "template<typename T> struct DeductionGuideConstrainedTemplateTest { DeductionGuideConstrainedTemplateTest(T);  }; template<typename T> requires (sizeof(T) > 4) DeductionGuideConstrainedTemplateTest(T)   -> DeductionGuideConstrainedTemplateTest<T>;\n"
+                                "template<typename T> struct DeductionGuideMultipleRequiresTest    { DeductionGuideMultipleRequiresTest(T);     }; template<typename T>                           DeductionGuideMultipleRequiresTest  (T)   -> DeductionGuideMultipleRequiresTest<T> requires (sizeof(T) <= 4); template<typename T> DeductionGuideMultipleRequiresTest(T) -> DeductionGuideMultipleRequiresTest<T> requires (sizeof(T) > 4);\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(10, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(19, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual( 9, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(18, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of comcepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(),"wrong number of functions in map");
 
@@ -4873,6 +4881,27 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("template <typename T> struct DeductionGuideBasicTest {\n"
                                  "    DeductionGuideBasicTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideConstrainedTemplateTest {\n"
+                                 "    DeductionGuideConstrainedTemplateTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideMultipleExpandedTest {\n"
+                                 "    DeductionGuideMultipleExpandedTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideMultipleFirstTest {\n"
+                                 "    DeductionGuideMultipleFirstTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideMultiplePatternsTest {\n"
+                                 "    DeductionGuideMultiplePatternsTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideMultipleRequiresTest {\n"
+                                 "    DeductionGuideMultipleRequiresTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideMultipleSecondTest {\n"
+                                 "    DeductionGuideMultipleSecondTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideMultipleTemplatesTest {\n"
+                                 "    DeductionGuideMultipleTemplatesTest<T>(T);\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct DeductionGuideMultipleTest {\n"
                                  "    DeductionGuideMultipleTest<T>(T);\n"
@@ -4885,11 +4914,17 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T, int N> struct DeductionGuideNonTypeTest {\n"
                                  "    DeductionGuideNonTypeTest<T, N>(T (&)[N]);\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideOrderTest {\n"
+                                 "    DeductionGuideOrderTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct DeductionGuidePointerTest {\n"
                                  "    DeductionGuidePointerTest<T>(T *);\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct DeductionGuideQualifiedTypeTest {\n"
                                  "    DeductionGuideQualifiedTypeTest<T>(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct DeductionGuideRequiresTest {\n"
+                                 "    DeductionGuideRequiresTest<T>(T);\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct DeductionGuideTransformTest {\n"
                                  "    DeductionGuideTransformTest<T>(T);\n"
@@ -4900,53 +4935,56 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> struct DeductionGuideBasicTest {\n"
                                  "    DeductionGuideBasicTest<T>(T);\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.guideMap.begin();
-                Assert::AreEqual("DeductionGuideBasicTest(T) -> DeductionGuideBasicTest<T>;\n"                                                                          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeductionGuideMultipleTest(double) -> DeductionGuideMultipleTest<double>;\n"
-                                 "DeductionGuideMultipleTest(int) -> DeductionGuideMultipleTest<int>;\n"                                                                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeductionGuideNonTemplateTest(int) -> DeductionGuideNonTemplateTest<long>;\n"                                                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeductionGuideNonTypeTest(T (&)[N]) -> DeductionGuideNonTypeTest<T, N>;\n"                                                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeductionGuidePointerTest(T *) -> DeductionGuidePointerTest<T>;\n"                                                                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeductionGuideQualifiedTypeTest(DeductionGuideNamespaceTest::X) -> DeductionGuideQualifiedTypeTest<DeductionGuideNamespaceTest::X>;\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeductionGuideTransformTest(const char *) -> DeductionGuideTransformTest<int>;\n"                                                     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeductionGuideTwoParametersTest(T, T) -> DeductionGuideTwoParametersTest<T>;\n"                                                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("DeductionGuideBasicTest(T) -> DeductionGuideBasicTest<T>;\n"                                                                          , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> "                       "DeductionGuideBasicTest(T) -> DeductionGuideBasicTest<T>;\n"                                                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires (sizeof(T) > 4) DeductionGuideConstrainedTemplateTest(T) -> DeductionGuideConstrainedTemplateTest<T>;\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideMultipleExpandedTest(double) -> DeductionGuideMultipleExpandedTest<double>;\n"
+                                                                                "DeductionGuideMultipleExpandedTest(int) -> DeductionGuideMultipleExpandedTest<int>;\n"
+                                                                                "DeductionGuideMultipleExpandedTest(long) -> DeductionGuideMultipleExpandedTest<long>;\n"                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideMultipleFirstTest(int) -> DeductionGuideMultipleFirstTest<int>;\n"
+                                                                                "DeductionGuideMultipleFirstTest(long) -> DeductionGuideMultipleFirstTest<long>;\n"                                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideMultiplePatternsTest(double) -> DeductionGuideMultiplePatternsTest<double>;\n"
+                                                                                "DeductionGuideMultiplePatternsTest(int) -> DeductionGuideMultiplePatternsTest<int>;\n"
+                                 "template <typename T> "                       "DeductionGuideMultiplePatternsTest(T *) -> DeductionGuideMultiplePatternsTest<T>;\n"                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> "                       "DeductionGuideMultipleRequiresTest(T) -> DeductionGuideMultipleRequiresTest<T> requires (sizeof(T) <= 4);\n"
+                                 "template <typename T> "                       "DeductionGuideMultipleRequiresTest(T) -> DeductionGuideMultipleRequiresTest<T> requires (sizeof(T) > 4);\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideMultipleSecondTest(int) -> DeductionGuideMultipleSecondTest<int>;\n"
+                                                                                "DeductionGuideMultipleSecondTest(long) -> DeductionGuideMultipleSecondTest<long>;\n"                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> "                       "DeductionGuideMultipleTemplatesTest(T &) -> DeductionGuideMultipleTemplatesTest<T>;\n"
+                                 "template <typename T> "                       "DeductionGuideMultipleTemplatesTest(T *) -> DeductionGuideMultipleTemplatesTest<T>;\n"
+                                 "template <typename T> "                       "DeductionGuideMultipleTemplatesTest(const T &) -> DeductionGuideMultipleTemplatesTest<T>;\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideMultipleTest(double) -> DeductionGuideMultipleTest<double>;\n"
+                                                                                "DeductionGuideMultipleTest(int) -> DeductionGuideMultipleTest<int>;\n"                                                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideNonTemplateTest(int) -> DeductionGuideNonTemplateTest<long>;\n"                                                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, int N> "                "DeductionGuideNonTypeTest(T (&)[N]) -> DeductionGuideNonTypeTest<T, N>;\n"                                                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideOrderTest(double) -> DeductionGuideOrderTest<double>;\n"
+                                                                                "DeductionGuideOrderTest(int) -> DeductionGuideOrderTest<int>;\n"
+                                                                                "DeductionGuideOrderTest(long) -> DeductionGuideOrderTest<long>;\n"                                                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> "                       "DeductionGuidePointerTest(T *) -> DeductionGuidePointerTest<T>;\n"                                                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideQualifiedTypeTest(DeductionGuideNamespaceTest::X) -> DeductionGuideQualifiedTypeTest<DeductionGuideNamespaceTest::X>;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> "                       "DeductionGuideRequiresTest(T) -> DeductionGuideRequiresTest<T> requires (sizeof(T) > 4);\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual(                                               "DeductionGuideTransformTest(const char *) -> DeductionGuideTransformTest<int>;\n"                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> "                       "DeductionGuideTwoParametersTest(T, T) -> DeductionGuideTwoParametersTest<T>;\n"                                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> "                       "DeductionGuideBasicTest(T) -> DeductionGuideBasicTest<T>;\n"                                                                          , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },
 };
 /* some missing test cases
-
-14. Deduction guides
-            A(int)->A<int>;
-
-
-/////////////////////////////////////////////////////////////////////////// namespace
 
 38. Using declarations
             using Base::foo;
@@ -4955,6 +4993,5 @@ Test ExploratoryTestsOfClangAST[] =
             export namespace
         or
             export using
-
 
 */

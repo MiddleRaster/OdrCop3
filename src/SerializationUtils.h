@@ -28,8 +28,9 @@ namespace OdrCop3
         const std::string& TU;
         std::unordered_set<const Decl*>& recursingDecls;
         std::string aux;
-        bool wantFunctionBody = true;
-        bool needsFriend      = false;
+        bool wantFunctionBody       = true;
+        bool needsFriend            = false;
+        bool suppressTemplatePrefix = false;
         ContextItems(ASTContext* context, const PrintingPolicy& policy, const std::string& TU, std::unordered_set<const Decl*>& recursingDecls, const std::string& aux="")
             : context       (*context)
             , printPolicy   (policy)
@@ -163,7 +164,11 @@ namespace OdrCop3
         std::string Serialize(const clang::TemplateParameterList* templateParameterList, const clang::Decl* decl) const
         {
             std::string prefix = GetTemplateHeader<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList);
-            std::string block  = SerializeDecl(contextItems, decl);
+
+            ContextItems ci2(contextItems);
+            ci2.suppressTemplatePrefix = true;
+            std::string block  = SerializeDecl(ci2, decl);
+
             return prefix + IndentBlock(block, GetIndentation(prefix, block)) + "\n";
         }
     };
