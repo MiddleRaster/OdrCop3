@@ -4986,56 +4986,64 @@ Test ExploratoryTestsOfClangAST[] =
     {"class-scope using-declarations", []
         {
             std::string code =
-                                "struct Base1 { void foo(); }; struct Base2 { void foo(); }; struct Derived : Base1, Base2 { using Base1::foo; };"
-                                "namespace { struct Impl { void foo(); }; } struct Widget : Impl { using Impl::foo; };"
+                                "struct Base1 { void foo(); }; struct Base2 { void foo(); }; struct Derived : Base1, Base2 { using Base1::foo; };\n"
+                                "namespace { struct Impl { void foo(); }; } struct Widget : Impl { using Impl::foo; };\n"
 
-                                "struct ClassUsingTest1Base { void foo(); }; struct ClassUsingTest1Derived : ClassUsingTest1Base { using ClassUsingTest1Base::foo; };"
-                                "struct ClassUsingTest2Base { int value;  }; struct ClassUsingTest2Derived : ClassUsingTest2Base { using ClassUsingTest2Base::value; };"
-                                "struct ClassUsingTest3Base { void foo(int); void foo(double); }; struct ClassUsingTest3Derived : ClassUsingTest3Base { using ClassUsingTest3Base::foo; };"
-                                "struct ClassUsingTest4Base { static int value; }; struct ClassUsingTest4Derived : ClassUsingTest4Base { using ClassUsingTest4Base::value; };"
-                                "struct ClassUsingTest5Base { typedef int ValueType; }; struct ClassUsingTest5Derived : ClassUsingTest5Base { using ClassUsingTest5Base::ValueType; };"
-                                "struct ClassUsingTest6Base { using ValueType = int; }; struct ClassUsingTest6Derived : ClassUsingTest6Base { using ClassUsingTest6Base::ValueType; };"
-                                "struct ClassUsingTest7Base { enum Value { First, Second }; }; struct ClassUsingTest7Derived : ClassUsingTest7Base { using ClassUsingTest7Base::Value; };"
-                                "struct ClassUsingTest8Base { struct Nested {}; }; struct ClassUsingTest8Derived : ClassUsingTest8Base { using ClassUsingTest8Base::Nested; };"
-                                "struct ClassUsingTest9Base { template<typename T> void foo(T); }; struct ClassUsingTest9Derived : ClassUsingTest9Base { using ClassUsingTest9Base::foo; };"
-                                "struct ClassUsingTest10Base { void foo() const; }; struct ClassUsingTest10Derived : ClassUsingTest10Base { using ClassUsingTest10Base::foo; };"
-                                "struct ClassUsingTest11Base { void foo() &; }; struct ClassUsingTest11Derived : ClassUsingTest11Base { using ClassUsingTest11Base::foo; };"
-                                "struct ClassUsingTest12Base { void foo() &&; }; struct ClassUsingTest12Derived : ClassUsingTest12Base { using ClassUsingTest12Base::foo; };"
-                                "struct ClassUsingTest13Base { void foo() noexcept; }; struct ClassUsingTest13Derived : ClassUsingTest13Base { using ClassUsingTest13Base::foo; };"
-                                "struct ClassUsingTest14Base { void foo(int = 42); }; struct ClassUsingTest14Derived : ClassUsingTest14Base { using ClassUsingTest14Base::foo; };"
-                                "struct ClassUsingTest15Base { protected: void foo(); }; struct ClassUsingTest15Derived : ClassUsingTest15Base { using ClassUsingTest15Base::foo; };"
-                                "struct ClassUsingTest17Base { void foo(); }; struct ClassUsingTest17Derived : ClassUsingTest17Base { private: using ClassUsingTest17Base::foo; };"
-                                "struct ClassUsingTest18Base { void foo(); }; struct ClassUsingTest18Derived : ClassUsingTest18Base { public: using ClassUsingTest18Base::foo; };"
-                                "struct ClassUsingTest19Base { void foo(); }; struct ClassUsingTest19Derived : ClassUsingTest19Base { protected: using ClassUsingTest19Base::foo; };"
-                                "struct ClassUsingTest20Base { void foo(); }; struct ClassUsingTest20Derived : ClassUsingTest20Base { using ClassUsingTest20Base::foo; };"
+                                "struct ClassUsingTest1Base { void foo(); }; struct ClassUsingTest1Derived : ClassUsingTest1Base { using ClassUsingTest1Base::foo; };\n"
+                                "struct ClassUsingTest2Base { int value;  }; struct ClassUsingTest2Derived : ClassUsingTest2Base { using ClassUsingTest2Base::value; };\n"
+                                "struct ClassUsingTest3Base { void foo(int); void foo(double); }; struct ClassUsingTest3Derived : ClassUsingTest3Base { using ClassUsingTest3Base::foo; };\n"
+                                "struct ClassUsingTest4Base { static int value; }; struct ClassUsingTest4Derived : ClassUsingTest4Base { using ClassUsingTest4Base::value; };\n"
+                                "struct ClassUsingTest5Base { typedef int ValueType; }; struct ClassUsingTest5Derived : ClassUsingTest5Base { using ClassUsingTest5Base::ValueType; };\n"
+                                "struct ClassUsingTest6Base { using ValueType = int; }; struct ClassUsingTest6Derived : ClassUsingTest6Base { using ClassUsingTest6Base::ValueType; };\n"
+                                "struct ClassUsingTest7Base { enum Value { First, Second }; }; struct ClassUsingTest7Derived : ClassUsingTest7Base { using ClassUsingTest7Base::Value; };\n"
+                                "struct ClassUsingTest8Base { struct Nested {}; }; struct ClassUsingTest8Derived : ClassUsingTest8Base { using ClassUsingTest8Base::Nested; };\n"
+                                "struct ClassUsingTest9Base { template<typename T> void foo(T); }; struct ClassUsingTest9Derived : ClassUsingTest9Base { using ClassUsingTest9Base::foo; };\n"
+                                "struct ClassUsingTest10Base { void foo() const; }; struct ClassUsingTest10Derived : ClassUsingTest10Base { using ClassUsingTest10Base::foo; };\n"
+                                "struct ClassUsingTest11Base { void foo() &; }; struct ClassUsingTest11Derived : ClassUsingTest11Base { using ClassUsingTest11Base::foo; };\n"
+                                "struct ClassUsingTest12Base { void foo() &&; }; struct ClassUsingTest12Derived : ClassUsingTest12Base { using ClassUsingTest12Base::foo; };\n"
+                                "struct ClassUsingTest13Base { void foo() noexcept; }; struct ClassUsingTest13Derived : ClassUsingTest13Base { using ClassUsingTest13Base::foo; };\n"
+                                "struct ClassUsingTest14Base { void foo(int = 42); }; struct ClassUsingTest14Derived : ClassUsingTest14Base { using ClassUsingTest14Base::foo; };\n"
+                                "struct ClassUsingTest15Base { protected: void foo(); }; struct ClassUsingTest15Derived : ClassUsingTest15Base { using ClassUsingTest15Base::foo; };\n"
+                                "struct ClassUsingTest17Base { void foo(); }; struct ClassUsingTest17Derived : ClassUsingTest17Base { private: using ClassUsingTest17Base::foo; };\n"
+                                "struct ClassUsingTest18Base { void foo(); }; struct ClassUsingTest18Derived : ClassUsingTest18Base { public: using ClassUsingTest18Base::foo; };\n"
+                                "struct ClassUsingTest19Base { void foo(); }; struct ClassUsingTest19Derived : ClassUsingTest19Base { protected: using ClassUsingTest19Base::foo; };\n"
+                                "struct ClassUsingTest20Base { void foo(); }; struct ClassUsingTest20Derived : ClassUsingTest20Base { using ClassUsingTest20Base::foo; };\n"
 
-                                "namespace { struct ClassUsingManualTest1Base { void foo(); }; } struct ClassUsingManualTest1Derived : ClassUsingManualTest1Base { using ClassUsingManualTest1Base::foo; };"
-                                "namespace { struct ClassUsingManualTest2Base { int value; }; } struct ClassUsingManualTest2Derived : ClassUsingManualTest2Base { using ClassUsingManualTest2Base::value; };"
-                                "namespace { struct ClassUsingManualTest3Base { void foo(int); void foo(double); }; } struct ClassUsingManualTest3Derived : ClassUsingManualTest3Base { using ClassUsingManualTest3Base::foo; };"
-                                "namespace { struct ClassUsingManualTest4Base { using ValueType = int; }; } struct ClassUsingManualTest4Derived : ClassUsingManualTest4Base { using ClassUsingManualTest4Base::ValueType; };"
-                                "namespace { struct ClassUsingManualTest5Base { struct Nested {}; }; } struct ClassUsingManualTest5Derived : ClassUsingManualTest5Base { using ClassUsingManualTest5Base::Nested; };"
-                                "namespace { struct ClassUsingManualTest6Base { template<typename T> void foo(T); }; } struct ClassUsingManualTest6Derived : ClassUsingManualTest6Base { using ClassUsingManualTest6Base::foo; };"
-                                "namespace { struct ClassUsingManualTest7Base { enum Value { First, Second }; }; } struct ClassUsingManualTest7Derived : ClassUsingManualTest7Base { using ClassUsingManualTest7Base::Value; };"
-                                "namespace { struct ClassUsingManualTest8Base { static int value; }; } struct ClassUsingManualTest8Derived : ClassUsingManualTest8Base { using ClassUsingManualTest8Base::value; };"
-                                "namespace { struct ClassUsingManualTest9Base { protected: void foo(); }; } struct ClassUsingManualTest9Derived : ClassUsingManualTest9Base { using ClassUsingManualTest9Base::foo; };"
-                                "namespace { struct ClassUsingManualTest10Base { void foo(); }; } struct ClassUsingManualTest10Derived : ClassUsingManualTest10Base { private: using ClassUsingManualTest10Base::foo; };"
-                                "namespace { struct ClassUsingManualTest11Base { void foo(); }; } struct ClassUsingManualTest11Derived : ClassUsingManualTest11Base { protected: using ClassUsingManualTest11Base::foo; };"
-                                "namespace { struct ClassUsingManualTest12Base { void foo() const; }; } struct ClassUsingManualTest12Derived : ClassUsingManualTest12Base { using ClassUsingManualTest12Base::foo; };"
-                                "namespace { struct ClassUsingManualTest13Base { void foo() noexcept; }; } struct ClassUsingManualTest13Derived : ClassUsingManualTest13Base { using ClassUsingManualTest13Base::foo; };"
-                                "namespace { struct ClassUsingManualTest14Base { void foo() &; }; } struct ClassUsingManualTest14Derived : ClassUsingManualTest14Base { using ClassUsingManualTest14Base::foo; };"
-                                "namespace { struct ClassUsingManualTest15Base { void foo() &&; }; } struct ClassUsingManualTest15Derived : ClassUsingManualTest15Base { using ClassUsingManualTest15Base::foo; };"
-                                "namespace { struct ClassUsingManualTest16Base { typedef int ValueType; }; } struct ClassUsingManualTest16Derived : ClassUsingManualTest16Base { using ClassUsingManualTest16Base::ValueType; };"
-                                "namespace { struct ClassUsingManualTest17Base { void foo(int = 42); }; } struct ClassUsingManualTest17Derived : ClassUsingManualTest17Base { using ClassUsingManualTest17Base::foo; };"
-                                "namespace { struct ClassUsingManualTest18Base { struct Nested { int value; }; }; } struct ClassUsingManualTest18Derived : ClassUsingManualTest18Base { using ClassUsingManualTest18Base::Nested; };"
-                                "namespace { struct ClassUsingManualTest19Base { template<typename T> struct Nested {}; }; } struct ClassUsingManualTest19Derived : ClassUsingManualTest19Base { using ClassUsingManualTest19Base::Nested; };"
-                                "namespace { struct ClassUsingManualTest20Base { using ValueType = int; }; } using ClassUsingManualTest20Alias = ClassUsingManualTest20Base; struct ClassUsingManualTest20Derived : ClassUsingManualTest20Alias { using ClassUsingManualTest20Alias::ValueType; };"
+                                "namespace { struct ClassUsingManualTest1Base { void foo(); }; } struct ClassUsingManualTest1Derived : ClassUsingManualTest1Base { using ClassUsingManualTest1Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest2Base { int value; }; } struct ClassUsingManualTest2Derived : ClassUsingManualTest2Base { using ClassUsingManualTest2Base::value; };\n"
+                                "namespace { struct ClassUsingManualTest3Base { void foo(int); void foo(double); }; } struct ClassUsingManualTest3Derived : ClassUsingManualTest3Base { using ClassUsingManualTest3Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest4Base { using ValueType = int; }; } struct ClassUsingManualTest4Derived : ClassUsingManualTest4Base { using ClassUsingManualTest4Base::ValueType; };\n"
+                                "namespace { struct ClassUsingManualTest5Base { struct Nested {}; }; } struct ClassUsingManualTest5Derived : ClassUsingManualTest5Base { using ClassUsingManualTest5Base::Nested; };\n"
+                                "namespace { struct ClassUsingManualTest6Base { template<typename T> void foo(T); }; } struct ClassUsingManualTest6Derived : ClassUsingManualTest6Base { using ClassUsingManualTest6Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest7Base { enum Value { First, Second }; }; } struct ClassUsingManualTest7Derived : ClassUsingManualTest7Base { using ClassUsingManualTest7Base::Value; };\n"
+                                "namespace { struct ClassUsingManualTest8Base { static int value; }; } struct ClassUsingManualTest8Derived : ClassUsingManualTest8Base { using ClassUsingManualTest8Base::value; };\n"
+                                "namespace { struct ClassUsingManualTest9Base { protected: void foo(); }; } struct ClassUsingManualTest9Derived : ClassUsingManualTest9Base { using ClassUsingManualTest9Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest10Base { void foo(); }; } struct ClassUsingManualTest10Derived : ClassUsingManualTest10Base { private: using ClassUsingManualTest10Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest11Base { void foo(); }; } struct ClassUsingManualTest11Derived : ClassUsingManualTest11Base { protected: using ClassUsingManualTest11Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest12Base { void foo() const; }; } struct ClassUsingManualTest12Derived : ClassUsingManualTest12Base { using ClassUsingManualTest12Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest13Base { void foo() noexcept; }; } struct ClassUsingManualTest13Derived : ClassUsingManualTest13Base { using ClassUsingManualTest13Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest14Base { void foo() &; }; } struct ClassUsingManualTest14Derived : ClassUsingManualTest14Base { using ClassUsingManualTest14Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest15Base { void foo() &&; }; } struct ClassUsingManualTest15Derived : ClassUsingManualTest15Base { using ClassUsingManualTest15Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest16Base { typedef int ValueType; }; } struct ClassUsingManualTest16Derived : ClassUsingManualTest16Base { using ClassUsingManualTest16Base::ValueType; };\n"
+                                "namespace { struct ClassUsingManualTest17Base { void foo(int = 42); }; } struct ClassUsingManualTest17Derived : ClassUsingManualTest17Base { using ClassUsingManualTest17Base::foo; };\n"
+                                "namespace { struct ClassUsingManualTest18Base { struct Nested { int value; }; }; } struct ClassUsingManualTest18Derived : ClassUsingManualTest18Base { using ClassUsingManualTest18Base::Nested; };\n"
+                                "namespace { struct ClassUsingManualTest19Base { template<typename T> struct Nested {}; }; } struct ClassUsingManualTest19Derived : ClassUsingManualTest19Base { using ClassUsingManualTest19Base::Nested; };\n"
+                                "namespace { struct ClassUsingManualTest20Base { using ValueType = int; }; } using ClassUsingManualTest20Alias = ClassUsingManualTest20Base; struct ClassUsingManualTest20Derived : ClassUsingManualTest20Alias { using ClassUsingManualTest20Alias::ValueType; };\n"
 
+                                "namespace { struct ClassUsingManualTest31Base { int    Value;            }; } struct ClassUsingManualTest31Derived : ClassUsingManualTest31Base { using ClassUsingManualTest31Base::Value; };\n"
+                                "namespace { struct ClassUsingManualTest32Base { double Value;            }; } struct ClassUsingManualTest32Derived : ClassUsingManualTest32Base { using ClassUsingManualTest32Base::Value; };\n"
+                                "namespace { struct ClassUsingManualTest33Base { enum { Enumerator = 1 }; }; } struct ClassUsingManualTest33Derived : ClassUsingManualTest33Base { using ClassUsingManualTest33Base::Enumerator; };\n"
+                                "namespace { struct ClassUsingManualTest34Base { enum { Enumerator = 2 }; }; } struct ClassUsingManualTest34Derived : ClassUsingManualTest34Base { using ClassUsingManualTest34Base::Enumerator; };\n"
+                                "namespace { struct ClassUsingManualTest35Base { using ValueType = int;   }; } struct ClassUsingManualTest35Derived : ClassUsingManualTest35Base { using ClassUsingManualTest35Base::ValueType; };\n"
+                                "namespace { struct ClassUsingManualTest36Base { using ValueType = long;  }; } struct ClassUsingManualTest36Derived : ClassUsingManualTest36Base { using ClassUsingManualTest36Base::ValueType; };\n"
+                                "namespace { struct ClassUsingManualTest37Base { void Foo();              }; } struct ClassUsingManualTest37Derived : ClassUsingManualTest37Base { using ClassUsingManualTest37Base::Foo; };\n"
+                                "namespace { struct ClassUsingManualTest38Base { void Foo() noexcept;     }; } struct ClassUsingManualTest38Derived : ClassUsingManualTest38Base { using ClassUsingManualTest38Base::Foo; };\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(62, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(70, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
@@ -5148,6 +5156,62 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    using struct (anonymous namespace)::ClassUsingManualTest2Base {\n"
                                  "              int value;\n"
                                  "          }::value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest31Derived : struct (anonymous namespace)::ClassUsingManualTest31Base {\n"
+                                 "                                           int Value;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest31Base {\n"
+                                 "              int Value;\n"
+                                 "          }::Value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest32Derived : struct (anonymous namespace)::ClassUsingManualTest32Base {\n"
+                                 "                                           double Value;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest32Base {\n"
+                                 "              double Value;\n"
+                                 "          }::Value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest33Derived : struct (anonymous namespace)::ClassUsingManualTest33Base {\n"
+                                 "                                           enum (unnamed enum at input.cc:44:49) {\n"
+                                 "                                               Enumerator = 1\n"
+                                 "                                           };\n"
+                                 "                                       } {\n"
+                                 "    using ClassUsingManualTest33Base::Enumerator;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest34Derived : struct (anonymous namespace)::ClassUsingManualTest34Base {\n"
+                                 "                                           enum (unnamed enum at input.cc:45:49) {\n"
+                                 "                                               Enumerator = 2\n"
+                                 "                                           };\n"
+                                 "                                       } {\n"
+                                 "    using ClassUsingManualTest34Base::Enumerator;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest35Derived : struct (anonymous namespace)::ClassUsingManualTest35Base {\n"
+                                 "                                           using ValueType = int;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest35Base {\n"
+                                 "              using ValueType = int;\n"
+                                 "          }::ValueType;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest36Derived : struct (anonymous namespace)::ClassUsingManualTest36Base {\n"
+                                 "                                           using ValueType = long;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest36Base {\n"
+                                 "              using ValueType = long;\n"
+                                 "          }::ValueType;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest37Derived : struct (anonymous namespace)::ClassUsingManualTest37Base {\n"
+                                 "                                           void Foo();\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest37Base {\n"
+                                 "              void Foo();\n"
+                                 "          }::Foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest38Derived : struct (anonymous namespace)::ClassUsingManualTest38Base {\n"
+                                 "                                           void Foo() noexcept;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest38Base {\n"
+                                 "              void Foo() noexcept;\n"
+                                 "          }::Foo;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ClassUsingManualTest3Derived : struct (anonymous namespace)::ClassUsingManualTest3Base {\n"
                                  "                                          void foo(int);\n"
@@ -5343,32 +5407,21 @@ Test ExploratoryTestsOfClangAST[] =
                                  "              void foo();\n"
                                  "          }::foo;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.guideMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },
@@ -5376,8 +5429,21 @@ Test ExploratoryTestsOfClangAST[] =
 };
 /* some missing test cases
 
-38. Using declarations
-            using Base::foo; // class-scope is easy
+
+internal linkage issues:
+TU1:
+static const int DefaultValue = 3;              // internal linkage
+inline int Increment(int value = DefaultValue)  // external linkage
+{ return value + 1; }
+
+TU2:
+static const int DefaultValue = 4;              // internal linkage
+inline int Increment(int value = DefaultValue)  // external linkage
+{ return value + 1; }
+
+Conclusion: the default values are different, therefore an ODR violation, but they look EXACTLY the same.
+Solution  : add a C-style comment containing = 3 or = 4 to each external linkage item containing an internal linkage variable.
+
 
     // namespace-scope is hard:
 
