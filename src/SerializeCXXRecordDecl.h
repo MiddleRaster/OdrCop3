@@ -103,8 +103,17 @@ namespace OdrCop3
                     baseType.print(os, policy);
                     os.flush();
                     out += str;
-                } else
+                } else {
+
+                    // surgical for now:  when an anonymous namespace type is aliased
+                    // in the near future, I'll probably make everything canonical to handle "using namespace" directives
+                    clang::QualType canonicalBaseType = contextItems.context.getCanonicalType(baseType);
+                    if (const clang::CXXRecordDecl* recordDecl = canonicalBaseType->getAsCXXRecordDecl())
+                        if (recordDecl->isInAnonymousNamespace())
+                            baseType = canonicalBaseType;
+
                     out += IndentBlock(SerializeType(contextItems, baseType), LengthOfLastLine(out)); // the normal serialization
+                }
                 
                 out  = TrimRightIf(out, ";");
             }

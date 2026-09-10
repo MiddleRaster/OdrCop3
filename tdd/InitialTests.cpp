@@ -4988,17 +4988,59 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code =
                                 "struct Base1 { void foo(); }; struct Base2 { void foo(); }; struct Derived : Base1, Base2 { using Base1::foo; };"
                                 "namespace { struct Impl { void foo(); }; } struct Widget : Impl { using Impl::foo; };"
+
+                                "struct ClassUsingTest1Base { void foo(); }; struct ClassUsingTest1Derived : ClassUsingTest1Base { using ClassUsingTest1Base::foo; };"
+                                "struct ClassUsingTest2Base { int value;  }; struct ClassUsingTest2Derived : ClassUsingTest2Base { using ClassUsingTest2Base::value; };"
+                                "struct ClassUsingTest3Base { void foo(int); void foo(double); }; struct ClassUsingTest3Derived : ClassUsingTest3Base { using ClassUsingTest3Base::foo; };"
+                                "struct ClassUsingTest4Base { static int value; }; struct ClassUsingTest4Derived : ClassUsingTest4Base { using ClassUsingTest4Base::value; };"
+                                "struct ClassUsingTest5Base { typedef int ValueType; }; struct ClassUsingTest5Derived : ClassUsingTest5Base { using ClassUsingTest5Base::ValueType; };"
+                                "struct ClassUsingTest6Base { using ValueType = int; }; struct ClassUsingTest6Derived : ClassUsingTest6Base { using ClassUsingTest6Base::ValueType; };"
+                                "struct ClassUsingTest7Base { enum Value { First, Second }; }; struct ClassUsingTest7Derived : ClassUsingTest7Base { using ClassUsingTest7Base::Value; };"
+                                "struct ClassUsingTest8Base { struct Nested {}; }; struct ClassUsingTest8Derived : ClassUsingTest8Base { using ClassUsingTest8Base::Nested; };"
+                                "struct ClassUsingTest9Base { template<typename T> void foo(T); }; struct ClassUsingTest9Derived : ClassUsingTest9Base { using ClassUsingTest9Base::foo; };"
+                                "struct ClassUsingTest10Base { void foo() const; }; struct ClassUsingTest10Derived : ClassUsingTest10Base { using ClassUsingTest10Base::foo; };"
+                                "struct ClassUsingTest11Base { void foo() &; }; struct ClassUsingTest11Derived : ClassUsingTest11Base { using ClassUsingTest11Base::foo; };"
+                                "struct ClassUsingTest12Base { void foo() &&; }; struct ClassUsingTest12Derived : ClassUsingTest12Base { using ClassUsingTest12Base::foo; };"
+                                "struct ClassUsingTest13Base { void foo() noexcept; }; struct ClassUsingTest13Derived : ClassUsingTest13Base { using ClassUsingTest13Base::foo; };"
+                                "struct ClassUsingTest14Base { void foo(int = 42); }; struct ClassUsingTest14Derived : ClassUsingTest14Base { using ClassUsingTest14Base::foo; };"
+                                "struct ClassUsingTest15Base { protected: void foo(); }; struct ClassUsingTest15Derived : ClassUsingTest15Base { using ClassUsingTest15Base::foo; };"
+                                "struct ClassUsingTest17Base { void foo(); }; struct ClassUsingTest17Derived : ClassUsingTest17Base { private: using ClassUsingTest17Base::foo; };"
+                                "struct ClassUsingTest18Base { void foo(); }; struct ClassUsingTest18Derived : ClassUsingTest18Base { public: using ClassUsingTest18Base::foo; };"
+                                "struct ClassUsingTest19Base { void foo(); }; struct ClassUsingTest19Derived : ClassUsingTest19Base { protected: using ClassUsingTest19Base::foo; };"
+                                "struct ClassUsingTest20Base { void foo(); }; struct ClassUsingTest20Derived : ClassUsingTest20Base { using ClassUsingTest20Base::foo; };"
+
+                                "namespace { struct ClassUsingManualTest1Base { void foo(); }; } struct ClassUsingManualTest1Derived : ClassUsingManualTest1Base { using ClassUsingManualTest1Base::foo; };"
+                                "namespace { struct ClassUsingManualTest2Base { int value; }; } struct ClassUsingManualTest2Derived : ClassUsingManualTest2Base { using ClassUsingManualTest2Base::value; };"
+                                "namespace { struct ClassUsingManualTest3Base { void foo(int); void foo(double); }; } struct ClassUsingManualTest3Derived : ClassUsingManualTest3Base { using ClassUsingManualTest3Base::foo; };"
+                                "namespace { struct ClassUsingManualTest4Base { using ValueType = int; }; } struct ClassUsingManualTest4Derived : ClassUsingManualTest4Base { using ClassUsingManualTest4Base::ValueType; };"
+                                "namespace { struct ClassUsingManualTest5Base { struct Nested {}; }; } struct ClassUsingManualTest5Derived : ClassUsingManualTest5Base { using ClassUsingManualTest5Base::Nested; };"
+                                "namespace { struct ClassUsingManualTest6Base { template<typename T> void foo(T); }; } struct ClassUsingManualTest6Derived : ClassUsingManualTest6Base { using ClassUsingManualTest6Base::foo; };"
+                                "namespace { struct ClassUsingManualTest7Base { enum Value { First, Second }; }; } struct ClassUsingManualTest7Derived : ClassUsingManualTest7Base { using ClassUsingManualTest7Base::Value; };"
+                                "namespace { struct ClassUsingManualTest8Base { static int value; }; } struct ClassUsingManualTest8Derived : ClassUsingManualTest8Base { using ClassUsingManualTest8Base::value; };"
+                                "namespace { struct ClassUsingManualTest9Base { protected: void foo(); }; } struct ClassUsingManualTest9Derived : ClassUsingManualTest9Base { using ClassUsingManualTest9Base::foo; };"
+                                "namespace { struct ClassUsingManualTest10Base { void foo(); }; } struct ClassUsingManualTest10Derived : ClassUsingManualTest10Base { private: using ClassUsingManualTest10Base::foo; };"
+                                "namespace { struct ClassUsingManualTest11Base { void foo(); }; } struct ClassUsingManualTest11Derived : ClassUsingManualTest11Base { protected: using ClassUsingManualTest11Base::foo; };"
+                                "namespace { struct ClassUsingManualTest12Base { void foo() const; }; } struct ClassUsingManualTest12Derived : ClassUsingManualTest12Base { using ClassUsingManualTest12Base::foo; };"
+                                "namespace { struct ClassUsingManualTest13Base { void foo() noexcept; }; } struct ClassUsingManualTest13Derived : ClassUsingManualTest13Base { using ClassUsingManualTest13Base::foo; };"
+                                "namespace { struct ClassUsingManualTest14Base { void foo() &; }; } struct ClassUsingManualTest14Derived : ClassUsingManualTest14Base { using ClassUsingManualTest14Base::foo; };"
+                                "namespace { struct ClassUsingManualTest15Base { void foo() &&; }; } struct ClassUsingManualTest15Derived : ClassUsingManualTest15Base { using ClassUsingManualTest15Base::foo; };"
+                                "namespace { struct ClassUsingManualTest16Base { typedef int ValueType; }; } struct ClassUsingManualTest16Derived : ClassUsingManualTest16Base { using ClassUsingManualTest16Base::ValueType; };"
+                                "namespace { struct ClassUsingManualTest17Base { void foo(int = 42); }; } struct ClassUsingManualTest17Derived : ClassUsingManualTest17Base { using ClassUsingManualTest17Base::foo; };"
+                                "namespace { struct ClassUsingManualTest18Base { struct Nested { int value; }; }; } struct ClassUsingManualTest18Derived : ClassUsingManualTest18Base { using ClassUsingManualTest18Base::Nested; };"
+                                "namespace { struct ClassUsingManualTest19Base { template<typename T> struct Nested {}; }; } struct ClassUsingManualTest19Derived : ClassUsingManualTest19Base { using ClassUsingManualTest19Base::Nested; };"
+                                "namespace { struct ClassUsingManualTest20Base { using ValueType = int; }; } using ClassUsingManualTest20Alias = ClassUsingManualTest20Base; struct ClassUsingManualTest20Derived : ClassUsingManualTest20Alias { using ClassUsingManualTest20Alias::ValueType; };"
+
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(4, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of comcepts in map");
-            Assert::AreEqual(0, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(62, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -5007,6 +5049,289 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Base2 {\n"
                                  "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest10Derived : struct (anonymous namespace)::ClassUsingManualTest10Base {\n"
+                                 "                                           void foo();\n"
+                                 "                                       } {\n"
+                                 "private:\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest10Base {\n"
+                                 "              void foo();\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest11Derived : struct (anonymous namespace)::ClassUsingManualTest11Base {\n"
+                                 "                                           void foo();\n"
+                                 "                                       } {\n"
+                                 "protected:\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest11Base {\n"
+                                 "              void foo();\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest12Derived : struct (anonymous namespace)::ClassUsingManualTest12Base {\n"
+                                 "                                           void foo() const;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest12Base {\n"
+                                 "              void foo() const;\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest13Derived : struct (anonymous namespace)::ClassUsingManualTest13Base {\n"
+                                 "                                           void foo() noexcept;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest13Base {\n"
+                                 "              void foo() noexcept;\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest14Derived : struct (anonymous namespace)::ClassUsingManualTest14Base {\n"
+                                 "                                           void foo() &;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest14Base {\n"
+                                 "              void foo() &;\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest15Derived : struct (anonymous namespace)::ClassUsingManualTest15Base {\n"
+                                 "                                           void foo() &&;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest15Base {\n"
+                                 "              void foo() &&;\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest16Derived : struct (anonymous namespace)::ClassUsingManualTest16Base {\n"
+                                 "                                           typedef int ValueType;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest16Base {\n"
+                                 "              typedef int ValueType;\n"
+                                 "          }::ValueType;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest17Derived : struct (anonymous namespace)::ClassUsingManualTest17Base {\n"
+                                 "                                           void foo(int = 42);\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest17Base {\n"
+                                 "              void foo(int = 42);\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest18Derived : struct (anonymous namespace)::ClassUsingManualTest18Base {\n"
+                                 "                                           struct (anonymous namespace)::ClassUsingManualTest18Base::Nested {\n"
+                                 "                                               int value;\n"
+                                 "                                           };\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest18Base {\n"
+                                 "              struct (anonymous namespace)::ClassUsingManualTest18Base::Nested {\n"
+                                 "                  int value;\n"
+                                 "              };\n"
+                                 "          }::Nested;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest19Derived : struct (anonymous namespace)::ClassUsingManualTest19Base {\n"
+                                 "                                           template <typename T> struct (anonymous namespace)::ClassUsingManualTest19Base::Nested {\n"
+                                 "                                           };\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest19Base {\n"
+                                 "              template <typename T> struct (anonymous namespace)::ClassUsingManualTest19Base::Nested {\n"
+                                 "              };\n"
+                                 "          }::Nested;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest1Derived : struct (anonymous namespace)::ClassUsingManualTest1Base {\n"
+                                 "                                          void foo();\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest1Base {\n"
+                                 "              void foo();\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest20Derived : struct (anonymous namespace)::ClassUsingManualTest20Base {\n"
+                                 "                                           using ValueType = int;\n"
+                                 "                                       } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest20Base {\n"
+                                 "              using ValueType = int;\n"
+                                 "          }::ValueType;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest2Derived : struct (anonymous namespace)::ClassUsingManualTest2Base {\n"
+                                 "                                          int value;\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest2Base {\n"
+                                 "              int value;\n"
+                                 "          }::value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest3Derived : struct (anonymous namespace)::ClassUsingManualTest3Base {\n"
+                                 "                                          void foo(int);\n"
+                                 "                                          void foo(double);\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest3Base {\n"
+                                 "              void foo(int);\n"
+                                 "              void foo(double);\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest4Derived : struct (anonymous namespace)::ClassUsingManualTest4Base {\n"
+                                 "                                          using ValueType = int;\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest4Base {\n"
+                                 "              using ValueType = int;\n"
+                                 "          }::ValueType;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest5Derived : struct (anonymous namespace)::ClassUsingManualTest5Base {\n"
+                                 "                                          struct (anonymous namespace)::ClassUsingManualTest5Base::Nested {\n"
+                                 "                                          };\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest5Base {\n"
+                                 "              struct (anonymous namespace)::ClassUsingManualTest5Base::Nested {\n"
+                                 "              };\n"
+                                 "          }::Nested;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest6Derived : struct (anonymous namespace)::ClassUsingManualTest6Base {\n"
+                                 "                                          template <typename T> void foo(T);\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest6Base {\n"
+                                 "              template <typename T> void foo(T);\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest7Derived : struct (anonymous namespace)::ClassUsingManualTest7Base {\n"
+                                 "                                          enum (anonymous namespace)::ClassUsingManualTest7Base::Value {\n"
+                                 "                                              First,\n"
+                                 "                                              Second\n"
+                                 "                                          };\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest7Base {\n"
+                                 "              enum (anonymous namespace)::ClassUsingManualTest7Base::Value {\n"
+                                 "                  First,\n"
+                                 "                  Second\n"
+                                 "              };\n"
+                                 "          }::Value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest8Derived : struct (anonymous namespace)::ClassUsingManualTest8Base {\n"
+                                 "                                          static int value;\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest8Base {\n"
+                                 "              static int value;\n"
+                                 "          }::value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingManualTest9Derived : struct (anonymous namespace)::ClassUsingManualTest9Base {\n"
+                                 "                                      protected:\n"
+                                 "                                          void foo();\n"
+                                 "                                      } {\n"
+                                 "    using struct (anonymous namespace)::ClassUsingManualTest9Base {\n"
+                                 "          protected:\n"
+                                 "              void foo();\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest10Base {\n"
+                                 "    void foo() const;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest10Derived : ClassUsingTest10Base {\n"
+                                 "    using ClassUsingTest10Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest11Base {\n"
+                                 "    void foo() &;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest11Derived : ClassUsingTest11Base {\n"
+                                 "    using ClassUsingTest11Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest12Base {\n"
+                                 "    void foo() &&;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest12Derived : ClassUsingTest12Base {\n"
+                                 "    using ClassUsingTest12Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest13Base {\n"
+                                 "    void foo() noexcept;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest13Derived : ClassUsingTest13Base {\n"
+                                 "    using ClassUsingTest13Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest14Base {\n"
+                                 "    void foo(int = 42);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest14Derived : ClassUsingTest14Base {\n"
+                                 "    using ClassUsingTest14Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest15Base {\n"
+                                 "protected:\n"
+                                 "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest15Derived : ClassUsingTest15Base {\n"
+                                 "    using ClassUsingTest15Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest17Base {\n"
+                                 "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest17Derived : ClassUsingTest17Base {\n"
+                                 "private:\n"
+                                 "    using ClassUsingTest17Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest18Base {\n"
+                                 "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest18Derived : ClassUsingTest18Base {\n"
+                                 "public:\n"
+                                 "    using ClassUsingTest18Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest19Base {\n"
+                                 "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest19Derived : ClassUsingTest19Base {\n"
+                                 "protected:\n"
+                                 "    using ClassUsingTest19Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest1Base {\n"
+                                 "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest1Derived : ClassUsingTest1Base {\n"
+                                 "    using ClassUsingTest1Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest20Base {\n"
+                                 "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest20Derived : ClassUsingTest20Base {\n"
+                                 "    using ClassUsingTest20Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest2Base {\n"
+                                 "    int value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest2Derived : ClassUsingTest2Base {\n"
+                                 "    using ClassUsingTest2Base::value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest3Base {\n"
+                                 "    void foo(int);\n"
+                                 "    void foo(double);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest3Derived : ClassUsingTest3Base {\n"
+                                 "    using ClassUsingTest3Base::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest4Base {\n"
+                                 "    static int value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest4Derived : ClassUsingTest4Base {\n"
+                                 "    using ClassUsingTest4Base::value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest5Base {\n"
+                                 "    typedef int ValueType;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest5Derived : ClassUsingTest5Base {\n"
+                                 "    using ClassUsingTest5Base::ValueType;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest6Base {\n"
+                                 "    using ValueType = int;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest6Derived : ClassUsingTest6Base {\n"
+                                 "    using ClassUsingTest6Base::ValueType;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest7Base {\n"
+                                 "    enum Value {\n"
+                                 "        First,\n"
+                                 "        Second\n"
+                                 "    };\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest7Derived : ClassUsingTest7Base {\n"
+                                 "    using ClassUsingTest7Base::Value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest8Base {\n"
+                                 "    struct Nested {\n"
+                                 "    };\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest8Derived : ClassUsingTest8Base {\n"
+                                 "    using ClassUsingTest8Base::Nested;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest9Base {\n"
+                                 "    template <typename T> void foo(T);\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ClassUsingTest9Derived : ClassUsingTest9Base {\n"
+                                 "    using ClassUsingTest9Base::foo;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Derived : Base1, Base2 {\n"
                                  "    using Base1::foo;\n"
@@ -5018,6 +5343,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "              void foo();\n"
                                  "          }::foo;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

@@ -113,6 +113,7 @@ namespace OdrCop3
     {
         clang::PrintingPolicy policy = contextItems.printPolicy;
         policy.FullyQualifiedName = true;
+        policy.PrintAsCanonical   = true;
 
         std::string str;
         llvm::raw_string_ostream os(str);

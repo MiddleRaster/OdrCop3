@@ -26,15 +26,15 @@ namespace OdrCop3
         {   // there should be no need to check NeedsManualSerialization. If we get here, we need it.
             for (auto* shadow : usingDecl->shadows())
             {
-                if (auto* cxxMethodDecl = dyn_cast<CXXMethodDecl>(shadow->getTargetDecl()))
+                if (auto* namedDecl = shadow->getTargetDecl())
                 {
-                    if (auto* cxxRecordDecl = dyn_cast<CXXRecordDecl>(cxxMethodDecl->getDeclContext()))
+                    if (auto* cxxRecordDecl = dyn_cast<CXXRecordDecl>(namedDecl->getDeclContext()))
                     {
                         std::string out;
                         out += "using ";
                         out += TrimRightIf(IndentBlock(SerializeDecl(contextItems, cxxRecordDecl), 6), ";");
-                        out += "::" + cxxMethodDecl->getNameAsString() + ";\n";
-                        return out; // only 1, I guess
+                        out += "::" + namedDecl->getNameAsString() + ";\n";
+                        return out; // only 1, evidently
                     }
                 }
             }
