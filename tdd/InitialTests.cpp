@@ -4983,15 +4983,85 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"class-scope using-declarations", []
+        {
+            std::string code =
+                                "struct Base1 { void foo(); }; struct Base2 { void foo(); }; struct Derived : Base1, Base2 { using Base1::foo; };"
+                                "namespace { struct Impl { void foo(); }; } struct Widget : Impl { using Impl::foo; };"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(4, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.functionMap.size(),"wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Base1 {\n"
+                                 "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Base2 {\n"
+                                 "    void foo();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Derived : Base1, Base2 {\n"
+                                 "    using Base1::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Widget : struct (anonymous namespace)::Impl {\n"
+                                 "                    void foo();\n"
+                                 "                } {\n"
+                                 "    using struct (anonymous namespace)::Impl {\n"
+                                 "              void foo();\n"
+                                 "          }::foo;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.guideMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+
 };
 /* some missing test cases
 
 38. Using declarations
-            using Base::foo;
+            using Base::foo; // class-scope is easy
 
-40. Modules
-            export namespace
-        or
-            export using
+    // namespace-scope is hard:
+
+    namespace lib1 { void process(int);    }
+    namespace lib2 { void process(double); }
+
+    // shared_header.h — included identically by both TUs
+    inline void run() { process(42); }
+
+    // TU A                          // TU B
+    using lib1::process;             using lib2::process;
+    #include "shared_header.h"       #include "shared_header.h"
 
 */

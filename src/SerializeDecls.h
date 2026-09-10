@@ -37,6 +37,7 @@
 #include "SerializeVarTemplatePartialSpecializationDecl.h"
 #include "SerializeFriendDecl.h"
 #include "SerializeConceptDecl.h"
+#include "SerializeUsingDecl.h"
 
 namespace OdrCop3
 {
@@ -620,6 +621,7 @@ namespace OdrCop3
             case clang::Decl::Kind::TypeAliasTemplate:                  if (const TypeAliasTemplateDecl*                   tatd = dyn_cast<                 TypeAliasTemplateDecl>(decl)) return                  TypeAliasTemplateDeclSerializer<SerializeDecl, SerializeType, SerializeExpr, resolveNamespaceAliases>(contextItems,               tatd).Serialize(); break;
             case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<                            FriendDecl>(decl)) return                             FriendDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,         friendDecl).Serialize(); break;
             case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<                           ConceptDecl>(decl)) return                            ConceptDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,        conceptDecl).Serialize(); break;
+            case clang::Decl::Kind::Using:                              if (const UsingDecl *                         usingDecl = dyn_cast<                             UsingDecl>(decl)) return                              UsingDeclSerializer<SerializeDecl, SerializeType, SerializeExpr                         >(contextItems,          usingDecl).Serialize(); break;
             default: break;
             }
             // when this is released, comment out the next two lines, so that it won't throw but will print something
