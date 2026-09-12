@@ -22,6 +22,8 @@
 #include "SerializeConstantExpr.h"
 #include "SerializeCXXFunctionalCastExpr.h"
 #include "SerializeInitListExpr.h"
+#include "SerializeRequiresExpr.h"
+#include "SerializeTypeTraitExpr.h"
 #include "SerializeUnaryExprOrTypeTraitExpr.h"
 #include "SerializeParenExpr.h"
 #include "SerializeCXXConstructExpr.h"
@@ -47,6 +49,8 @@ namespace OdrCop3
             static std::string Serialize(const ContextItems& contextItems, const clang::CXXConstructExpr         *          cxxConstructExpr) { return          CXXConstructExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,          cxxConstructExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::ImplicitCastExpr         *          implicitCastExpr) { return          ImplicitCastExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,          implicitCastExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::UnresolvedLookupExpr     *      unresolvedLookupExpr) { return      UnresolvedLookupExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,      unresolvedLookupExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::RequiresExpr             *              requiresExpr) { return              RequiresExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,              requiresExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::TypeTraitExpr            *             typeTraitExpr) { return             TypeTraitExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,             typeTraitExpr).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeType>
@@ -72,7 +76,7 @@ namespace OdrCop3
                     return !NeedsManualSerialization(contextItems, expr);
                 }
             };
-            if (Can::Print(contextItems, expr) == false)
+            if (Needs::OriginalNamespace(expr) || Can::Print(contextItems, expr) == false)
             {
                 using ExprSerializer = Serialize::Expr<SerializeDecl, SerializeType, &Exprs<SerializeDecl, SerializeType>>;
                 switch (expr->getStmtClass())
@@ -89,6 +93,8 @@ namespace OdrCop3
                 case clang::Stmt::StmtClass::CXXConstructExprClass         : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::CXXConstructExpr         >(expr));
                 case clang::Stmt::StmtClass::ImplicitCastExprClass         : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ImplicitCastExpr         >(expr));
                 case clang::Stmt::StmtClass::UnresolvedLookupExprClass     : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::UnresolvedLookupExpr     >(expr));
+                case clang::Stmt::StmtClass::RequiresExprClass             : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::RequiresExpr             >(expr));
+                case clang::Stmt::StmtClass::TypeTraitExprClass            : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::TypeTraitExpr            >(expr));
                 default:
                     break;
                 };

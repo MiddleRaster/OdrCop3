@@ -1380,24 +1380,25 @@ Test ExploratoryTestsOfClangAST[] =
 
     {"Requires", []
         {
-            std::string code = "template <typename T> T FunctionTemplateWithRequiresClause(const T& value) requires requires { typename T::value_type; } { return value; }\n"
-                               "template<typename T> concept TheConcept = sizeof(T) == 4;"
-                               "template<typename T> requires TheConcept<T> void FunctionTemplateWithConcept(T) {}\n"
+            std::string code =
+                                "template <typename T> T FunctionTemplateWithRequiresClause(const T& value) requires requires { typename T::value_type; } { return value; }\n"
+                                "template<typename T> concept TheConcept = sizeof(T) == 4;"
+                                "template<typename T> requires TheConcept<T> void FunctionTemplateWithConcept(T) {}\n"
 
-                               "namespace { struct NoSeeUm {}; }\n"
-                               "template<typename T, typename U> concept IsSameConcept = true;\n"
-                               "template<typename T> requires IsSameConcept<T, NoSeeUm> void FunctionTemplateWithAnonymousConcept(T) {}\n"
+                                "namespace { struct NoSeeUm {}; }\n"
+                                "template<typename T, typename U> concept IsSameConcept = true;\n"
+                                "template<typename T> requires IsSameConcept<T, NoSeeUm> void FunctionTemplateWithAnonymousConcept(T) {}\n"
 
-                               "template<typename T> requires TheConcept<T> struct ClassRequiresTheConcept { T value; };\n"
-                               "template<typename T> requires IsSameConcept<T, NoSeeUm> struct ClassTemplateWithAnonymousConcept { T value; };\n"
+                                "template<typename T> requires TheConcept<T> struct ClassRequiresTheConcept { T value; };\n"
+                                "template<typename T> requires IsSameConcept<T, NoSeeUm> struct ClassTemplateWithAnonymousConcept { T value; };\n"
 
-                               "template<auto V> concept ValueConcept = true;\n"
+                                "template<auto V> concept ValueConcept = true;\n"
                                    "struct ValueHolder { static int value; };\n"
                                    "template<typename T> requires ValueConcept<&ValueHolder::value> struct TestDeclarationArg {};\n"
 
                                    "namespace { struct Hidden { static const int value = 0; }; }\n"
                                    "template<typename T> requires ValueConcept<&Hidden::value> struct TestAnonymousNamespaceArg {};\n"
-                               ;
+                                   ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
@@ -3964,7 +3965,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline int multipleV1Value = 0;\n"                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int multipleV2Value = 0;\n"                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("details::NestedType nestedObject;\n"                                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline int nestedInlineValue = 0;\n"                                    , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int nestedInlineValue = 0;\n"                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int nonInlineSiblingValue = 0;\n"                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int inlineSiblingValue = 0;\n"                                  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("InlineNamespaceTest::object"                                           , (*it  ).first);
@@ -4139,16 +4140,19 @@ Test ExploratoryTestsOfClangAST[] =
                               //"namespace OriginalNamespace7 { template<typename T> concept C = true; } namespace Alias7 = OriginalNamespace7; template<typename T> concept Hit301 = requires(T t) { { t } -> Alias7::C; };\n"
                                 "namespace OriginalNamespace8 { struct S { int x; }; } namespace Alias8 = OriginalNamespace8; int hit339(OriginalNamespace8::S& s) { return s.Alias8::S::x; }\n"
                               //"namespace OriginalNamespace9 { template<typename T> concept C = true; } namespace Alias9 = OriginalNamespace9; template<typename T> concept Hit352 = Alias9::C<T>;\n"
+
+                                "namespace OriginalNamespace { template<typename T> concept SameAsInt = __is_same(T, int); } namespace Alias = OriginalNamespace; template<typename T> concept RequiresExprReturnTypeAliasTest = requires(T t) { { t.value() } -> Alias::SameAsInt; }; struct RequiresExprReturnTypeAliasTestType { int value(); }; static_assert(RequiresExprReturnTypeAliasTest<RequiresExprReturnTypeAliasTestType>);\n"
+                              //"namespace OriginalNamespace { template<typename T> concept HasValueType = requires { typename T::value_type; }; } namespace Alias = OriginalNamespace; template<typename T> concept RequiresExprReturnTypeSubstitutionFailureAliasTest = requires(T t) { { t.value() } -> Alias::HasValueType; }; struct RequiresExprReturnTypeSubstitutionFailureAliasTestType { int value(); }; static_assert(!RequiresExprReturnTypeSubstitutionFailureAliasTest<RequiresExprReturnTypeSubstitutionFailureAliasTestType>);\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(72, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(73, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(35, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 3, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(14, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(16, maps.conceptMap.size(), "wrong number of comcepts in map");
             Assert::AreEqual(24, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -4413,6 +4417,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct NamespaceAliasTest {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct RequiresExprReturnTypeAliasTestType {\n"
+                                 "    int value();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -4493,6 +4500,8 @@ Test ExploratoryTestsOfClangAST[] =
               //Assert::AreEqual("template <typename T> concept SomeConcept = true;\n"                                                                                                                                        , (*it++).second[0].fullyQualified);
               //Assert::AreEqual("template <typename T> concept C = true;\n"                                                                                                                                                  , (*it++).second[0].fullyQualified);
               //Assert::AreEqual("template <typename T> concept C = true;\n"                                                                                                                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept SameAsInt = __is_same(T, int);\n"                                                                                                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept RequiresExprReturnTypeAliasTest = requires (T t) { { t.value() } -> OriginalNamespace::SameAsInt; };\n"                                                             , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();

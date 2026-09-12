@@ -28,7 +28,7 @@ namespace OdrCop3
             out += GetTemplateHeader<SerializeDecl, SerializeType, SerializeExpr>(contextItems, conceptDecl->getTemplateParameters());
             out += "concept " + conceptDecl->getNameAsString() + " = ";
             out += IndentBlock(SerializeExpr(contextItems, conceptDecl->getConstraintExpr()), LengthOfLastLine(out));
-            return out + ";\n";
+            return TrimRightIf(out, " ") + ";\n";
         }
     };
 }

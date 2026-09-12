@@ -25,17 +25,20 @@ namespace OdrCop3
         std::string Serialize() const
         {
             std::string out;
-            out += conceptSpecializationExpr->getNamedConcept()->getNameAsString();
-            out += "<";
-
-            for (const TemplateArgumentLoc& argLoc : conceptSpecializationExpr->getTemplateArgsAsWritten()->arguments())
+            out += conceptSpecializationExpr->getNamedConcept()->getQualifiedNameAsString();
+            
+            if (const auto* templateArgs = conceptSpecializationExpr->getTemplateArgsAsWritten())
+            if (templateArgs->LAngleLoc.isValid())
             {
-                out += SerializeTemplateArgument<SerializeDecl, SerializeType, SerializeExpr>(contextItems, argLoc.getArgument(), LengthOfLastLine(out));
-                out += ", ";
+                out += "<";
+                for (const TemplateArgumentLoc& argLoc : templateArgs->arguments())
+                {
+                    out += SerializeTemplateArgument<SerializeDecl, SerializeType, SerializeExpr>(contextItems, argLoc.getArgument(), LengthOfLastLine(out));
+                    out += ", ";
+                }
+                out = TrimRightIf(out, ", ");
+                out += "> ";
             }
-            out = TrimRightIf(out, ", ");
-            out += "> ";
-
             return out;
         }
     };
