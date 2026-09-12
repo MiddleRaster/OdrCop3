@@ -281,278 +281,269 @@ namespace OdrCop3
 
         class Needs
         {
-        private:
-            static bool TemplateArgsContainAliasedName(const clang::CXXRecordDecl* cxxRecordDecl)
-            {   // pulls template arguments directly off a ClassTemplateSpecializationDecl,
-                // for cases where the TemplateSpecializationType sugar has already been stripped away.
-                if (const auto* specDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(cxxRecordDecl))
-                    for (const clang::TemplateArgument& arg : specDecl->getTemplateArgs().asArray())
-                        if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
-                            if (true == TypeContainsAliasedName(arg.getAsType()))
-                                return true;
-                return false;
-            }
-            static bool NestedNameSpecifierContainsAliasedName(clang::NestedNameSpecifier nestedNameSpecifier)
+            struct OriginalNamespaceVisitor : public clang::RecursiveASTVisitor<OriginalNamespaceVisitor>
             {
-                while (nestedNameSpecifier)
+                bool found = false;
+
+                bool TraverseTypeConstraint(const clang::TypeConstraint* constraint)
                 {
-                    switch (nestedNameSpecifier.getKind())
-                    {
-                    case clang::NestedNameSpecifier::Kind::Namespace:
-                        if (llvm::isa<clang::NamespaceAliasDecl>(nestedNameSpecifier.getAsNamespaceAndPrefix().Namespace))
-                            return true;
-                        nestedNameSpecifier = nestedNameSpecifier.getAsNamespaceAndPrefix().Prefix;
-                        break;
-                    case clang::NestedNameSpecifier::Kind::Type:
-                        // A Type-kind qualifier can itself be a template specialization carrying
-                        // an aliased argument, so run it through the full TypePrintingType check.
-                        if (const clang::Type* type = nestedNameSpecifier.getAsType())
-                            return TypeContainsAliasedName(clang::QualType(type, 0));
-                        return false;
-                    default:
-                        return false;
-                    }
+                    if (constraint)
+                        if (const clang::ConceptReference* conceptRef = constraint->getConceptReference())
+                            if (NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
+                                found = true;
+
+                    if (!found)
+                        return clang::RecursiveASTVisitor<OriginalNamespaceVisitor>::TraverseTypeConstraint(constraint);
+                    return !found;
                 }
-                return false;
-            }
-            static bool QualifierContainsAliasedName(const clang::Decl* decl)
-            {
-                if (const auto* declaratorDecl = llvm::dyn_cast<clang::DeclaratorDecl>(decl))
-                    return NestedNameSpecifierContainsAliasedName(declaratorDecl->getQualifier());
-                if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
-                    return NestedNameSpecifierContainsAliasedName(tagDecl->getQualifier());
-                return false;
-            }
-            static bool TypeContainsAliasedName(clang::QualType qt)
-            {
-                if (const auto* recordType = qt->getAs<clang::RecordType>())
+                bool TraverseFunctionTemplateDecl(clang::FunctionTemplateDecl* functionTemplateDecl)
                 {
-                    if (true == NestedNameSpecifierContainsAliasedName(recordType->getQualifier()))
-                        return true;
-                    if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(recordType->getDecl()))
-                        if (true == TemplateArgsContainAliasedName(cxxRecordDecl))
-                            return true;
+                    llvm::SmallVector<clang::AssociatedConstraint, 4> constraints;
+                    functionTemplateDecl->getAssociatedConstraints(constraints);
+                    for (const clang::AssociatedConstraint& constraint : constraints)
+                        if (constraint.ConstraintExpr != nullptr)
+                            if (!TraverseStmt(const_cast<clang::Expr*>(constraint.ConstraintExpr)))
+                                return false;
+                    if (!found)
+                        return clang::RecursiveASTVisitor<OriginalNamespaceVisitor>::TraverseFunctionTemplateDecl(functionTemplateDecl);
+                    return !found;
+                }
+                bool TraverseConceptExprRequirement(clang::concepts::ExprRequirement* requirement)
+                {
+                    if (!requirement->isExprSubstitutionFailure())
+                        if (const clang::Expr* expr = requirement->getExpr()) {
+                            if (TypeContainsAliasedName(expr->getType()))
+                                found = true;
+                            if (!found)
+                                if (!TraverseStmt(const_cast<clang::Expr*>(expr)))
+                                    return false;
+                        }
+                    if (!found && requirement->getReturnTypeRequirement().isTypeConstraint())
+                        if (const clang::TypeConstraint* constraint = requirement->getReturnTypeRequirement().getTypeConstraint())
+                            TraverseTypeConstraint(constraint);
+                    return !found;
+                }
+                bool TraverseConceptTypeRequirement(clang::concepts::TypeRequirement* requirement)
+                {
+                    if (!requirement->isSubstitutionFailure())
+                        if (const clang::TypeSourceInfo* typeSourceInfo = requirement->getType())
+                            if (TypeContainsAliasedName(typeSourceInfo->getType()))
+                                found = true;
+                    return !found;
+                }
+                bool TraverseConceptNestedRequirement(clang::concepts::NestedRequirement* requirement)
+                {
+                    if (!requirement->hasInvalidConstraint())
+                        TraverseStmt(const_cast<clang::Expr*>(requirement->getConstraintExpr()));
+                    return !found;
+                }
+                bool VisitDecl(const clang::Decl* decl)
+                {
+                    if (QualifierContainsAliasedName(decl))
+                        found = true;
+                    if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
+                        if (TypeContainsAliasedName(valueDecl->getType()))
+                            found = true;
+                    if (const auto* typedefNameDecl = llvm::dyn_cast<clang::TypedefNameDecl>(decl))
+                        if (TypeContainsAliasedName(typedefNameDecl->getUnderlyingType()))
+                            found = true;
+                    return !found;
+                }
+                bool VisitConceptReference(clang::ConceptReference* conceptRef)
+                {
+                    if (NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
+                        found = true;
+                    return !found;
+                }
+                bool VisitDeclRefExpr(const clang::DeclRefExpr* expr)
+                {
+                    if (NestedNameSpecifierContainsAliasedName(expr->getQualifier()))
+                        found = true;
+                    return !found;
+                }
+                bool VisitMemberExpr(const clang::MemberExpr* expr)
+                {
+                    if (NestedNameSpecifierContainsAliasedName(expr->getQualifier()))
+                        found = true;
+                    return !found;
+                }
+                bool VisitConceptDecl(const clang::ConceptDecl* decl)
+                {
+                    if (TemplateParametersContainAliasedName(decl->getTemplateParameters()))
+                        found = true;
+                    return !found;
+                }
+                bool VisitConceptSpecializationExpr(const clang::ConceptSpecializationExpr* expr)
+                {
+                    if (const clang::ConceptReference* conceptRef = expr->getConceptReference())
+                        if (NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
+                            found = true;
+                    if (!found)
+                        for (const clang::TemplateArgument& arg : expr->getTemplateArguments())
+                            if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                                if (TypeContainsAliasedName(arg.getAsType()))
+                                    found = true;
+                    return !found;
+                }
+                bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr* expr)
+                {
+                    if (expr->isArgumentType())
+                        if (TypeContainsAliasedName(expr->getArgumentTypeInfo()->getType()))
+                            found = true;
+                    return !found;
+                }
+                bool VisitTypeTraitExpr(const clang::TypeTraitExpr* expr)
+                {
+                    for (const clang::TypeSourceInfo* arg : expr->getArgs())
+                        if (TypeContainsAliasedName(arg->getType()))
+                            found = true;
+                    return !found;
+                }
+                bool VisitRequiresExpr(const clang::RequiresExpr* expr)
+                {
+                    for (const clang::ParmVarDecl* parm : expr->getLocalParameters())
+                        if (TypeContainsAliasedName(parm->getType()))
+                            found = true;
+                    return !found;
+                }
+                bool VisitNonTypeTemplateParmDecl(const clang::NonTypeTemplateParmDecl* decl)
+                {
+                    if (TypeContainsAliasedName(decl->getType()))
+                        found = true;
+                    return !found;
+                }
+                bool VisitCXXConversionDecl(const clang::CXXConversionDecl* decl)
+                {
+                    if (TypeContainsAliasedName(decl->getConversionType()))
+                        found = true;
+                    return !found;
+                }
+                bool VisitCXXRecordDecl(const clang::CXXRecordDecl* decl)
+                {
+                    if (NestedNameSpecifierContainsAliasedName(decl->getQualifier()))
+                        found = true;
+                    if (decl->isThisDeclarationADefinition())
+                        for (const clang::CXXBaseSpecifier& base : decl->bases())
+                            if (TypeContainsAliasedName(base.getType()))
+                                found = true;
+                    return !found;
+                }
+                bool VisitClassTemplateSpecializationDecl(const clang::ClassTemplateSpecializationDecl* decl)
+                {
+                    for (const clang::TemplateArgument& arg : decl->getTemplateArgs().asArray())
+                        if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                            if (TypeContainsAliasedName(arg.getAsType()))
+                                found = true;
+                    return !found;
+                }
+                bool VisitFunctionDecl(const clang::FunctionDecl* decl)
+                {
+                    if (TypeContainsAliasedName(decl->getReturnType()))
+                        found = true;
+                    return !found;
                 }
 
-                if (const auto* enumType = qt->getAs<clang::EnumType>())
-                    if (true == NestedNameSpecifierContainsAliasedName(enumType->getQualifier()))
-                        return true;
-
-                if (const auto* typedefType = qt->getAs<clang::TypedefType>())
-                    if (true == NestedNameSpecifierContainsAliasedName(typedefType->getQualifier()))
-                        return true;
-
-                // Pointer types
-                if (const auto* ptrType = qt->getAs<clang::PointerType>())
-                    if (true == TypeContainsAliasedName(ptrType->getPointeeType()))
-                        return true;
-
-                // Reference types
-                if (const auto* refType = qt->getAs<clang::ReferenceType>())
-                    if (true == TypeContainsAliasedName(refType->getPointeeType()))
-                        return true;
-
-                // Array types: must go via Type*; getAs<ArrayType>() is forbidden.
-                if (const clang::Type* rawType = qt.getTypePtr())
-                    if (const auto* arrayType = llvm::dyn_cast<clang::ArrayType>(rawType))
-                        if (true == TypeContainsAliasedName(arrayType->getElementType()))
-                            return true;
-
-                // Template specialization sugar: check template arguments for alias use
-                if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
-                    for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
-                        if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
-                            if (true == TypeContainsAliasedName(arg.getAsType()))
-                                return true;
-
-                return false;
-            }
-            static bool ExprContainsAliasedName(const clang::Expr* expr)
-            {   // Walks an expression subtree. Needed because a namespace alias can appear inside an
-                // initializer's Expr nodes (e.g. sizeof(Alias::Foo), a DeclRefExpr's own qualifier, or a
-                // MemberExpr's own qualifier) with no path back through any Decl's type.
-                if (expr) {
-                    if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(expr))
-                        if (true == NestedNameSpecifierContainsAliasedName(declRefExpr->getQualifier()))
-                            return true;
-
-                    if (const auto* memberExpr = llvm::dyn_cast<clang::MemberExpr>(expr))
-                        if (true == NestedNameSpecifierContainsAliasedName(memberExpr->getQualifier()))
-                            return true;
-
-                    if (const auto* conceptSpecExpr = llvm::dyn_cast<clang::ConceptSpecializationExpr>(expr))
-                    {
-                        if (const clang::ConceptReference* conceptRef = conceptSpecExpr->getConceptReference())
-                            if (true == NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
-                                return true;
-
-                        for (const clang::TemplateArgument& arg : conceptSpecExpr->getTemplateArguments())
+            private:
+                static bool TemplateParametersContainAliasedName(const clang::TemplateParameterList* params)
+                {
+                    if (params)
+                        for (const clang::NamedDecl* param : *params)
+                            if (const auto* ntp = llvm::dyn_cast<clang::NonTypeTemplateParmDecl>(param))
+                                if (TypeContainsAliasedName(ntp->getType()))
+                                    return true;
+                    return false;
+                }
+                static bool TemplateArgsContainAliasedName(const clang::CXXRecordDecl* cxxRecordDecl)
+                {   // pulls template arguments directly off a ClassTemplateSpecializationDecl,
+                    // for cases where the TemplateSpecializationType sugar has already been stripped away.
+                    if (const auto* specDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(cxxRecordDecl))
+                        for (const clang::TemplateArgument& arg : specDecl->getTemplateArgs().asArray())
                             if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
                                 if (true == TypeContainsAliasedName(arg.getAsType()))
                                     return true;
-                    }
-
-                    if (const auto* requiresExpr = llvm::dyn_cast<clang::RequiresExpr>(expr))
+                    return false;
+                }
+                static bool NestedNameSpecifierContainsAliasedName(clang::NestedNameSpecifier nestedNameSpecifier)
+                {
+                    while (nestedNameSpecifier)
                     {
-                        for (const clang::concepts::Requirement* requirement : requiresExpr->getRequirements())
-                            if (true == RequirementContainsAliasedName(requirement))
+                        switch (nestedNameSpecifier.getKind())
+                        {
+                        case clang::NestedNameSpecifier::Kind::Namespace:
+                            if (llvm::isa<clang::NamespaceAliasDecl>(nestedNameSpecifier.getAsNamespaceAndPrefix().Namespace))
                                 return true;
-
-                        for (const clang::ParmVarDecl* parm : requiresExpr->getLocalParameters())
-                            if (true == TypeContainsAliasedName(parm->getType()))
+                            nestedNameSpecifier = nestedNameSpecifier.getAsNamespaceAndPrefix().Prefix;
+                            break;
+                        case clang::NestedNameSpecifier::Kind::Type:
+                            // A Type-kind qualifier can itself be a template specialization carrying
+                            // an aliased argument, so run it through the full TypePrintingType check.
+                            if (const clang::Type* type = nestedNameSpecifier.getAsType())
+                                return TypeContainsAliasedName(clang::QualType(type, 0));
+                            return false;
+                        default:
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+                static bool QualifierContainsAliasedName(const clang::Decl* decl)
+                {
+                    if (const auto* declaratorDecl = llvm::dyn_cast<clang::DeclaratorDecl>(decl))
+                        if (NestedNameSpecifierContainsAliasedName(declaratorDecl->getQualifier()))
+                            return true;
+                    if (const auto* tagDecl = llvm::dyn_cast<clang::TagDecl>(decl))
+                        if (NestedNameSpecifierContainsAliasedName(tagDecl->getQualifier()))
+                            return true;
+                    return false;
+                }
+                static bool TypeContainsAliasedName(clang::QualType qt)
+                {
+                    if (const auto* recordType = qt->getAs<clang::RecordType>())
+                    {
+                        if (true == NestedNameSpecifierContainsAliasedName(recordType->getQualifier()))
+                            return true;
+                        if (const auto* cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(recordType->getDecl()))
+                            if (true == TemplateArgsContainAliasedName(cxxRecordDecl))
                                 return true;
                     }
 
-                    if (const auto* traitExpr = llvm::dyn_cast<clang::UnaryExprOrTypeTraitExpr>(expr))
-                        if (traitExpr->isArgumentType())
-                            if (true == TypeContainsAliasedName(traitExpr->getArgumentTypeInfo()->getType()))
+                    if (const auto* enumType = qt->getAs<clang::EnumType>())
+                        if (true == NestedNameSpecifierContainsAliasedName(enumType->getQualifier()))
+                            return true;
+
+                    if (const auto* typedefType = qt->getAs<clang::TypedefType>())
+                        if (true == NestedNameSpecifierContainsAliasedName(typedefType->getQualifier()))
+                            return true;
+
+                    if (const auto* ptrType = qt->getAs<clang::PointerType>())
+                        if (true == TypeContainsAliasedName(ptrType->getPointeeType()))
+                            return true;
+
+                    if (const auto* refType = qt->getAs<clang::ReferenceType>())
+                        if (true == TypeContainsAliasedName(refType->getPointeeType()))
+                            return true;
+
+                    if (const clang::Type* rawType = qt.getTypePtr())
+                        if (const auto* arrayType = llvm::dyn_cast<clang::ArrayType>(rawType))
+                            if (true == TypeContainsAliasedName(arrayType->getElementType()))
                                 return true;
 
-                    if (const auto* typeTraitExpr = llvm::dyn_cast<clang::TypeTraitExpr>(expr))
-                        for (const clang::TypeSourceInfo* argTypeSourceInfo : typeTraitExpr->getArgs())
-                            if (true == TypeContainsAliasedName(argTypeSourceInfo->getType()))
-                                return true;
+                    if (const auto* tmplSpec = qt->getAs<clang::TemplateSpecializationType>())
+                        for (const clang::TemplateArgument& arg : tmplSpec->template_arguments())
+                            if (arg.getKind() == clang::TemplateArgument::ArgKind::Type)
+                                if (true == TypeContainsAliasedName(arg.getAsType()))
+                                    return true;
 
-                    // Generic fallthrough: recurse into every child statement/expression so we don't
-                    // have to special-case every Expr subclass (CallExpr, CXXConstructExpr, etc.).
-                    for (const clang::Stmt* child : expr->children())
-                        if (const auto* childExpr = llvm::dyn_cast_or_null<clang::Expr>(child))
-                            if (true == ExprContainsAliasedName(childExpr))
-                                return true;
-                }
-                return false;
-            }
-            static bool TypeConstraintContainsAliasedName(const clang::TypeConstraint* typeConstraint)
-            {   // Handles `Alias::Foo auto x`, `template<Alias::Foo T>`, and a requirement's trailing `-> Alias::Foo` return-type-requirement;
-                // none of these carry the concept reference as a walkable Expr child.
-                if (typeConstraint)
-                    if (const clang::ConceptReference* conceptRef = typeConstraint->getConceptReference())
-                        if (true == NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
-                            return true;
-                return false;
-            }
-            static bool RequirementContainsAliasedName(const clang::concepts::Requirement* requirement)
-            {   // Requirements aren't Stmt nodes — each kind has to be unpacked by hand.
-                if (const auto* typeRequirement = llvm::dyn_cast<clang::concepts::TypeRequirement>(requirement)) {
-                    if (!typeRequirement->isSubstitutionFailure())
-                        if (const clang::TypeSourceInfo* typeSourceInfo = typeRequirement->getType())
-                            if (true == TypeContainsAliasedName(typeSourceInfo->getType()))
-                                return true;
                     return false;
                 }
-                if (const auto* exprRequirement = llvm::dyn_cast<clang::concepts::ExprRequirement>(requirement)) {
-                    if (!exprRequirement->isExprSubstitutionFailure())
-                        if (true == ExprContainsAliasedName(exprRequirement->getExpr()))
-                            return true;
-                    if (const clang::Expr* expr = exprRequirement->getExpr())
-                        if (true == TypeContainsAliasedName(expr->getType()))
-                            return true;
-                    if (exprRequirement->getReturnTypeRequirement().isTypeConstraint())
-                        if (true == TypeConstraintContainsAliasedName(exprRequirement->getReturnTypeRequirement().getTypeConstraint()))
-                            return true;
-                    return false;
-                }
-                if (const auto* nestedRequirement = llvm::dyn_cast<clang::concepts::NestedRequirement>(requirement)) {
-                    if (!nestedRequirement->hasInvalidConstraint())
-                        if (true == ExprContainsAliasedName(nestedRequirement->getConstraintExpr()))
-                            return true;
-                    return false;
-                }
-                return false;
-            }
-            static bool TemplateParametersContainAliasedName(const clang::TemplateParameterList* params)
-            {
-                if (params)
-                    for (const clang::NamedDecl* param : *params)
-                        if (const auto* ntp = llvm::dyn_cast<clang::NonTypeTemplateParmDecl>(param))
-                            if (true == TypeContainsAliasedName(ntp->getType()))
-                                return true;
-                return false;
-            }
+            };
 
         public:
             static bool OriginalNamespace(const clang::Decl* decl)
             {
-                // Decl-side qualifiers
-                if (true == QualifierContainsAliasedName(decl))
-                    return true;
-
-                // Type-side qualifiers (ValueDecls)
-                if (const auto* valueDecl = llvm::dyn_cast<clang::ValueDecl>(decl))
-                    if (true == TypeContainsAliasedName(valueDecl->getType()))
-                        return true;
-
-                // Initializer-side qualifiers (VarDecls) — e.g. sizeof(Alias::Foo) in the init.
-                if (const auto* varDecl = llvm::dyn_cast<clang::VarDecl>(decl))
-                    if (true == ExprContainsAliasedName(varDecl->getInit()))
-                        return true;
-
-                // Underlying types of typedefs and using aliases
-                if (const auto* typedefNameDecl = llvm::dyn_cast<clang::TypedefNameDecl>(decl))
-                    if (true == TypeContainsAliasedName(typedefNameDecl->getUnderlyingType()))
-                        return true;
-                // template using aliases
-                if (const auto* typeAliasTemplateDecl = llvm::dyn_cast<clang::TypeAliasTemplateDecl>(decl))
-                    if (true == Needs::OriginalNamespace(typeAliasTemplateDecl->getTemplatedDecl()))
-                        return true;
-
-                // Recursively inspect child decls (fields, nested types, etc.)
-                if (const auto* declContext = llvm::dyn_cast<clang::DeclContext>(decl))
-                    for (const clang::Decl* child : declContext->decls())
-                        if (!child->isImplicit())
-                            if (true == Needs::OriginalNamespace(child))
-                                return true;
-
-                // class templates
-                if (const auto* classTemplateDecl = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
-                    if (true == TemplateParametersContainAliasedName(classTemplateDecl->getTemplateParameters()))
-                        return true;
-                    if (const auto* cxxRecord = classTemplateDecl->getTemplatedDecl())
-                        if (true == Needs::OriginalNamespace(cxxRecord))
-                            return true;
-                }
-
-                // concepts
-                if (const auto* conceptDecl = llvm::dyn_cast<clang::ConceptDecl>(decl)) {
-                    if (true == TemplateParametersContainAliasedName(conceptDecl->getTemplateParameters()))
-                        return true;
-                    if (true == ExprContainsAliasedName(conceptDecl->getConstraintExpr()))
-                        return true;
-                }
-
-                // functions and function templates
-                const clang::FunctionDecl* functionDecl = nullptr;
-                if (const auto* functionTemplateDecl = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl)) {
-                    llvm::SmallVector<clang::AssociatedConstraint,4> constraints;
-                    functionTemplateDecl->getAssociatedConstraints(constraints);
-                    for (const AssociatedConstraint& constraint : constraints)
-                        if (constraint.ConstraintExpr != nullptr)
-                            if (true == ExprContainsAliasedName(constraint.ConstraintExpr))
-                                return true;
-
-                    functionDecl = functionTemplateDecl->getTemplatedDecl();
-                } else
-                    functionDecl = llvm::dyn_cast<clang::FunctionDecl>(decl);
-                if (functionDecl) {
-                    for (const clang::ParmVarDecl* parm : functionDecl->parameters())
-                        if (!parm->isImplicit())
-                            if (true == Needs::OriginalNamespace(parm))
-                                return true;
-                    if (true == TypeContainsAliasedName(functionDecl->getReturnType()))
-                        return true;
-                }
-                if (const auto* conversionDecl = llvm::dyn_cast<clang::CXXConversionDecl>(decl))
-                    if (true == TypeContainsAliasedName(conversionDecl->getConversionType()))
-                        return true;
-
-                // Base classes on CXXRecordDecl
-                if (const auto* cxxRecord = llvm::dyn_cast<clang::CXXRecordDecl>(decl))
-                    if (cxxRecord->isThisDeclarationADefinition())
-                        for (const clang::CXXBaseSpecifier& base : cxxRecord->bases())
-                            if (true == TypeContainsAliasedName(base.getType()))
-                                return true;
-
-                return false;
+                OriginalNamespaceVisitor visitor;
+                visitor.TraverseDecl(const_cast<clang::Decl*>(decl));
+                return visitor.found;
             }
         };
 

@@ -290,8 +290,13 @@ namespace OdrCop3
         }
         std::string get_FunctionName() const
         {
-            std::string name = funcDecl->getNameAsString();
-            if (auto *  args = funcDecl->getTemplateSpecializationArgs())
+            std::string name;
+            if (funcDecl->isOutOfLine() && !funcDecl->getFriendObjectKind())
+                name = funcDecl->getCanonicalDecl()->getQualifiedNameAsString();
+            else
+                name = funcDecl->getNameAsString();
+
+            if (auto * args = funcDecl->getTemplateSpecializationArgs())
             {   // explicit specialization
                 std::string out = "<";
 

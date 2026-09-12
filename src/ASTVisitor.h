@@ -64,8 +64,12 @@ namespace OdrCop3
             if (functionDecl->isImplicit())
                 return true;
 
+            if (!functionDecl->isThisDeclarationADefinition())
+                return true;
+
             if (isa<CXXMethodDecl>(functionDecl))
-                return true; // if it's a method, it's already in the UDT map
+                if (!functionDecl->isOutOfLine())
+                    return true; // if it's a method, it's already in the UDT map, unless it's out-of-line
 
             if (functionDecl->getStorageClass() == clang::SC_Static || functionDecl->isInAnonymousNamespace())
                 return true; // if the function has internal-linkage, skip it
@@ -78,9 +82,6 @@ namespace OdrCop3
             default:
                 break;
             }
-
-            if (!functionDecl->isThisDeclarationADefinition())
-                return true;
 
             if (const FunctionTemplateDecl* functionTemplateDecl = functionDecl->getDescribedFunctionTemplate())
                 maps.functionMap[CreateKeyForFunctionMap(functionDecl)].push_back({TU, SerializeDecls(contextItems, functionTemplateDecl)});
@@ -147,8 +148,9 @@ namespace OdrCop3
             if (cxxRecordDecl->getDeclContext()->isFunctionOrMethod()) // defined inside function or method: can't be the cause of an ODR violation
                 return true;                                           // (except in the containing function, which is checked elsewhere)
 
-            if (cxxRecordDecl->isCXXClassMember())
-                return true; // already defined nested inside another UDT
+            if (cxxRecordDecl->isCXXClassMember()) // already defined nested inside another UDT
+                if (!cxxRecordDecl->isOutOfLine()) // but not an out-of-class initialization
+                    return true;
 
             std::string key = cxxRecordDecl->getQualifiedNameAsString();
             if      (cxxRecordDecl->getDescribedClassTemplate())                                    key += "<>";
