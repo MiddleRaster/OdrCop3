@@ -1520,7 +1520,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 2, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
             
             {
@@ -1738,7 +1738,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 5, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -1947,7 +1947,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 3, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(31, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(31, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 7, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -2051,7 +2051,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(8, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -2149,7 +2149,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 4, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 8, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -2349,7 +2349,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 7, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(10, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -2481,7 +2481,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(6, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -2588,7 +2588,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(18, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 8, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -2794,7 +2794,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(20, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(12, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -2983,7 +2983,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(16, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(10, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3127,7 +3127,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3211,7 +3211,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 9, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(18, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3388,7 +3388,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(9, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3461,7 +3461,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(4, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3520,7 +3520,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(11, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3591,7 +3591,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3688,7 +3688,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(2, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3755,7 +3755,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 1, maps.functionMap.size(), "wrong number of functions in map");
             
             {
@@ -3842,7 +3842,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -3941,7 +3941,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(15, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -4134,26 +4134,26 @@ Test ExploratoryTestsOfClangAST[] =
                                 "int Alias2::NamespaceAliasTest::field = 0; void Alias2::NamespaceAliasTest::method() {}\n"
                               //"namespace OriginalNamespace2 { int SomeFunc(); } auto namespaceAliasDeclRefExprTest = Alias2::SomeFunc();\n"
                                 "namespace OriginalNamespace3 { struct Holder { static int field; }; } namespace Alias3 = OriginalNamespace3; auto namespaceAliasMemberExprTest = Alias3::Holder::field;\n"
-                              //"namespace OriginalNamespace4 { template<typename T> concept SomeConcept = true; } namespace Alias4 = OriginalNamespace4; template<typename T> requires Alias4::SomeConcept<T> void namespaceAliasConceptQualifierTest(T) {}\n"
+                                "namespace OriginalNamespace4 { template<typename T> concept SomeConcept = true; } namespace Alias4 = OriginalNamespace4; template<typename T> requires Alias4::SomeConcept<T> void namespaceAliasConceptQualifierTest(T) {}\n"
                                 "namespace OriginalNamespace5 { struct Outer5 { struct Inner5; }; } namespace Alias5 = OriginalNamespace5; struct Alias5::Outer5::Inner5 {};\n"
                                 "namespace OriginalNamespace6 { struct NamespaceAliasTest {}; } namespace Alias6 = OriginalNamespace6; template<typename T> struct Foo6 {}; template struct Foo6<Alias6::NamespaceAliasTest>;\n"
-                              //"namespace OriginalNamespace7 { template<typename T> concept C = true; } namespace Alias7 = OriginalNamespace7; template<typename T> concept Hit301 = requires(T t) { { t } -> Alias7::C; };\n"
+                                "namespace OriginalNamespace7 { template<typename T> concept C = true; } namespace Alias7 = OriginalNamespace7; template<typename T> concept Hit301 = requires(T t) { { t } -> Alias7::C; };\n"
                                 "namespace OriginalNamespace8 { struct S { int x; }; } namespace Alias8 = OriginalNamespace8; int hit339(OriginalNamespace8::S& s) { return s.Alias8::S::x; }\n"
-                              //"namespace OriginalNamespace9 { template<typename T> concept C = true; } namespace Alias9 = OriginalNamespace9; template<typename T> concept Hit352 = Alias9::C<T>;\n"
+                                "namespace OriginalNamespace9 { template<typename T> concept C = true; } namespace Alias9 = OriginalNamespace9; template<typename T> concept Hit352 = Alias9::C<T>;\n"
 
                                 "namespace OriginalNamespace { template<typename T> concept SameAsInt = __is_same(T, int); } namespace Alias = OriginalNamespace; template<typename T> concept RequiresExprReturnTypeAliasTest = requires(T t) { { t.value() } -> Alias::SameAsInt; }; struct RequiresExprReturnTypeAliasTestType { int value(); }; static_assert(RequiresExprReturnTypeAliasTest<RequiresExprReturnTypeAliasTestType>);\n"
-                              //"namespace OriginalNamespace { template<typename T> concept HasValueType = requires { typename T::value_type; }; } namespace Alias = OriginalNamespace; template<typename T> concept RequiresExprReturnTypeSubstitutionFailureAliasTest = requires(T t) { { t.value() } -> Alias::HasValueType; }; struct RequiresExprReturnTypeSubstitutionFailureAliasTestType { int value(); }; static_assert(!RequiresExprReturnTypeSubstitutionFailureAliasTest<RequiresExprReturnTypeSubstitutionFailureAliasTestType>);\n"
+                                "namespace OriginalNamespace { template<typename T> concept HasValueType = requires { typename T::value_type; }; } namespace Alias = OriginalNamespace; template<typename T> concept RequiresExprReturnTypeSubstitutionFailureAliasTest = requires(T t) { { t.value() } -> Alias::HasValueType; }; struct RequiresExprReturnTypeSubstitutionFailureAliasTestType { int value(); }; static_assert(!RequiresExprReturnTypeSubstitutionFailureAliasTest<RequiresExprReturnTypeSubstitutionFailureAliasTestType>);\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(73, maps.udtMap.size(), "wrong number of UDTs in map");
+            Assert::AreEqual(74, maps.udtMap.size(), "wrong number of UDTs in map");
             Assert::AreEqual(35, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 3, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(16, maps.conceptMap.size(), "wrong number of comcepts in map");
-            Assert::AreEqual(24, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(23, maps.conceptMap.size(), "wrong number of concepts in map");
+            Assert::AreEqual(25, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -4420,6 +4420,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct RequiresExprReturnTypeAliasTestType {\n"
                                  "    int value();\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct RequiresExprReturnTypeSubstitutionFailureAliasTestType {\n"
+                                 "    int value();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -4481,8 +4484,8 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.conceptMap.begin();
-              //Assert::AreEqual("template <typename T> concept Hit301 = requires (T t) { { t } -> OriginalNamespace7::C; };\n"                                                                                               , (*it++).second[0].fullyQualified);
-              //Assert::AreEqual("template <typename T> concept Hit352 = OriginalNamespace9::C<T>;\n"                                                                                                                                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept Hit301 = requires (T t) { { t } -> OriginalNamespace7::C; };\n"                                                                                               , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept Hit352 = OriginalNamespace9::C<T>;\n"                                                                                                                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept NamespaceAliasConceptAlignmentTest = (alignof(OriginalNamespace::NamespaceAliasTest) > 0);\n"                                                                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept NamespaceAliasConceptCombinedConstraintTest = (__is_same(T, OriginalNamespace::NamespaceAliasTest) && sizeof(OriginalNamespace::NamespaceAliasTest) > 0);\n"  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept NamespaceAliasConceptCompoundRequirementTest = requires { { OriginalNamespace::NamespaceAliasTest{} }; };\n"                                                  , (*it++).second[0].fullyQualified);
@@ -4496,12 +4499,14 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTest = requires { sizeof(OriginalNamespace::NamespaceAliasTest); };\n"                                                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTypeRequirementTest = requires { typename OriginalNamespace::NamespaceAliasTest; };\n"                                                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept NamespaceAliasConceptTypeTest = __is_same(T, OriginalNamespace::NamespaceAliasTest);\n"                                                                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <OriginalNamespace::NamespaceAliasInt N> concept NamespaceAliasNonTypeConceptParameterTest = (N > 0);\n"                                                                           , (*it++).second[0].fullyQualified);
-              //Assert::AreEqual("template <typename T> concept SomeConcept = true;\n"                                                                                                                                        , (*it++).second[0].fullyQualified);
-              //Assert::AreEqual("template <typename T> concept C = true;\n"                                                                                                                                                  , (*it++).second[0].fullyQualified);
-              //Assert::AreEqual("template <typename T> concept C = true;\n"                                                                                                                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <unsigned int N> concept NamespaceAliasNonTypeConceptParameterTest = (N > 0);\n"                                                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept SomeConcept = true;\n"                                                                                                                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C = true;\n"                                                                                                                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept C = true;\n"                                                                                                                                                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept HasValueType = requires { typename T::value_type; };\n"                                                                                                       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept SameAsInt = __is_same(T, int);\n"                                                                                                                             , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> concept RequiresExprReturnTypeAliasTest = requires (T t) { { t.value() } -> OriginalNamespace::SameAsInt; };\n"                                                             , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept RequiresExprReturnTypeAliasTest = requires (T t) { { t.value() } -> OriginalNamespace::SameAsInt; };\n"                                                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept RequiresExprReturnTypeSubstitutionFailureAliasTest = requires (T t) { { t.value() } -> OriginalNamespace::HasValueType; };\n"                                 , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -4523,8 +4528,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> requires NamespaceAliasConceptHelperTest<T> void namespaceAliasConceptIdConstraintTest(T) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
-              //Assert::AreEqual("template <typename T> requires OriginalNamespace4::SomeConcept<T> void namespaceAliasConceptQualifierTest(T) {\n"
-              //                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires OriginalNamespace4::SomeConcept<T> void namespaceAliasConceptQualifierTest(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> requires (sizeof(T) > 0) OriginalNamespace::NamespaceAliasTest namespaceAliasConstrainedFunctionTemplate(T) {\n"
                                  "    return {};\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -4636,7 +4641,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(33, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -4852,7 +4857,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(),  "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.conceptMap.size(), "wrong number of concepts in map");
             Assert::AreEqual(0, maps.functionMap.size(), "wrong number of functions in map");
 
             {
@@ -4928,7 +4933,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(18, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(),"wrong number of functions in map");
 
             {
@@ -5101,7 +5106,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of comcepts in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
             Assert::AreEqual( 0, maps.functionMap.size(),"wrong number of functions in map");
 
             {
@@ -5501,7 +5506,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of comcepts in map");
+            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
             Assert::AreEqual(1, maps.functionMap.size(),"wrong number of functions in map");
 
             {
@@ -5548,8 +5553,6 @@ namespace alias:
     does not work. It still prints the Alias.
     commented out for now.
 ditto:  "namespace OriginalNamespace4 { template<typename T> concept SomeConcept = true; } namespace Alias4 = OriginalNamespace4; template<typename T> requires Alias4::SomeConcept<T> void namespaceAliasConceptQualifierTest(T) {}\n"
-ditto:  "namespace OriginalNamespace7 { template<typename T> concept C = true; } namespace Alias7 = OriginalNamespace7; template<typename T> concept Hit301 = requires(T t) { { t } -> Alias7::C; };\n"
-ditto:  "namespace OriginalNamespace9 { template<typename T> concept C = true; } namespace Alias9 = OriginalNamespace9; template<typename T> concept Hit352 = Alias9::C<T>;\n"
 
 
 internal linkage issues:

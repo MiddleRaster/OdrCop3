@@ -30,7 +30,7 @@ namespace OdrCop3
     {
         auto AddParameterPackAndNameAndDefaultArgument = [](const ContextItems& contextItems, const auto* tp) -> std::string
                                                          {
-                                                            std::string out = " ";
+                                                            std::string out;
                                                              if (tp->isParameterPack())
                                                                  out += "...";
                                                              if (!tp->getName().empty())
@@ -57,17 +57,18 @@ namespace OdrCop3
 
             if (const auto* ttp = clang::dyn_cast<clang::TemplateTypeParmDecl>(param))
             {
-                out += ttp->wasDeclaredWithTypename() ? "typename" : "class";
+                out += ttp->wasDeclaredWithTypename() ? "typename " : "class ";
                 out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp);
                 continue;
             }
             if (const auto* nttp = clang::dyn_cast<clang::NonTypeTemplateParmDecl>(param))
             {   // NTTP where type is a struct (new to C++20)
                 QualType nttpQT = nttp->getType().getCanonicalType();
-                if (NeedsManualSerialization(contextItems, nttpQT))
+                if (NeedsManualSerialization(contextItems, nttpQT) || NamespaceAliasDetector::ContainsNamespaceAlias(nttp->getType()))
                 {
                     out += IndentBlock(SerializeType(contextItems, nttpQT), LengthOfLastLine(out));
                     out  = TrimRightIf(out, " ");
+                    out += SnugUpPointersAndReferences(out);
                 }
                 else
                 {
@@ -82,7 +83,7 @@ namespace OdrCop3
             if (const auto* ttp2 = clang::dyn_cast<clang::TemplateTemplateParmDecl>(param))
             {
                 out += ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, ttp2->getTemplateParameters());
-                out += "class";
+                out += "class ";
                 out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp2);
                 continue;
             }
@@ -92,7 +93,8 @@ namespace OdrCop3
         if (const clang::Expr* requiresClause = params->getRequiresClause())
         {
             out += "requires ";
-            out += IndentBlock(SerializeExpr(contextItems, requiresClause), LengthOfLastLine(out));
+            out += TrimRightIf(IndentBlock(SerializeExpr(contextItems, requiresClause), LengthOfLastLine(out)), " ");
+            out += " ";
         }
         return out;
     }
@@ -100,7 +102,8 @@ namespace OdrCop3
     template <auto SerializeDecl, auto SerializeType, auto SerializeExpr>
     inline std::string GetTemplateHeader(const ContextItems& contextItems, const auto* templateParameterList)
     {
-        if (NeedsManualSerialization(contextItems, templateParameterList))
+        if (NeedsManualSerialization        (contextItems, templateParameterList) ||
+            NamespaceAliasDetector::ContainsNamespaceAlias(templateParameterList))
             return IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList), 0);
 
         std::string                 templatePrefix;

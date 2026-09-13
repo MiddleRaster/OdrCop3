@@ -501,7 +501,7 @@ namespace OdrCop3
             }
         };
 
-        template <typename F> static bool ContainsNamespaceAlias(F&& traverse)
+        template <typename F> static bool ContainsNamespaceAliasInternal(F&& traverse)
         {
             NamespaceAliasVisitor visitor;
             traverse(visitor);
@@ -509,8 +509,19 @@ namespace OdrCop3
         }
 
     public:
-        static bool ContainsNamespaceAlias(const clang::Decl   *     decl) { return ContainsNamespaceAlias([&](auto& visitor) { visitor.TraverseDecl(const_cast<clang::Decl*>(decl)); }); }
-        static bool ContainsNamespaceAlias(const clang::QualType qualType) { return ContainsNamespaceAlias([&](auto& visitor) { visitor.TraverseType(                      qualType); }); }
-        static bool ContainsNamespaceAlias(const clang::Expr   *     expr) { return ContainsNamespaceAlias([&](auto& visitor) { visitor.TraverseStmt(const_cast<clang::Expr*>(expr)); }); }
+        static bool ContainsNamespaceAlias(const clang::Decl   *     decl) { return ContainsNamespaceAliasInternal([&](auto& visitor) { visitor.TraverseDecl(const_cast<clang::Decl*>(decl)); }); }
+        static bool ContainsNamespaceAlias(const clang::QualType qualType) { return ContainsNamespaceAliasInternal([&](auto& visitor) { visitor.TraverseType(                      qualType); }); }
+        static bool ContainsNamespaceAlias(const clang::Expr   *     expr) { return ContainsNamespaceAliasInternal([&](auto& visitor) { visitor.TraverseStmt(const_cast<clang::Expr*>(expr)); }); }
+        static bool ContainsNamespaceAlias(const clang::TemplateParameterList* parameters)
+        {
+            return ContainsNamespaceAliasInternal([&](auto& visitor) {
+                    for (const clang::NamedDecl* parameter : *parameters)
+                        if (!visitor.TraverseDecl(const_cast<clang::NamedDecl*>(parameter)))
+                            return;
+                    if (const clang::Expr* requiresClause = parameters->getRequiresClause())
+                        visitor.TraverseStmt(const_cast<clang::Expr*>(requiresClause));
+                });
+        }
+
     };
 }
