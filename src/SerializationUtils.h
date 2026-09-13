@@ -234,9 +234,9 @@ namespace OdrCop3
         }
     };
 
-    class Needs
+    class NamespaceAliasDetector
     {
-        struct OriginalNamespaceVisitor : public clang::RecursiveASTVisitor<OriginalNamespaceVisitor>
+        struct NamespaceAliasVisitor : public clang::RecursiveASTVisitor<NamespaceAliasVisitor>
         {
             bool found = false;
 
@@ -248,7 +248,7 @@ namespace OdrCop3
                             found = true;
 
                 if (!found)
-                    return clang::RecursiveASTVisitor<OriginalNamespaceVisitor>::TraverseTypeConstraint(constraint);
+                    return clang::RecursiveASTVisitor<NamespaceAliasVisitor>::TraverseTypeConstraint(constraint);
                 return !found;
             }
             bool TraverseFunctionTemplateDecl(clang::FunctionTemplateDecl* functionTemplateDecl)
@@ -260,7 +260,7 @@ namespace OdrCop3
                         if (!TraverseStmt(const_cast<clang::Expr*>(constraint.ConstraintExpr)))
                             return false;
                 if (!found)
-                    return clang::RecursiveASTVisitor<OriginalNamespaceVisitor>::TraverseFunctionTemplateDecl(functionTemplateDecl);
+                    return clang::RecursiveASTVisitor<NamespaceAliasVisitor>::TraverseFunctionTemplateDecl(functionTemplateDecl);
                 return !found;
             }
             bool TraverseConceptExprRequirement(clang::concepts::ExprRequirement* requirement)
@@ -297,7 +297,7 @@ namespace OdrCop3
                 if (nns.getKind() == clang::NestedNameSpecifier::Kind::Namespace)
                     if (clang::isa<clang::NamespaceAliasDecl>(nns.getAsNamespaceAndPrefix().Namespace))
                         found = true;
-                return RecursiveASTVisitor<OriginalNamespaceVisitor>::TraverseNestedNameSpecifier(nns);
+                return RecursiveASTVisitor<NamespaceAliasVisitor>::TraverseNestedNameSpecifier(nns);
             }
 
             bool VisitDecl(const clang::Decl* decl)
@@ -501,24 +501,16 @@ namespace OdrCop3
             }
         };
 
+        template <typename F> static bool ContainsNamespaceAlias(F&& traverse)
+        {
+            NamespaceAliasVisitor visitor;
+            traverse(visitor);
+            return visitor.found;
+        }
+
     public:
-        static bool OriginalNamespace(const clang::Decl* decl)
-        {
-            OriginalNamespaceVisitor visitor;
-            visitor.TraverseDecl(const_cast<clang::Decl*>(decl));
-            return visitor.found;
-        }
-        static bool OriginalNamespace(const clang::QualType qualType)
-        {
-            OriginalNamespaceVisitor visitor;
-            visitor.TraverseType(qualType);
-            return visitor.found;
-        }
-        static bool OriginalNamespace(const clang::Expr* expr)
-        {
-            OriginalNamespaceVisitor visitor;
-            visitor.TraverseStmt(const_cast<clang::Expr*>(expr));
-            return visitor.found;
-        }
+        static bool ContainsNamespaceAlias(const clang::Decl   *     decl) { return ContainsNamespaceAlias([&](auto& visitor) { visitor.TraverseDecl(const_cast<clang::Decl*>(decl)); }); }
+        static bool ContainsNamespaceAlias(const clang::QualType qualType) { return ContainsNamespaceAlias([&](auto& visitor) { visitor.TraverseType(                      qualType); }); }
+        static bool ContainsNamespaceAlias(const clang::Expr   *     expr) { return ContainsNamespaceAlias([&](auto& visitor) { visitor.TraverseStmt(const_cast<clang::Expr*>(expr)); }); }
     };
 }

@@ -76,7 +76,7 @@ namespace OdrCop3
                     return !NeedsManualSerialization(contextItems, expr);
                 }
             };
-            if (Needs::OriginalNamespace(expr) || Can::Print(contextItems, expr) == false)
+            if (NamespaceAliasDetector::ContainsNamespaceAlias(expr) || Can::Print(contextItems, expr) == false)
             {
                 using ExprSerializer = Serialize::Expr<SerializeDecl, SerializeType, &Exprs<SerializeDecl, SerializeType>>;
                 switch (expr->getStmtClass())

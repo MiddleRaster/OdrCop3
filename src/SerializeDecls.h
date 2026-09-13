@@ -388,7 +388,7 @@ namespace OdrCop3
                 return qualType.getAsString();
             }
 
-            bool resolveNamespaceAliases = Needs::OriginalNamespace(decl);
+            bool resolveNamespaceAliases = NamespaceAliasDetector::ContainsNamespaceAlias(decl);
             std::unordered_set<const clang::Decl*> decls;
             if ((Can(contextItems, decls).Print(decl) == false) || (resolveNamespaceAliases == true))
             {

@@ -162,7 +162,7 @@ namespace OdrCop3
             std::string str;
             llvm::raw_string_ostream os(str);
             PrintingPolicy policy{contextItems.printPolicy};
-            policy.PrintAsCanonical = Needs::OriginalNamespace(qualType);
+            policy.PrintAsCanonical = NamespaceAliasDetector::ContainsNamespaceAlias(qualType);
             qualType.print(os, policy, contextItems.aux);
             os.flush();
             return str;
