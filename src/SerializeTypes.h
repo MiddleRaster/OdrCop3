@@ -127,30 +127,38 @@ namespace OdrCop3
                     return true;
                 }
             };
-            if (Can::Print(contextItems, qualType) == false)
+
+            SerializationNeeds serializationNeeds
             {
+                .isAnonymous           = !Can::Print(contextItems, qualType),
+                .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(qualType),
+                .hasInternalLinkageRef = false // for now
+            };
+            if (serializationNeeds.isAnonymous || serializationNeeds.hasInternalLinkageRef) // QualType::print() can handle namespace aliases
+            {
+                ContextItems contextItems2 = contextItems.withSerializationNeeds(serializationNeeds);
                 using TypeSerializer = Serialize::Type<SerializeDecl, &Types<SerializeDecl, SerializeExpr>, SerializeExpr>;
                 switch (qualType.getTypePtr()->getTypeClass())
                 {
-                case clang::Type::TypeClass::Typedef:                if (const                TypedefType*                typedefType = dyn_cast<               TypedefType>(qualType.getTypePtr())) return TypeSerializer::SerializeTypedefType               (contextItems, qualType,                typedefType); break;
-                case clang::Type::TypeClass::Enum:                   if (const                   EnumType*                   enumType = dyn_cast<                  EnumType>(qualType.getTypePtr())) return TypeSerializer::SerializeEnumType                  (contextItems, qualType,                   enumType); break;
-                case clang::Type::TypeClass::FunctionProto:          if (const          FunctionProtoType*          functionProtoType = dyn_cast<         FunctionProtoType>(qualType.getTypePtr())) return TypeSerializer::SerializeFunctionProtoType         (contextItems, qualType,          functionProtoType); break;
-                case clang::Type::TypeClass::Paren:                  if (const                  ParenType*                  parenType = dyn_cast<                 ParenType>(qualType.getTypePtr())) return TypeSerializer::SerializeParenType                 (contextItems, qualType,                  parenType); break;
-                case clang::Type::TypeClass::Record:                 if (const                 RecordType*                 recordType = dyn_cast<                RecordType>(qualType.getTypePtr())) return TypeSerializer::SerializeRecordType                (contextItems, qualType,                 recordType); break;
-                case clang::Type::TypeClass::TemplateTypeParm:       if (const       TemplateTypeParmType*       templateTypeParmType = dyn_cast<      TemplateTypeParmType>(qualType.getTypePtr())) return TypeSerializer::SerializeTemplateTypeParmType      (contextItems, qualType,       templateTypeParmType); break;
-                case clang::Type::TypeClass::DependentName:          if (const          DependentNameType*          dependentNameType = dyn_cast<         DependentNameType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentNameType         (contextItems, qualType,          dependentNameType); break;
-                case clang::Type::TypeClass::Pointer:                if (const                PointerType*                pointerType = dyn_cast<               PointerType>(qualType.getTypePtr())) return TypeSerializer::SerializePointerType               (contextItems, qualType,                pointerType); break;
-                case clang::Type::TypeClass::LValueReference:        if (const        LValueReferenceType*        lValueReferenceType = dyn_cast<       LValueReferenceType>(qualType.getTypePtr())) return TypeSerializer::SerializeLValueReferenceType       (contextItems, qualType,        lValueReferenceType); break;
-                case clang::Type::TypeClass::RValueReference:        if (const        RValueReferenceType*        rValueReferenceType = dyn_cast<       RValueReferenceType>(qualType.getTypePtr())) return TypeSerializer::SerializeRValueReferenceType       (contextItems, qualType,        rValueReferenceType); break;
-                case clang::Type::TypeClass::Decayed:                if (const                DecayedType*                decayedType = dyn_cast<               DecayedType>(qualType.getTypePtr())) return TypeSerializer::SerializeDecayedType               (contextItems, qualType,                decayedType); break;
-                case clang::Type::TypeClass::MemberPointer:          if (const          MemberPointerType*          memberPointerType = dyn_cast<         MemberPointerType>(qualType.getTypePtr())) return TypeSerializer::SerializeMemberPointerType         (contextItems, qualType,          memberPointerType); break;
-                case clang::Type::TypeClass::ConstantArray:          if (const          ConstantArrayType*          constantArrayType = dyn_cast<         ConstantArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeConstantArrayType         (contextItems, qualType,          constantArrayType); break;
-                case clang::Type::TypeClass::DependentSizedArray:    if (const    DependentSizedArrayType*    dependentSizedArrayType = dyn_cast<   DependentSizedArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentSizedArrayType   (contextItems, qualType,    dependentSizedArrayType); break;
-                case clang::Type::TypeClass::TemplateSpecialization: if (const TemplateSpecializationType* templateSpecializationType = dyn_cast<TemplateSpecializationType>(qualType.getTypePtr())) return TypeSerializer::SerializeTemplateSpecializationType(contextItems, qualType, templateSpecializationType); break;
-                case clang::Type::TypeClass::Builtin:                if (const                BuiltinType*                builtinType = dyn_cast<               BuiltinType>(qualType.getTypePtr())) return TypeSerializer::SerializeBuiltinType               (contextItems, qualType,                builtinType); break;
-                case clang::Type::TypeClass::Auto:                   if (const                   AutoType*                   autoType = dyn_cast<                  AutoType>(qualType.getTypePtr())) return TypeSerializer::SerializeAutoType                  (contextItems, qualType,                   autoType); break;
-                case clang::Type::TypeClass::SubstTemplateTypeParm:  if (const SubstTemplateTypeParmType *  substTemplateTypeParmType = dyn_cast< SubstTemplateTypeParmType>(qualType.getTypePtr())) return TypeSerializer::SerializeSubstTemplateTypeParmType (contextItems, qualType,  substTemplateTypeParmType); break;
-                case clang::Type::TypeClass::Decltype:               if (const               DecltypeType*               decltypeType = dyn_cast<              DecltypeType>(qualType.getTypePtr())) return TypeSerializer::SerializeDecltypeType              (contextItems, qualType,               decltypeType); break;
+                case clang::Type::TypeClass::Typedef:                if (const                TypedefType*                typedefType = dyn_cast<               TypedefType>(qualType.getTypePtr())) return TypeSerializer::SerializeTypedefType               (contextItems2, qualType,                typedefType); break;
+                case clang::Type::TypeClass::Enum:                   if (const                   EnumType*                   enumType = dyn_cast<                  EnumType>(qualType.getTypePtr())) return TypeSerializer::SerializeEnumType                  (contextItems2, qualType,                   enumType); break;
+                case clang::Type::TypeClass::FunctionProto:          if (const          FunctionProtoType*          functionProtoType = dyn_cast<         FunctionProtoType>(qualType.getTypePtr())) return TypeSerializer::SerializeFunctionProtoType         (contextItems2, qualType,          functionProtoType); break;
+                case clang::Type::TypeClass::Paren:                  if (const                  ParenType*                  parenType = dyn_cast<                 ParenType>(qualType.getTypePtr())) return TypeSerializer::SerializeParenType                 (contextItems2, qualType,                  parenType); break;
+                case clang::Type::TypeClass::Record:                 if (const                 RecordType*                 recordType = dyn_cast<                RecordType>(qualType.getTypePtr())) return TypeSerializer::SerializeRecordType                (contextItems2, qualType,                 recordType); break;
+                case clang::Type::TypeClass::TemplateTypeParm:       if (const       TemplateTypeParmType*       templateTypeParmType = dyn_cast<      TemplateTypeParmType>(qualType.getTypePtr())) return TypeSerializer::SerializeTemplateTypeParmType      (contextItems2, qualType,       templateTypeParmType); break;
+                case clang::Type::TypeClass::DependentName:          if (const          DependentNameType*          dependentNameType = dyn_cast<         DependentNameType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentNameType         (contextItems2, qualType,          dependentNameType); break;
+                case clang::Type::TypeClass::Pointer:                if (const                PointerType*                pointerType = dyn_cast<               PointerType>(qualType.getTypePtr())) return TypeSerializer::SerializePointerType               (contextItems2, qualType,                pointerType); break;
+                case clang::Type::TypeClass::LValueReference:        if (const        LValueReferenceType*        lValueReferenceType = dyn_cast<       LValueReferenceType>(qualType.getTypePtr())) return TypeSerializer::SerializeLValueReferenceType       (contextItems2, qualType,        lValueReferenceType); break;
+                case clang::Type::TypeClass::RValueReference:        if (const        RValueReferenceType*        rValueReferenceType = dyn_cast<       RValueReferenceType>(qualType.getTypePtr())) return TypeSerializer::SerializeRValueReferenceType       (contextItems2, qualType,        rValueReferenceType); break;
+                case clang::Type::TypeClass::Decayed:                if (const                DecayedType*                decayedType = dyn_cast<               DecayedType>(qualType.getTypePtr())) return TypeSerializer::SerializeDecayedType               (contextItems2, qualType,                decayedType); break;
+                case clang::Type::TypeClass::MemberPointer:          if (const          MemberPointerType*          memberPointerType = dyn_cast<         MemberPointerType>(qualType.getTypePtr())) return TypeSerializer::SerializeMemberPointerType         (contextItems2, qualType,          memberPointerType); break;
+                case clang::Type::TypeClass::ConstantArray:          if (const          ConstantArrayType*          constantArrayType = dyn_cast<         ConstantArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeConstantArrayType         (contextItems2, qualType,          constantArrayType); break;
+                case clang::Type::TypeClass::DependentSizedArray:    if (const    DependentSizedArrayType*    dependentSizedArrayType = dyn_cast<   DependentSizedArrayType>(qualType.getTypePtr())) return TypeSerializer::SerializeDependentSizedArrayType   (contextItems2, qualType,    dependentSizedArrayType); break;
+                case clang::Type::TypeClass::TemplateSpecialization: if (const TemplateSpecializationType* templateSpecializationType = dyn_cast<TemplateSpecializationType>(qualType.getTypePtr())) return TypeSerializer::SerializeTemplateSpecializationType(contextItems2, qualType, templateSpecializationType); break;
+                case clang::Type::TypeClass::Builtin:                if (const                BuiltinType*                builtinType = dyn_cast<               BuiltinType>(qualType.getTypePtr())) return TypeSerializer::SerializeBuiltinType               (contextItems2, qualType,                builtinType); break;
+                case clang::Type::TypeClass::Auto:                   if (const                   AutoType*                   autoType = dyn_cast<                  AutoType>(qualType.getTypePtr())) return TypeSerializer::SerializeAutoType                  (contextItems2, qualType,                   autoType); break;
+                case clang::Type::TypeClass::SubstTemplateTypeParm:  if (const SubstTemplateTypeParmType *  substTemplateTypeParmType = dyn_cast< SubstTemplateTypeParmType>(qualType.getTypePtr())) return TypeSerializer::SerializeSubstTemplateTypeParmType (contextItems2, qualType,  substTemplateTypeParmType); break;
+                case clang::Type::TypeClass::Decltype:               if (const               DecltypeType*               decltypeType = dyn_cast<              DecltypeType>(qualType.getTypePtr())) return TypeSerializer::SerializeDecltypeType              (contextItems2, qualType,               decltypeType); break;
                 default:
                     break;
                 };
@@ -162,7 +170,7 @@ namespace OdrCop3
             std::string str;
             llvm::raw_string_ostream os(str);
             PrintingPolicy policy{contextItems.printPolicy};
-            policy.PrintAsCanonical = NamespaceAliasDetector::ContainsNamespaceAlias(qualType);
+            policy.PrintAsCanonical = serializationNeeds.hasNamespaceAlias;
             qualType.print(os, policy, contextItems.aux);
             os.flush();
             return str;
