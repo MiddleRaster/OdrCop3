@@ -120,18 +120,26 @@ namespace OdrCop3
                     return " = " + IndentBlock(body, 3);
             }
 
-            std::string e;
-            llvm::raw_string_ostream os(e);
-
-            PrintingPolicy printPolicy{contextItems.printPolicy};
-            printPolicy.FullyQualifiedName = resolveNamespaceAliases;
-            expr->printPretty(os, nullptr, printPolicy);
-            os.flush();
-            if (e == "")
-                return "";
-            if (varDecl->getInitStyle() == VarDecl::InitializationStyle::CInit)
-                return " = " + e;
-            return e;
+            std::string initStr;
+            if (resolveNamespaceAliases)
+            {
+                if (const auto* ctorExpr = llvm::dyn_cast<clang::CXXConstructExpr>(expr->IgnoreImplicit()); ctorExpr && ctorExpr->getParenOrBraceRange().isInvalid())
+                    return ""; // implicit default-construction, nothing written — initStr.g. "Foo x;" via a typedef chain
+                initStr = IndentBlock(SerializeExpr(contextItems, expr), 0);
+            } else {
+                llvm::raw_string_ostream os(initStr);
+                expr->printPretty(os, nullptr, contextItems.printPolicy);
+                os.flush();
+                if (initStr == "")
+                    return "";
+            }
+            switch (varDecl->getInitStyle())
+            {
+            default:
+            case clang::VarDecl::InitializationStyle::ListInit: return                     initStr;
+            case clang::VarDecl::InitializationStyle::CInit   : return " = " + IndentBlock(initStr, 3);
+            case clang::VarDecl::InitializationStyle::CallInit: return   "(" + IndentBlock(initStr, 1) + ")";
+            }
         }
 
         std::string GetInlineStaticConstAndConstexpr() const

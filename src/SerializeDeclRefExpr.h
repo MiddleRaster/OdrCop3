@@ -24,10 +24,11 @@ namespace OdrCop3
         DeclRefExprSerializer(const ContextItems& contextItems, const DeclRefExpr* declRefExpr) : contextItems(contextItems), declRefExpr(declRefExpr) {}
         std::string Serialize() const
         {
-            const clang::ValueDecl* valueDecl = declRefExpr->getDecl();
-            if (const auto* recordDecl = dyn_cast<CXXRecordDecl>(valueDecl->getDeclContext()))
-                return "(" + TrimRightIf(IndentBlock(SerializeDecl(contextItems, recordDecl), 1), ";") + ")::" + valueDecl->getNameAsString();
-
+            if (NeedsManualSerialization(contextItems, static_cast<const Expr*>(declRefExpr))) {
+                const clang::ValueDecl* valueDecl = declRefExpr->getDecl();
+                if (const auto* recordDecl = dyn_cast<CXXRecordDecl>(valueDecl->getDeclContext()))
+                    return "(" + TrimRightIf(IndentBlock(SerializeDecl(contextItems, recordDecl), 1), ";") + ")::" + valueDecl->getNameAsString();
+            }
             return declRefExpr->getDecl()->getQualifiedNameAsString(); // fallback, in case it's not a ValueDecl* after all, so we don't know how to serialize it manually
         }
     };

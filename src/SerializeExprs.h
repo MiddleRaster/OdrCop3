@@ -29,6 +29,7 @@
 #include "SerializeCXXConstructExpr.h"
 #include "SerializeImplicitCastExpr.h"
 #include "SerializeUnresolvedLookupExpr.h"
+#include "SerializeCallExpr.h"
 
 namespace OdrCop3
 {
@@ -51,6 +52,7 @@ namespace OdrCop3
             static std::string Serialize(const ContextItems& contextItems, const clang::UnresolvedLookupExpr     *      unresolvedLookupExpr) { return      UnresolvedLookupExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,      unresolvedLookupExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::RequiresExpr             *              requiresExpr) { return              RequiresExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,              requiresExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::TypeTraitExpr            *             typeTraitExpr) { return             TypeTraitExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,             typeTraitExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::CallExpr                 *                 parenExpr) { return                  CallExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,                 parenExpr).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeType>
@@ -95,6 +97,7 @@ namespace OdrCop3
                 case clang::Stmt::StmtClass::UnresolvedLookupExprClass     : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::UnresolvedLookupExpr     >(expr));
                 case clang::Stmt::StmtClass::RequiresExprClass             : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::RequiresExpr             >(expr));
                 case clang::Stmt::StmtClass::TypeTraitExprClass            : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::TypeTraitExpr            >(expr));
+                case clang::Stmt::StmtClass::CallExprClass                 : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::CallExpr                 >(expr));
                 default:
                     break;
                 };
