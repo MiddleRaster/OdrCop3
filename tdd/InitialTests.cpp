@@ -5484,15 +5484,16 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.conceptMap.begin();
-            }
+            } 
             {
                 auto it = maps.functionMap.begin();
             }
         }
     },
-#ifdef KEEP
     {"internal-linkage values read by external-linkage types", []
         {
+            return;
+
             std::string code =
                                 "static const int DefaultValue = 3;\n"
                                 "inline int Increment(int value = DefaultValue) { return value + 1; }\n"
@@ -5537,29 +5538,16 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("inline int Increment(int value = DefaultValue /* = 3 */) {\n"
+                Assert::AreEqual("inline int Increment(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value + 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },
-#endif
+
 };
 /* some missing test cases
-
-namespace alias:
-  "namespace OriginalNamespace2 { int SomeFunc(); } auto namespaceAliasDeclRefExprTest = Alias2::SomeFunc();\n"
-   does not work, because:
-            PrintingPolicy printPolicy{contextItems.printPolicy};
-            printPolicy.FullyQualifiedName = resolveNamespaceAliases;
-            printPolicy.PrintAsCanonical   = true; // N.B.!
-            expr->printPretty(os, nullptr, printPolicy);
-            os.flush();
-    does not work. It still prints the Alias.
-    commented out for now.
-ditto:  "namespace OriginalNamespace4 { template<typename T> concept SomeConcept = true; } namespace Alias4 = OriginalNamespace4; template<typename T> requires Alias4::SomeConcept<T> void namespaceAliasConceptQualifierTest(T) {}\n"
-
 
 internal linkage issues:
 TU1:
@@ -5586,6 +5574,7 @@ Solution  : add a C-style comment containing = 3 or = 4 to each external linkage
 
 
     // namespace-scope is hard:
+    // or maybe not:  serialize/print all types as canonical
 
     namespace lib1 { void process(int);    }
     namespace lib2 { void process(double); }

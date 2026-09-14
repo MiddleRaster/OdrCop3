@@ -388,17 +388,19 @@ namespace OdrCop3
                 return qualType.getAsString();
             }
 
-            bool resolveNamespaceAliases = NamespaceAliasDetector::ContainsNamespaceAlias(decl);
             std::unordered_set<const clang::Decl*> decls;
-            if ((Can(contextItems, decls).Print(decl) == false) || (resolveNamespaceAliases == true))
+            SerializationNeeds serializationNeeds
             {
-                if (resolveNamespaceAliases)
-                    return CallSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true >(contextItems, decl);
-                else
-                    return CallSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, false>(contextItems, decl);
-            }
-
-            return Print::Decl(contextItems, decl);
+                .isAnonymous           = !Can(contextItems, decls).Print(decl),
+                .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(decl),
+                .hasInternalLinkageRef = false // for now
+            };
+            if (serializationNeeds.AreAllFalse() == true)
+                return Print::Decl(contextItems, decl);
+            if (serializationNeeds.hasNamespaceAlias)
+                return CallSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, true >(contextItems.withSerializationNeeds(serializationNeeds), decl);
+            else
+                return CallSerializer<&Decls<SerializeType, SerializeExpr>, SerializeType, SerializeExpr, false>(contextItems.withSerializationNeeds(serializationNeeds), decl);
         }
     }
 }

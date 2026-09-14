@@ -21,6 +21,13 @@
 
 namespace OdrCop3
 {
+    struct SerializationNeeds
+    {
+        bool isAnonymous            = false;
+        bool hasNamespaceAlias      = false;
+        bool hasInternalLinkageRef  = false;
+        bool AreAllFalse() const { return !(isAnonymous || hasNamespaceAlias || hasInternalLinkageRef); }
+    };
     struct ContextItems
     {
         ASTContext& context;
@@ -28,6 +35,7 @@ namespace OdrCop3
         const std::string& TU;
         std::unordered_set<const Decl*>& recursingDecls;
         std::string aux;
+        SerializationNeeds serializationNeeds;
         bool wantFunctionBody       = true;
         bool needsFriend            = false;
         bool suppressTemplatePrefix = false;
@@ -39,30 +47,11 @@ namespace OdrCop3
             , aux           (aux)
         {}
 
-        ContextItems withWantFunctionBody(bool value) const
-        {
-            auto result = *this;
-            result.wantFunctionBody = value;
-            return result;
-        }
-        ContextItems withNeedsFriend(bool value = true) const
-        {
-            auto result = *this;
-            result.needsFriend = value;
-            return result;
-        }
-        ContextItems withSuppressTemplatePrefix(bool value = true) const
-        {
-            auto result = *this;
-            result.suppressTemplatePrefix = value;
-            return result;
-        }
-        ContextItems withAux(std::string value) const
-        {
-            auto result = *this;
-            result.aux = std::move(value);
-            return result;
-        }
+        ContextItems withWantFunctionBody(                bool       value       ) const { auto result = *this; result.wantFunctionBody       = value;                         return result; }
+        ContextItems withNeedsFriend(                     bool       value = true) const { auto result = *this; result.needsFriend            = value;                         return result; }
+        ContextItems withSuppressTemplatePrefix(          bool       value = true) const { auto result = *this; result.suppressTemplatePrefix = value;                         return result; }
+        ContextItems withAux(                      std::string       value       ) const { auto result = *this; result.aux                    = std::move(value);              return result; }
+        ContextItems withSerializationNeeds(SerializationNeeds serializationNeeds) const { auto result = *this; result.serializationNeeds     = std::move(serializationNeeds); return result; }
     };
 
 	struct UnhandledException : public std::exception
@@ -522,6 +511,29 @@ namespace OdrCop3
                         visitor.TraverseStmt(const_cast<clang::Expr*>(requiresClause));
                 });
         }
-
     };
+    class InternalLinkageRefFinder : public RecursiveASTVisitor<InternalLinkageRefFinder>
+    {
+        bool KeepGoing() const { return namedDecl == nullptr; }
+        bool HasInternalLinkage(const Decl* decl)
+        {
+            if (const auto* named = dyn_cast<NamedDecl>(decl))
+                if (named->getFormalLinkage() == Linkage::Internal)
+                    return (namedDecl = named) != nullptr;
+            return false;
+        }
+    public:
+        const NamedDecl* namedDecl = nullptr;
+        bool VisitDeclRefExpr(const DeclRefExpr* declRefExpr)
+        {
+            HasInternalLinkage(declRefExpr->getDecl());
+            return KeepGoing();
+        }
+        bool VisitMemberExpr(const MemberExpr* memberExpr)
+        {
+            HasInternalLinkage(memberExpr->getMemberDecl());
+            return KeepGoing();
+        }
+    };
+
 }

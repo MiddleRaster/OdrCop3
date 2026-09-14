@@ -74,6 +74,16 @@ namespace OdrCop3
                 parmVarDecl->getDefaultArg()->printPretty(os, nullptr, policy);
                 os.flush();
                 out += " = " + s;
+
+                InternalLinkageRefFinder finder;
+                finder.TraverseStmt(const_cast<Expr*>(parmVarDecl->getDefaultArg()));
+                if (finder.namedDecl != nullptr)
+                { // needs C-style comment
+
+                    out += " /* ";
+                    out += IndentBlock(SerializeDecl(contextItems, finder.namedDecl), LengthOfLastLine(out));
+                    out += " */";
+                }
             }
             if (TypeSourceInfo* typeSourceInfo = parmVarDecl->getTypeSourceInfo())
             {   // trailing attributes
