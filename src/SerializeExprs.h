@@ -78,26 +78,34 @@ namespace OdrCop3
                     return !NeedsManualSerialization(contextItems, expr);
                 }
             };
-            if (NamespaceAliasDetector::ContainsNamespaceAlias(expr) || Can::Print(contextItems, expr) == false)
+
+            SerializationNeeds serializationNeeds
             {
+                .isAnonymous           = !Can::Print(contextItems, expr),
+                .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(expr),
+                .hasInternalLinkageRef = false // for now
+            };
+            if (serializationNeeds.hasNamespaceAlias || serializationNeeds.isAnonymous)
+            {
+                ContextItems contextItems2 = contextItems.withSerializationNeeds(serializationNeeds);
                 using ExprSerializer = Serialize::Expr<SerializeDecl, SerializeType, &Exprs<SerializeDecl, SerializeType>>;
                 switch (expr->getStmtClass())
                 {
-                case clang::Stmt::StmtClass::ConceptSpecializationExprClass: return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ConceptSpecializationExpr>(expr));
-                case clang::Stmt::StmtClass::UnaryOperatorClass            : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::UnaryOperator            >(expr));
-                case clang::Stmt::StmtClass::DeclRefExprClass              : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::DeclRefExpr              >(expr));
-                case clang::Stmt::StmtClass::ConstantExprClass             : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ConstantExpr             >(expr));
-                case clang::Stmt::StmtClass::CXXFunctionalCastExprClass    : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::CXXFunctionalCastExpr    >(expr));
-                case clang::Stmt::StmtClass::InitListExprClass             : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::InitListExpr             >(expr));
-                case clang::Stmt::StmtClass::BinaryOperatorClass           : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::BinaryOperator           >(expr));
-                case clang::Stmt::StmtClass::UnaryExprOrTypeTraitExprClass : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::UnaryExprOrTypeTraitExpr >(expr));
-                case clang::Stmt::StmtClass::ParenExprClass                : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ParenExpr                >(expr));
-                case clang::Stmt::StmtClass::CXXConstructExprClass         : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::CXXConstructExpr         >(expr));
-                case clang::Stmt::StmtClass::ImplicitCastExprClass         : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::ImplicitCastExpr         >(expr));
-                case clang::Stmt::StmtClass::UnresolvedLookupExprClass     : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::UnresolvedLookupExpr     >(expr));
-                case clang::Stmt::StmtClass::RequiresExprClass             : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::RequiresExpr             >(expr));
-                case clang::Stmt::StmtClass::TypeTraitExprClass            : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::TypeTraitExpr            >(expr));
-                case clang::Stmt::StmtClass::CallExprClass                 : return ExprSerializer::Serialize(contextItems, dyn_cast<clang::CallExpr                 >(expr));
+                case clang::Stmt::StmtClass::ConceptSpecializationExprClass: return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::ConceptSpecializationExpr>(expr));
+                case clang::Stmt::StmtClass::UnaryOperatorClass            : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::UnaryOperator            >(expr));
+                case clang::Stmt::StmtClass::DeclRefExprClass              : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::DeclRefExpr              >(expr));
+                case clang::Stmt::StmtClass::ConstantExprClass             : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::ConstantExpr             >(expr));
+                case clang::Stmt::StmtClass::CXXFunctionalCastExprClass    : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::CXXFunctionalCastExpr    >(expr));
+                case clang::Stmt::StmtClass::InitListExprClass             : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::InitListExpr             >(expr));
+                case clang::Stmt::StmtClass::BinaryOperatorClass           : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::BinaryOperator           >(expr));
+                case clang::Stmt::StmtClass::UnaryExprOrTypeTraitExprClass : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::UnaryExprOrTypeTraitExpr >(expr));
+                case clang::Stmt::StmtClass::ParenExprClass                : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::ParenExpr                >(expr));
+                case clang::Stmt::StmtClass::CXXConstructExprClass         : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::CXXConstructExpr         >(expr));
+                case clang::Stmt::StmtClass::ImplicitCastExprClass         : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::ImplicitCastExpr         >(expr));
+                case clang::Stmt::StmtClass::UnresolvedLookupExprClass     : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::UnresolvedLookupExpr     >(expr));
+                case clang::Stmt::StmtClass::RequiresExprClass             : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::RequiresExpr             >(expr));
+                case clang::Stmt::StmtClass::TypeTraitExprClass            : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::TypeTraitExpr            >(expr));
+                case clang::Stmt::StmtClass::CallExprClass                 : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::CallExpr                 >(expr));
                 default:
                     break;
                 };
