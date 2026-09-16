@@ -17,7 +17,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class FunctionDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FunctionDeclSerializer
     {
         const ContextItems& contextItems;
         const FunctionDecl* funcDecl;
@@ -74,7 +74,7 @@ namespace OdrCop3
                 std::string out = SerializeType(contextItems.withAux(aux), funcDecl->getReturnType());
                 return TrimRightIf(out, " ");
             }
-            return TrimRightIf(SerializeType(contextItems, resolveNamespaceAliases ? funcDecl->getReturnType().getCanonicalType() : funcDecl->getReturnType()), " ");
+            return TrimRightIf(SerializeType(contextItems, contextItems.serializationNeeds.hasNamespaceAlias ? funcDecl->getReturnType().getCanonicalType() : funcDecl->getReturnType()), " ");
         }
         std::string get_ConstEval()       const { return funcDecl->isConsteval()                           ? "consteval "    : ""; }
         std::string get_InlineSpecified() const { return funcDecl->isInlineSpecified()                     ? "inline "       : ""; }
@@ -198,7 +198,7 @@ namespace OdrCop3
             std::string body;
             llvm::raw_string_ostream os(body);
             PrintingPolicy policy{contextItems.printPolicy};
-            policy.FullyQualifiedName = resolveNamespaceAliases;
+            policy.FullyQualifiedName = contextItems.serializationNeeds.hasNamespaceAlias;
             funcDecl->getBody()->printPretty(os, nullptr, policy);
             os.flush();
             return body;

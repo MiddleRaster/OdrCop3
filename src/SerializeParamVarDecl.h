@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class ParmVarDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class ParmVarDeclSerializer
     {
         const ContextItems& contextItems;
         const ParmVarDecl* parmVarDecl;
@@ -39,12 +39,12 @@ namespace OdrCop3
             if (IsType::EventuallyArrayOrFunctionPointer(parmVarDecl->getOriginalType()))
             {
                 QualType qualType = parmVarDecl->getOriginalType();
-                if (resolveNamespaceAliases)
+                if (contextItems.serializationNeeds.hasNamespaceAlias)
                     qualType = qualType.getCanonicalType();
                 out += IndentBlock(SerializeType(contextItems.withAux(parmVarDecl->getName().str()), qualType), LengthOfLastLine(out));
             } else {
                 QualType qualType = parmVarDecl->getType();
-                if (resolveNamespaceAliases)
+                if (contextItems.serializationNeeds.hasNamespaceAlias)
                     qualType = qualType.getCanonicalType();
 
                 out += IndentBlock(SerializeType(contextItems, qualType), LengthOfLastLine(out));

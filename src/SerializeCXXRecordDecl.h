@@ -16,7 +16,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class CXXRecordDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class CXXRecordDeclSerializer
     {
         const ContextItems & contextItems;
         const CXXRecordDecl* cxxRecordDecl;
@@ -91,7 +91,7 @@ namespace OdrCop3
                 }
 
                 clang::QualType baseType = base.getType();
-                if ((resolveNamespaceAliases == true) && !baseType->isTemplateTypeParmType())
+                if ((contextItems.serializationNeeds.hasNamespaceAlias == true) && !baseType->isTemplateTypeParmType())
                 {   // only set to true when called from Needs::OriginalNamespace switch statement in SerializeDecls.h
                     std::string str;
                     llvm::raw_string_ostream os(str);

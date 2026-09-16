@@ -18,7 +18,7 @@
 
 namespace OdrCop3
 {
-    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr, bool resolveNamespaceAliases=false> class FieldDeclSerializer
+    template<auto SerializeDecl, auto SerializeType, auto SerializeExpr> class FieldDeclSerializer
     {
         const ContextItems& contextItems;
         const FieldDecl   * fieldDecl;
@@ -89,7 +89,7 @@ namespace OdrCop3
                 llvm::raw_string_ostream os(fieldStr);
 
                 PrintingPolicy policy{contextItems.printPolicy};
-                policy.FullyQualifiedName = resolveNamespaceAliases;
+                policy.FullyQualifiedName = contextItems.serializationNeeds.hasNamespaceAlias;
                 qt.print(os, policy, get_Name());
                 os.flush();
 
