@@ -29,7 +29,16 @@ namespace OdrCop3
                 if (const auto* recordDecl = dyn_cast<CXXRecordDecl>(valueDecl->getDeclContext()))
                     return "(" + TrimRightIf(IndentBlock(SerializeDecl(contextItems, recordDecl), 1), ";") + ")::" + valueDecl->getNameAsString();
             }
-            return declRefExpr->getDecl()->getQualifiedNameAsString(); // fallback, in case it's not a ValueDecl* after all, so we don't know how to serialize it manually
+            std::string out = declRefExpr->getDecl()->getQualifiedNameAsString();
+            if (contextItems.serializationNeeds.hasInternalLinkageRef)
+            if (const NamedDecl* namedDecl = InternalLinkageRefFinder::FindReference(declRefExpr))
+            {
+                out += " /* ";
+                out += IndentBlock(SerializeDecl(contextItems, namedDecl), LengthOfLastLine(out));
+                out += " */";
+                return out;
+            }
+            return out;
         }
     };
 }

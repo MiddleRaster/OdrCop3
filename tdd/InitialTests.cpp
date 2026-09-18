@@ -1270,9 +1270,14 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        inline constexpr int operator()(int x) const {\n"
                                  "            return x * 2;\n"
                                  "        }\n"
-                                 "    } mpf = (anonymous namespace)::Lambda;\n"
-                                 "};\n"
-                               , (*it++).second[0].fullyQualified);
+                                 "    } mpf = (anonymous namespace)::Lambda /* class (anonymous namespace)::(lambda at input.cc:4:27) {\n"
+                                 "                                                 inline constexpr int operator()(int x) const {\n"
+                                 "                                                     return x * 2;\n"
+                                 "                                                 }\n"
+                                 "                                             } Lambda = [](int x) {\n"
+                                 "                                                            return x * 2;\n"
+                                 "                                                        }; */;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -5498,7 +5503,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 //"inline int ArrayBoundUser() { int arr[DefaultValue]; return sizeof(arr); }\n"
                                 //"template <int N> struct Holder { static const int value = N; }; inline int TemplateArgUser() { return Holder<DefaultValue>::value; }\n"
                                 //"inline int SwitchCaseUser(int value) { switch (value) { case DefaultValue: return 1; default: return 0; } }\n"
-                                //"inline void  NoexceptTarget() noexcept(DefaultValue == 3) {}\n"
+                                "inline void  NoexceptTarget() noexcept(DefaultValue == 3) {}\n"
                                 //"template <int N> requires (N == DefaultValue) struct Constrained {}; inline Constrained<DefaultValue> RequiresClauseUser() { return {}; }\n"
                                 //"inline void  StaticAssertUser() { static_assert(DefaultValue == 3, \"must match\"); }\n"
                                 //"struct alignas(DefaultValue < 8 ? 8 : DefaultValue) AlignedType { char c; }; inline int AlignasUser() { return alignof(AlignedType); }\n"
@@ -5512,7 +5517,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(1, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(2, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -5538,6 +5543,8 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("inline int Increment(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value + 1;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void NoexceptTarget() noexcept(DefaultValue /* static const int DefaultValue = 3; */ == 3) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }

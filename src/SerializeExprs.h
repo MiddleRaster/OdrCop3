@@ -83,9 +83,9 @@ namespace OdrCop3
             {
                 .isAnonymous           = !Can::Print(contextItems, expr),
                 .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(expr),
-                .hasInternalLinkageRef = false // for now
+                .hasInternalLinkageRef = nullptr != InternalLinkageRefFinder::FindReference(expr)
             };
-            if (serializationNeeds.hasNamespaceAlias || serializationNeeds.isAnonymous)
+            if (serializationNeeds.hasNamespaceAlias || serializationNeeds.isAnonymous || serializationNeeds.hasInternalLinkageRef)
             {
                 ContextItems contextItems2 = contextItems.withSerializationNeeds(serializationNeeds);
                 using ExprSerializer = Serialize::Expr<SerializeDecl, SerializeType, &Exprs<SerializeDecl, SerializeType>>;
