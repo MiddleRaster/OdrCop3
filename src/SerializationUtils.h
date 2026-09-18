@@ -546,6 +546,12 @@ namespace OdrCop3
             finder.TraverseStmt(const_cast<Expr*>(expr));
             return finder.namedDecl;
         }
+        static const NamedDecl* FindReference(QualType qualType)
+        {
+            InternalLinkageRefFinder finder;
+            finder.TraverseType(qualType);
+            return finder.namedDecl;
+        }
     };
 
 }

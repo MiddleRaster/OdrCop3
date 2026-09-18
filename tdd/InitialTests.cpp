@@ -5504,23 +5504,27 @@ Test ExploratoryTestsOfClangAST[] =
                                 //"template <int N> struct Holder { static const int value = N; }; inline int TemplateArgUser() { return Holder<DefaultValue>::value; }\n"
                                 //"inline int SwitchCaseUser(int value) { switch (value) { case DefaultValue: return 1; default: return 0; } }\n"
                                 "inline void  NoexceptTarget() noexcept(DefaultValue == 3) {}\n"
-                                //"template <int N> requires (N == DefaultValue) struct Constrained {}; inline Constrained<DefaultValue> RequiresClauseUser() { return {}; }\n"
+                                "template <int N> requires (N == DefaultValue) struct Constrained {}; inline Constrained<DefaultValue> RequiresClauseUser() { return {}; }\n"
                                 //"inline void  StaticAssertUser() { static_assert(DefaultValue == 3, \"must match\"); }\n"
                                 //"struct alignas(DefaultValue < 8 ? 8 : DefaultValue) AlignedType { char c; }; inline int AlignasUser() { return alignof(AlignedType); }\n"
+
+                                //"namespace {\n" "struct InternalA;\n" "struct InternalB {\n" " InternalA* a;\n" "};\n" "struct InternalA {\n" " InternalB* b;\n" "}\n" "}\n" "struct ExternalRecursive {\n" " InternalA value;\n" "};\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(0, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(1, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(2, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(3, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("template <int N> requires (N == DefaultValue /* static const int DefaultValue = 3; */) struct Constrained {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -5545,6 +5549,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return value + 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void NoexceptTarget() noexcept(DefaultValue /* static const int DefaultValue = 3; */ == 3) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline Constrained<DefaultValue /* static const int DefaultValue = 3; */> RequiresClauseUser() {\n"
+                                 "    return {};\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }

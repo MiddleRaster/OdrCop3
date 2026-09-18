@@ -59,23 +59,24 @@ namespace OdrCop3
             {
                 out += ttp->wasDeclaredWithTypename() ? "typename " : "class ";
                 out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp);
+                out  = TrimRightIf(out, " ");
                 continue;
             }
             if (const auto* nttp = clang::dyn_cast<clang::NonTypeTemplateParmDecl>(param))
             {   // NTTP where type is a struct (new to C++20)
-                QualType nttpQT = nttp->getType().getCanonicalType();
-                if (NeedsManualSerialization(contextItems, nttpQT) || NamespaceAliasDetector::ContainsNamespaceAlias(nttp->getType()))
-                {
-                    out += IndentBlock(SerializeType(contextItems, nttpQT), LengthOfLastLine(out));
-                    out  = TrimRightIf(out, " ");
-                    out += SnugUpPointersAndReferences(out);
-                }
-                else
+                if (contextItems.serializationNeeds.AreAllFalse())
                 {
                     std::string declStr;
                     llvm::raw_string_ostream declStream(declStr);
                     nttp->getType().print(declStream, contextItems.printPolicy);
-                    out += declStr;
+                    out += declStr + " ";
+                }
+                else
+                {
+                    QualType nttpQT = nttp->getType().getCanonicalType();
+                    out += IndentBlock(SerializeType(contextItems, nttpQT), LengthOfLastLine(out));
+                    out  = TrimRightIf(out, " ");
+                    out += SnugUpPointersAndReferences(out);
                 }
                 out += AddParameterPackAndNameAndDefaultArgument(contextItems, nttp);
                 continue;
@@ -102,8 +103,7 @@ namespace OdrCop3
     template <auto SerializeDecl, auto SerializeType, auto SerializeExpr>
     inline std::string GetTemplateHeader(const ContextItems& contextItems, const auto* templateParameterList)
     {
-        if (NeedsManualSerialization        (contextItems, templateParameterList) ||
-            NamespaceAliasDetector::ContainsNamespaceAlias(templateParameterList))
+        if (!contextItems.serializationNeeds.AreAllFalse())
             return IndentBlock(ConstructTemplateParameterList<SerializeDecl, SerializeType, SerializeExpr>(contextItems, templateParameterList), 0);
 
         std::string                 templatePrefix;

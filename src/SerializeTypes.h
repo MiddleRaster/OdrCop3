@@ -132,7 +132,7 @@ namespace OdrCop3
             {
                 .isAnonymous           = !Can::Print(contextItems, qualType),
                 .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(qualType),
-                .hasInternalLinkageRef = false // for now
+                .hasInternalLinkageRef = nullptr != InternalLinkageRefFinder::FindReference(qualType)
             };
             if (serializationNeeds.isAnonymous || serializationNeeds.hasInternalLinkageRef) // QualType::print() can handle namespace aliases
             {
