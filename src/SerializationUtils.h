@@ -552,6 +552,12 @@ namespace OdrCop3
             finder.TraverseType(qualType);
             return finder.namedDecl;
         }
+        static const NamedDecl* FindReference(Stmt* stmt)
+        {
+            InternalLinkageRefFinder finder;
+            finder.TraverseStmt(stmt);
+            return finder.namedDecl;
+        }
     };
 
 }
