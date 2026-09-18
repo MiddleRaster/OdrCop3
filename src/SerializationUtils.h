@@ -534,6 +534,18 @@ namespace OdrCop3
             HasInternalLinkage(memberExpr->getMemberDecl());
             return KeepGoing();
         }
+        static const NamedDecl* FindReference(const Decl* decl)
+        {
+            InternalLinkageRefFinder finder;
+            finder.TraverseDecl(const_cast<Decl*>(decl));
+            return finder.namedDecl;
+        }
+        static const NamedDecl* FindReference(const Expr* expr)
+        {
+            InternalLinkageRefFinder finder;
+            finder.TraverseStmt(const_cast<Expr*>(expr));
+            return finder.namedDecl;
+        }
     };
 
 }

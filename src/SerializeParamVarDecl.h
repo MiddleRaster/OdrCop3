@@ -75,13 +75,10 @@ namespace OdrCop3
                 os.flush();
                 out += " = " + s;
 
-                InternalLinkageRefFinder finder;
-                finder.TraverseStmt(const_cast<Expr*>(parmVarDecl->getDefaultArg()));
-                if (finder.namedDecl != nullptr)
+                if (const NamedDecl* namedDecl = InternalLinkageRefFinder::FindReference(parmVarDecl->getDefaultArg()))
                 { // needs C-style comment
-
                     out += " /* ";
-                    out += IndentBlock(SerializeDecl(contextItems, finder.namedDecl), LengthOfLastLine(out));
+                    out += IndentBlock(SerializeDecl(contextItems, namedDecl), LengthOfLastLine(out));
                     out += " */";
                 }
             }

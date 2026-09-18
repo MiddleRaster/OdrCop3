@@ -393,7 +393,7 @@ namespace OdrCop3
             {
                 .isAnonymous           = !Can(contextItems, decls).Print(decl),
                 .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(decl),
-                .hasInternalLinkageRef = false // for now
+                .hasInternalLinkageRef = nullptr != InternalLinkageRefFinder::FindReference(decl)
             };
             if (serializationNeeds.AreAllFalse() == true)
                 return Print::Decl(contextItems, decl);

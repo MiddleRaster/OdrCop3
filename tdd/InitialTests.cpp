@@ -5492,8 +5492,6 @@ Test ExploratoryTestsOfClangAST[] =
     },
     {"internal-linkage values read by external-linkage types", []
         {
-            return;
-
             std::string code =
                                 "static const int DefaultValue = 3;\n"
                                 "inline int Increment(int value = DefaultValue) { return value + 1; }\n"
