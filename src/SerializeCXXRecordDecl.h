@@ -57,7 +57,7 @@ namespace OdrCop3
             std::string out;
             for (const Attr* attr : cxxRecordDecl->attrs()) // alignas/[[attributes]]/__declspecs
             {
-                std::string a = SerializeAttr(contextItems, attr);
+                std::string a = IndentBlock(Serialize::Attrs<SerializeDecl, SerializeType, SerializeExpr>(contextItems, attr), LengthOfLastLine(out));
                 if (a == "final ")
                     *hasFinal = true;
                 else
@@ -172,7 +172,7 @@ namespace OdrCop3
             out += get_Friend();
             out += get_Kind(); // struct/class/union keyword
             bool hasFinal = false; // final is treated as an attribute, but it's really a keyword
-            out += get_Attributes(&hasFinal);
+            out += IndentBlock(get_Attributes(&hasFinal), LengthOfLastLine(out));
             out += get_Name() + contextItems.aux; // aux contains <args>
             if (!cxxRecordDecl->isThisDeclarationADefinition())
                 return out + ";\n"; // if it's a declaration, go no farther

@@ -36,7 +36,7 @@ namespace OdrCop3
         {
             std::string out;
             for (const auto* attr : varDecl->attrs())
-                out += SerializeAttr(contextItems, attr);
+                out += Serialize::Attrs<SerializeDecl, SerializeType, SerializeExpr>(contextItems, attr);
             return out;
         }
         const LambdaExpr* FindLambdaExpr(const Expr* expr) const

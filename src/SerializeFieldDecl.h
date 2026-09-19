@@ -48,7 +48,7 @@ namespace OdrCop3
         {
             std::string out;
             for (const Attr* attr : fieldDecl->attrs())   // attributes on data-members
-                out += SerializeAttr(contextItems, attr);
+                out += Serialize::Attrs<SerializeDecl, SerializeType, SerializeExpr>(contextItems, attr);
 
             if (NeedsManualSerialization(contextItems, fieldDecl->getType().getCanonicalType()))
             {

@@ -32,7 +32,7 @@ namespace OdrCop3
                 SourceLocation typeLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
                 for (const Attr* attr : parmVarDecl->attrs())
                     if (attr->getLocation() <= typeLoc)
-                        out += SerializeAttr(contextItems, attr);
+                        out += Serialize::Attrs<SerializeDecl, SerializeType, SerializeExpr>(contextItems, attr);
             }
             auto startOfParm = out.size();
 
@@ -87,7 +87,7 @@ namespace OdrCop3
                 SourceLocation typeLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
                 for (const Attr* attr : parmVarDecl->attrs())
                     if (attr->getLocation() >= typeLoc)
-                        out += " " + TrimRightIf(SerializeAttr(contextItems, attr), " ");
+                        out += " " + TrimRightIf(Serialize::Attrs<SerializeDecl, SerializeType, SerializeExpr>(contextItems, attr), " ");
             }
             return out;
         }

@@ -125,7 +125,7 @@ namespace OdrCop3
             SourceLocation nameEnd = funcDecl->getNameInfo().getEndLoc();
             for (const Attr * attr : funcDecl->attrs())
                 if (attr->getLocation() <= nameEnd)
-                    out += SerializeAttr(contextItems, attr);
+                    out += Serialize::Attrs<SerializeDecl, SerializeType, SerializeExpr>(contextItems, attr);
             return out;
         }
         std::string get_TrailingAttributes() const
@@ -134,7 +134,7 @@ namespace OdrCop3
             SourceLocation nameEnd = funcDecl->getNameInfo().getEndLoc();
             for (const Attr * attr : funcDecl->attrs())
                 if (attr->getLocation() >= nameEnd)
-                    out += SerializeAttr(contextItems, attr);
+                    out += Serialize::Attrs<SerializeDecl, SerializeType, SerializeExpr>(contextItems, attr);
             return out;
         }
         std::string get_TrailingRequiresClause() const
