@@ -198,92 +198,64 @@ namespace OdrCop3
             std::string body;
             llvm::raw_string_ostream os(body);
 
-            if (contextItems.serializationNeeds.isAnonymous == false  // if it's internal-linkage because of being in an anonymous namespace, don't print the body specially
-             && contextItems.serializationNeeds.hasInternalLinkageRef // yes, but is it really in the body?
-             && nullptr != InternalLinkageRefFinder::FindReference(funcDecl->getBody()))
+            PrintingPolicy policy{contextItems.printPolicy};
+            policy.FullyQualifiedName = contextItems.serializationNeeds.hasNamespaceAlias;
+            funcDecl->getBody()->printPretty(os, nullptr, policy);
+
+            if (contextItems.serializationNeeds.isAnonymous           == false && // if it's internal-linkage because of being in an anonymous namespace, don't print the body specially
+                contextItems.serializationNeeds.hasInternalLinkageRef == true)    // yes, but is it really in the body?
             {
-                class InternalLinkagePrinterHelper : public PrinterHelper
+                class InternalLinkageReferenceCollector : public RecursiveASTVisitor<InternalLinkageReferenceCollector>
                 {
-                    const PrintingPolicy printingPolicy;
-                    unsigned int indentLevel;
-
-                    void EmitIndent(raw_ostream& os) const { os.indent(2*indentLevel*printingPolicy.Indentation); } // double this for some reason....
-                    static bool HasInternalLinkage(const Decl* decl, const NamedDecl*& named)
+                    std::set<const NamedDecl*> references;
+                    static const NamedDecl* InternalLinkageDecl(const Decl* decl)
                     {
-                        named = dyn_cast<NamedDecl>(decl);
-                        return named != nullptr && named->getFormalLinkage() == Linkage::Internal;
+                        if (const auto* named = dyn_cast<NamedDecl>(decl))
+                            return named->getFormalLinkage() == Linkage::Internal ? named : nullptr;
+                        return nullptr;
                     }
-                public:
-                    explicit InternalLinkagePrinterHelper(const PrintingPolicy& policy, unsigned startIndent=0)
-                        : printingPolicy(policy)
-                        , indentLevel(startIndent)
-                    {}
-                    bool handledStmt(Stmt* stmt, raw_ostream& os) override
+                    void Print(raw_ostream& os, const PrintingPolicy& policy) const
                     {
-                        const NamedDecl* named = nullptr;
-                        if (const auto* declRefExpr = dyn_cast<DeclRefExpr>(stmt))
-                        {
-                            if (!HasInternalLinkage(declRefExpr->getDecl(), named))
-                                return false;
-                            os << named->getName();
-                        }
-                        else if (const auto* memberExpr = dyn_cast<MemberExpr>(stmt))
-                        {
-                            if (!HasInternalLinkage(memberExpr->getMemberDecl(), named))
-                                return false;
-                            memberExpr->getBase()->printPretty(os, this, printingPolicy);
-                            os << (memberExpr->isArrow() ? "->" : ".") << named->getName();
-                        }
-                        else if (const auto* declStmt = dyn_cast<DeclStmt>(stmt))
-                        {
-                            if (!declStmt->isSingleDecl())
-                                return false;
-                            const auto* staticAssert = dyn_cast<StaticAssertDecl>(declStmt->getSingleDecl());
-                            if (staticAssert == nullptr)
-                                return false;
-                            if (nullptr == InternalLinkageRefFinder::FindReference(stmt))
-                                return false;
+                        if (references.empty())
+                            return;
 
-                            EmitIndent(os);
-                            os << "static_assert(";
-                            staticAssert->getAssertExpr()->printPretty(os, this, printingPolicy);
-                            if (const Expr* message = staticAssert->getMessage())
-                            {
-                                os << ", ";
-                                message->printPretty(os, this, printingPolicy);
-                            }
-                            os << ");\n";
-                            return true;
-                        }
-                        else if (const auto* compoundStmt = dyn_cast<CompoundStmt>(stmt))
+                        os << "/* Internal linkage references:\n";
+                        for (const NamedDecl* named : references)
                         {
-                            os << "{\n";
-                            ++indentLevel;
-                            for (Stmt* child : compoundStmt->body())
-                                child->printPretty(os, this, printingPolicy, indentLevel * printingPolicy.Indentation);
-                            --indentLevel;
-                            EmitIndent(os);
-                            os << "}";
-                            return true;
+                            named->print(os, policy);
+                            os << ";\n";
                         }
-                        else
-                        {
-                            return false;
-                        }
-                        os << " /* ";
-                        named->print(os, printingPolicy);
-                        os << "; */";
+                        os << "*/\n";
+                    }
+
+                    friend RecursiveASTVisitor<InternalLinkageReferenceCollector>; // so that the following methods can stay private
+                    bool VisitDeclRefExpr(const DeclRefExpr* declRefExpr)
+                    {
+                        if (const NamedDecl* named = InternalLinkageDecl(declRefExpr->getDecl()))
+                            references.insert(named);
                         return true;
                     }
+                    bool VisitMemberExpr(const MemberExpr* memberExpr)
+                    {
+                        if (const NamedDecl* named = InternalLinkageDecl(memberExpr->getMemberDecl()))
+                            references.insert(named);
+                        return true;
+                    }
+                public:
+                    static void PrintReferences(const Stmt* stmt, raw_ostream& os, const PrintingPolicy& policy)
+                    {
+                        InternalLinkageReferenceCollector collector;
+                        collector.TraverseStmt(const_cast<Stmt*>(stmt));
+                        collector.Print(os, policy);
+                    }
+                    static void PrintReferences(const Decl* decl, raw_ostream& os, const PrintingPolicy& policy)
+                    {
+                        InternalLinkageReferenceCollector collector;
+                        collector.TraverseDecl(const_cast<Decl*>(decl));
+                        collector.Print(os, policy);
+                    }
                 };
-                InternalLinkagePrinterHelper helper(contextItems.printPolicy);
-                funcDecl->getBody()->printPretty(os, &helper, contextItems.printPolicy);
-            }
-            else
-            {
-                PrintingPolicy policy{ contextItems.printPolicy };
-                policy.FullyQualifiedName = contextItems.serializationNeeds.hasNamespaceAlias;
-                funcDecl->getBody()->printPretty(os, nullptr, policy);
+                InternalLinkageReferenceCollector::PrintReferences(funcDecl->getBody(), os, policy);
             }
             os.flush();
             return body;

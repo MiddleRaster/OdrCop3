@@ -5500,7 +5500,7 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code =
                                 "static const int DefaultValue = 3;\n"
                                 "inline int Increment(int value = DefaultValue) { return value + 1; }\n"
-                                //"inline int ArrayBoundUser() { int arr[DefaultValue]; return sizeof(arr); }\n"
+                                "inline int ArrayBoundUser() { int arr[DefaultValue]; return sizeof(arr); }\n"
                                 //"template <int N> struct Holder { static const int value = N; }; inline int TemplateArgUser() { return Holder<DefaultValue>::value; }\n"
                                 //"inline int SwitchCaseUser(int value) { switch (value) { case DefaultValue: return 1; default: return 0; } }\n"
                                 "inline void  NoexceptTarget() noexcept(DefaultValue == 3) {}\n"
@@ -5519,7 +5519,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(4, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(5, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -5545,6 +5545,13 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("inline int ArrayBoundUser() {\n"
+                                 "    int arr[3];\n"  // int arr[DefaultValue /* static const int DefaultValue = 3; */] would have been nice, but the AST has sort-of lost that info.
+                                 "    return sizeof (arr);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int Increment(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value + 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -5554,8 +5561,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return {};\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void StaticAssertUser() {\n"
-                                 "    static_assert(DefaultValue /* static const int DefaultValue = 3; */ == 3, \"must match\");\n"
-                                 "}\n", (*it++).second[0].fullyQualified);
+                                 "    static_assert(DefaultValue == 3, \"must match\");\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }

@@ -225,9 +225,9 @@ namespace OdrCop3
 
     class NamespaceAliasDetector
     {
-        struct NamespaceAliasVisitor : public clang::RecursiveASTVisitor<NamespaceAliasVisitor>
+        class NamespaceAliasVisitor : public clang::RecursiveASTVisitor<NamespaceAliasVisitor>
         {
-            bool found = false;
+            friend clang::RecursiveASTVisitor<NamespaceAliasVisitor>;
 
             bool TraverseTypeConstraint(const clang::TypeConstraint* constraint)
             {
@@ -395,7 +395,6 @@ namespace OdrCop3
                 return !found;
             }
 
-        private:
             static bool TemplateParametersContainAliasedName(const clang::TemplateParameterList* params)
             {
                 if (params)
@@ -488,6 +487,8 @@ namespace OdrCop3
 
                 return false;
             }
+        public:
+            bool found = false;
         };
 
         template <typename F> static bool ContainsNamespaceAliasInternal(F&& traverse)
@@ -514,6 +515,9 @@ namespace OdrCop3
     };
     class InternalLinkageRefFinder : public RecursiveASTVisitor<InternalLinkageRefFinder>
     {
+        friend RecursiveASTVisitor<InternalLinkageRefFinder>;
+
+        const NamedDecl* namedDecl = nullptr;
         bool KeepGoing() const { return namedDecl == nullptr; }
         bool HasInternalLinkage(const Decl* decl)
         {
@@ -522,8 +526,6 @@ namespace OdrCop3
                     return (namedDecl = named) != nullptr;
             return false;
         }
-    public:
-        const NamedDecl* namedDecl = nullptr;
         bool VisitDeclRefExpr(const DeclRefExpr* declRefExpr)
         {
             HasInternalLinkage(declRefExpr->getDecl());
@@ -532,8 +534,11 @@ namespace OdrCop3
         bool VisitMemberExpr(const MemberExpr* memberExpr)
         {
             HasInternalLinkage(memberExpr->getMemberDecl());
+            if (KeepGoing())
+                TraverseType(memberExpr->getBase()->getType());
             return KeepGoing();
         }
+    public:
         static const NamedDecl* FindReference(const Decl* decl)
         {
             InternalLinkageRefFinder finder;
