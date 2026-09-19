@@ -5501,29 +5501,29 @@ Test ExploratoryTestsOfClangAST[] =
                                 "static const int DefaultValue = 3;\n"
                                 "inline int Increment(int value = DefaultValue) { return value + 1; }\n"
                                 "inline int ArrayBoundUser() { int arr[DefaultValue]; return sizeof(arr); }\n"
-                                //"template <int N> struct Holder { static const int value = N; }; inline int TemplateArgUser() { return Holder<DefaultValue>::value; }\n"
-                                //"inline int SwitchCaseUser(int value) { switch (value) { case DefaultValue: return 1; default: return 0; } }\n"
+                                "template <int N> struct Holder { static const int value = N; }; inline int TemplateArgUser() { return Holder<DefaultValue>::value; }\n"
+                                "inline int SwitchCaseUser(int value) { switch (value) { case DefaultValue: return 1; default: return 0; } }\n"
                                 "inline void  NoexceptTarget() noexcept(DefaultValue == 3) {}\n"
                                 "template <int N> requires (N == DefaultValue) struct Constrained {}; inline Constrained<DefaultValue> RequiresClauseUser() { return {}; }\n"
                                 "inline void  StaticAssertUser() { static_assert(DefaultValue == 3, \"must match\"); }\n"
-                                //"struct alignas(DefaultValue < 8 ? 8 : DefaultValue) AlignedType { char c; }; inline int AlignasUser() { return alignof(AlignedType); }\n"
-
-                                //"namespace {\n" "struct InternalA;\n" "struct InternalB {\n" " InternalA* a;\n" "};\n" "struct InternalA {\n" " InternalB* b;\n" "}\n" "}\n" "struct ExternalRecursive {\n" " InternalA value;\n" "};\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(1, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(5, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(7, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("template <int N> requires (N == DefaultValue /* static const int DefaultValue = 3; */) struct Constrained {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N> struct Holder {\n"
+                                 "    static const int value = N;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -5546,7 +5546,7 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("inline int ArrayBoundUser() {\n"
-                                 "    int arr[3];\n"  // int arr[DefaultValue /* static const int DefaultValue = 3; */] would have been nice, but the AST has sort-of lost that info.
+                                 "    int arr[3];\n"
                                  "    return sizeof (arr);\n"
                                  "}\n"
                                  "/* Internal linkage references:\n"
@@ -5566,6 +5566,23 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Internal linkage references:\n"
                                  "static const int DefaultValue = 3;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int SwitchCaseUser(int value) {\n"
+                                 "    switch (value) {\n"
+                                 "      case DefaultValue:\n"
+                                 "        return 1;\n"
+                                 "      default:\n"
+                                 "        return 0;\n"
+                                 "    }\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int TemplateArgUser() {\n"
+                                 "    return Holder<DefaultValue>::value;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
@@ -5573,6 +5590,20 @@ Test ExploratoryTestsOfClangAST[] =
 
 };
 /* some missing test cases
+
+1. anonymous namespace types and internal-linkage types used inside Attributes:
+"struct alignas((anonymous type)::SomeAnonymousType) AlignedToAnonymousType {};"
+"static const int DefaultValue = 3;\nstruct alignas(DefaultValue < 8 ? 8 : DefaultValue) AlignedType { char c; }; inline int AlignasUser() { return alignof(AlignedType); }\n"
+
+2. forward reference of anonymous namespace type doesn't serialize properly: InternalA leaves off the field, InternalB* b. :(
+"namespace { struct InternalA; struct InternalB { InternalA* a; }; struct InternalA { InternalB* b; }; } struct ExternalRecursive { InternalA value; };\n"
+
+
+
+
+
+
+
 
 internal linkage issues:
 TU1:
