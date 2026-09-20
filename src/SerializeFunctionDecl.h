@@ -247,8 +247,7 @@ namespace OdrCop3
                         for (const clang::Attr* attr : stmt->getAttrs())
                             if (const auto* assumeAttr = llvm::dyn_cast<clang::CXXAssumeAttr>(attr))
                                 this->TraverseStmt(assumeAttr->getAssumption());
-
-                        this->TraverseStmt(stmt->getSubStmt());
+                        RecursiveASTVisitor<InternalLinkageReferenceCollector>::TraverseAttributedStmt(stmt);
                         return true;
                     }
                 public:

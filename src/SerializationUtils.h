@@ -549,10 +549,7 @@ namespace OdrCop3
                 if (const auto* assumeAttr = llvm::dyn_cast<clang::CXXAssumeAttr>(attr))
                     if (!TraverseStmt(assumeAttr->getAssumption()))
                         return false;
-
-            if (!TraverseStmt(stmt->getSubStmt()))
-                return false;
-
+            RecursiveASTVisitor<InternalLinkageRefFinder>::TraverseAttributedStmt(stmt);
             return KeepGoing();
         }
         bool VisitDeclRefExpr(const DeclRefExpr* declRefExpr)
