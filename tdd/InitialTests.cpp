@@ -5592,12 +5592,13 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code =
                                 "namespace { struct SomeAnonymousType { int value; }; }\nstruct alignas(SomeAnonymousType) AlignedToSomeAnonymousType {};\n"
                                 "static const int DefaultValue = 3;\nstruct alignas(DefaultValue < 8 ? 8 : DefaultValue) AlignedType { char c; }; inline int AlignasUser() { return alignof(AlignedType); }\n"
+                                "namespace OriginalNamespace { struct AlignmentType { double value; }; } namespace Alias = OriginalNamespace; struct alignas(Alias::AlignmentType) NamespaceAliasAlignasAttributeTest {};\n";
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(2, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(4, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
@@ -5613,8 +5614,11 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct alignas(DefaultValue /* static const int DefaultValue = 3; */ < 8 ? 8 : DefaultValue /* static const int DefaultValue = 3; */) AlignedType {\n"
                                  "    char c;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct alignas(OriginalNamespace::AlignmentType) NamespaceAliasAlignasAttributeTest {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct AlignmentType {\n"
+                                 "    double value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

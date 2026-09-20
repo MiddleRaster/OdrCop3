@@ -231,13 +231,27 @@ namespace OdrCop3
         {
             friend clang::RecursiveASTVisitor<NamespaceAliasVisitor>;
 
+            bool TraverseAlignedAttr(clang::AlignedAttr* attr)
+            {
+                if (attr->isAlignmentExpr()) {
+                    if (!TraverseStmt(attr->getAlignmentExpr()))
+                        return false;
+                } else {
+                    if (clang::TypeSourceInfo* typeSourceInfo = attr->getAlignmentType())
+                        if (clang::NestedNameSpecifierLoc qualifier = typeSourceInfo->getTypeLoc().getAs<clang::RecordTypeLoc>().getQualifierLoc())
+                            if (NestedNameSpecifierContainsAliasedName(qualifier.getNestedNameSpecifier()))
+                                found = true;
+                }
+                if (!found)
+                    return clang::RecursiveASTVisitor<NamespaceAliasVisitor>::TraverseAlignedAttr(attr);
+                return !found;
+            }
             bool TraverseTypeConstraint(const clang::TypeConstraint* constraint)
             {
                 if (constraint)
                     if (const clang::ConceptReference* conceptRef = constraint->getConceptReference())
                         if (NestedNameSpecifierContainsAliasedName(conceptRef->getNestedNameSpecifierLoc().getNestedNameSpecifier()))
                             found = true;
-
                 if (!found)
                     return clang::RecursiveASTVisitor<NamespaceAliasVisitor>::TraverseTypeConstraint(constraint);
                 return !found;
@@ -504,6 +518,7 @@ namespace OdrCop3
         static bool ContainsNamespaceAlias(const clang::Decl   *     decl) { return ContainsNamespaceAliasInternal([&](auto& visitor) { visitor.TraverseDecl(const_cast<clang::Decl*>(decl)); }); }
         static bool ContainsNamespaceAlias(const clang::QualType qualType) { return ContainsNamespaceAliasInternal([&](auto& visitor) { visitor.TraverseType(                      qualType); }); }
         static bool ContainsNamespaceAlias(const clang::Expr   *     expr) { return ContainsNamespaceAliasInternal([&](auto& visitor) { visitor.TraverseStmt(const_cast<clang::Expr*>(expr)); }); }
+        static bool ContainsNamespaceAlias(const clang::Attr   *     attr) { return ContainsNamespaceAliasInternal([&](auto& visitor) { visitor.TraverseAttr(const_cast<clang::Attr*>(attr)); }); }
         static bool ContainsNamespaceAlias(const clang::TemplateParameterList* parameters)
         {
             return ContainsNamespaceAliasInternal([&](auto& visitor) {

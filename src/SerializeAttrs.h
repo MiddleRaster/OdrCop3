@@ -80,7 +80,7 @@ namespace OdrCop3
             SerializationNeeds serializationNeeds
             {
                 .isAnonymous           = !Can::Print(contextItems, attr),
-                .hasNamespaceAlias     = false, // for now
+                .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(attr),
                 .hasInternalLinkageRef = nullptr != InternalLinkageRefFinder::FindReference(attr)
             };
             if (serializationNeeds.AreAllFalse())
