@@ -543,6 +543,18 @@ namespace OdrCop3
                     return (namedDecl = named) != nullptr;
             return false;
         }
+        bool TraverseAttributedStmt(clang::AttributedStmt* stmt)
+        {
+            for (const clang::Attr* attr : stmt->getAttrs())
+                if (const auto* assumeAttr = llvm::dyn_cast<clang::CXXAssumeAttr>(attr))
+                    if (!TraverseStmt(assumeAttr->getAssumption()))
+                        return false;
+
+            if (!TraverseStmt(stmt->getSubStmt()))
+                return false;
+
+            return KeepGoing();
+        }
         bool VisitDeclRefExpr(const DeclRefExpr* declRefExpr)
         {
             HasInternalLinkage(declRefExpr->getDecl());

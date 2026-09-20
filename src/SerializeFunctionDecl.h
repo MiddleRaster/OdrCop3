@@ -222,6 +222,7 @@ namespace OdrCop3
                         os << "/* Internal linkage references:\n";
                         for (const NamedDecl* named : references)
                         {
+                            os << "   ";
                             named->print(os, policy);
                             os << ";\n";
                         }
@@ -239,6 +240,15 @@ namespace OdrCop3
                     {
                         if (const NamedDecl* named = InternalLinkageDecl(memberExpr->getMemberDecl()))
                             references.insert(named);
+                        return true;
+                    }
+                    bool TraverseAttributedStmt(clang::AttributedStmt* stmt)
+                    {
+                        for (const clang::Attr* attr : stmt->getAttrs())
+                            if (const auto* assumeAttr = llvm::dyn_cast<clang::CXXAssumeAttr>(attr))
+                                this->TraverseStmt(assumeAttr->getAssumption());
+
+                        this->TraverseStmt(stmt->getSubStmt());
                         return true;
                     }
                 public:
