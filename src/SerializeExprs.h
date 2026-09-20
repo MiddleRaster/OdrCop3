@@ -18,6 +18,7 @@
 #include "SerializeConceptSpecializationExpr.h"
 #include "SerializeUnaryOperatorExpr.h"
 #include "SerializeBinaryOperatorExpr.h"
+#include "SerializeConditionalOperatorExpr.h"
 #include "SerializeDeclRefExpr.h"
 #include "SerializeConstantExpr.h"
 #include "SerializeCXXFunctionalCastExpr.h"
@@ -39,13 +40,14 @@ namespace OdrCop3
         struct Expr
         {
             static std::string Serialize(const ContextItems& contextItems, const clang::ConceptSpecializationExpr* conceptSpecializationExpr) { return ConceptSpecializationExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems, conceptSpecializationExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::UnaryExprOrTypeTraitExpr *  unaryExprOrTypeTraitExpr) { return  UnaryExprOrTypeTraitExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,  unaryExprOrTypeTraitExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::UnaryOperator            *             unaryOperator) { return         UnaryOperatorExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,             unaryOperator).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::BinaryOperator           *            binaryOperator) { return        BinaryOperatorExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,            binaryOperator).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::ConditionalOperator      *       conditionalOperator) { return       ConditionalOperatorSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,       conditionalOperator).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::DeclRefExpr              *               declRefExpr) { return               DeclRefExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,               declRefExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::ConstantExpr             *              constantExpr) { return              ConstantExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,              constantExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::CXXFunctionalCastExpr    *     cXXFunctionalCastExpr) { return     CXXFunctionalCastExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,     cXXFunctionalCastExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::InitListExpr             *              initListExpr) { return              InitListExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,              initListExpr).Serialize(); }
-            static std::string Serialize(const ContextItems& contextItems, const clang::BinaryOperator           *            binaryOperator) { return        BinaryOperatorExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,            binaryOperator).Serialize(); }
-            static std::string Serialize(const ContextItems& contextItems, const clang::UnaryExprOrTypeTraitExpr *  unaryExprOrTypeTraitExpr) { return  UnaryExprOrTypeTraitExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,  unaryExprOrTypeTraitExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::ParenExpr                *                 parenExpr) { return                 ParenExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,                 parenExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::CXXConstructExpr         *          cxxConstructExpr) { return          CXXConstructExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,          cxxConstructExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::ImplicitCastExpr         *          implicitCastExpr) { return          ImplicitCastExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,          implicitCastExpr).Serialize(); }
@@ -106,6 +108,7 @@ namespace OdrCop3
                 case clang::Stmt::StmtClass::RequiresExprClass             : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::RequiresExpr             >(expr));
                 case clang::Stmt::StmtClass::TypeTraitExprClass            : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::TypeTraitExpr            >(expr));
                 case clang::Stmt::StmtClass::CallExprClass                 : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::CallExpr                 >(expr));
+                case clang::Stmt::StmtClass::ConditionalOperatorClass      : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::ConditionalOperator      >(expr));
                 default:
                     break;
                 };

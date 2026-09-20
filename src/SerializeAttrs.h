@@ -36,12 +36,12 @@ namespace OdrCop3
         {
             static std::string Serialize(const ContextItems& contextItems, const clang::AlignedAttr* alignedAttr)
             {
+                std::string out = "alignas(";
                 if (alignedAttr->isAlignmentExpr())
-                    if (const clang::Expr* expr = alignedAttr->getAlignmentExpr())
-                        return IndentBlock(SerializeExpr(contextItems, expr), 0);
-
-                // alignment specified as a type: alignas(SomeType)
-                return "alignas(" + IndentBlock(SerializeType(contextItems, alignedAttr->getAlignmentType()->getType()), 8) + ") ";
+                    out += IndentBlock(SerializeExpr(contextItems, alignedAttr->getAlignmentExpr()           ), LengthOfLastLine(out));
+                else
+                    out += IndentBlock(SerializeType(contextItems, alignedAttr->getAlignmentType()->getType()), LengthOfLastLine(out));
+                return out + ") ";
             }
             //static std::string Serialize(const ContextItems& /*contextItems*/, const clang::WarnUnusedResultAttr* nodiscard)
             //{
@@ -81,12 +81,11 @@ namespace OdrCop3
             {
                 .isAnonymous           = !Can::Print(contextItems, attr),
                 .hasNamespaceAlias     = false, // for now
-                .hasInternalLinkageRef = false  // for now
+                .hasInternalLinkageRef = nullptr != InternalLinkageRefFinder::FindReference(attr)
             };
             if (serializationNeeds.AreAllFalse())
                 return Print(contextItems, attr);
 
-            std::string out;
             switch (attr->getKind())
             {
             case clang::attr::Aligned:          if (const auto* alignedAttr = clang::dyn_cast<clang::AlignedAttr         >(attr)) return Attr<SerializeDecl, SerializeType, SerializeExpr>::Serialize(contextItems.withSerializationNeeds(serializationNeeds), alignedAttr); break;
@@ -105,7 +104,7 @@ namespace OdrCop3
             case clang::attr::MSInheritance:   // always skip these
                 return "";
             default: // turn this on later: 
-                // return Attr::Serialize(contextItems, attr);
+                // return Serialize::Print(contextItems, attr);
                 break;
             };
             throw OdrCop3::UnhandledException(std::string("unhandled attr::getKind: ") + enum_name<clang::attr::Kind,0, 512>(attr->getKind()));

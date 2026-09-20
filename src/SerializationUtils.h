@@ -541,30 +541,10 @@ namespace OdrCop3
             return KeepGoing();
         }
     public:
-        static const NamedDecl* FindReference(const Decl* decl)
-        {
-            InternalLinkageRefFinder finder;
-            finder.TraverseDecl(const_cast<Decl*>(decl));
-            return finder.namedDecl;
-        }
-        static const NamedDecl* FindReference(const Expr* expr)
-        {
-            InternalLinkageRefFinder finder;
-            finder.TraverseStmt(const_cast<Expr*>(expr));
-            return finder.namedDecl;
-        }
-        static const NamedDecl* FindReference(QualType qualType)
-        {
-            InternalLinkageRefFinder finder;
-            finder.TraverseType(qualType);
-            return finder.namedDecl;
-        }
-        static const NamedDecl* FindReference(Stmt* stmt)
-        {
-            InternalLinkageRefFinder finder;
-            finder.TraverseStmt(stmt);
-            return finder.namedDecl;
-        }
+        static const NamedDecl* FindReference(const Decl * decl) { InternalLinkageRefFinder finder; finder.TraverseDecl(const_cast<Decl*>(decl)); return finder.namedDecl; }
+        static const NamedDecl* FindReference(const Expr * expr) { InternalLinkageRefFinder finder; finder.TraverseStmt(const_cast<Expr*>(expr)); return finder.namedDecl; }
+        static const NamedDecl* FindReference(QualType qualType) { InternalLinkageRefFinder finder; finder.TraverseType(qualType);                return finder.namedDecl; }
+        static const NamedDecl* FindReference(const Stmt * stmt) { InternalLinkageRefFinder finder; finder.TraverseStmt(const_cast<Stmt*>(stmt)); return finder.namedDecl; }
+        static const NamedDecl* FindReference(const Attr * attr) { InternalLinkageRefFinder finder; finder.TraverseAttr(const_cast<Attr*>(attr)); return finder.namedDecl; }
     };
-
 }

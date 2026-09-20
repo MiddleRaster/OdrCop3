@@ -5590,19 +5590,19 @@ Test ExploratoryTestsOfClangAST[] =
     {"Attributes and internal-linkage types", []
         {
             std::string code =
-                                "namespace { struct SomeAnonymousType { int value; }; }\n"
-                                "struct alignas(SomeAnonymousType) AlignedToSomeAnonymousType {};\n"
+                                "namespace { struct SomeAnonymousType { int value; }; }\nstruct alignas(SomeAnonymousType) AlignedToSomeAnonymousType {};\n"
+                                "static const int DefaultValue = 3;\nstruct alignas(DefaultValue < 8 ? 8 : DefaultValue) AlignedType { char c; }; inline int AlignasUser() { return alignof(AlignedType); }\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(1, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(0, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(1, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -5610,7 +5610,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                   int value;\n"
                                  "               }) AlignedToSomeAnonymousType {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct alignas(DefaultValue /* static const int DefaultValue = 3; */ < 8 ? 8 : DefaultValue /* static const int DefaultValue = 3; */) AlignedType {\n"
+                                 "    char c;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -5635,7 +5637,9 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int AlignasUser() {\n"
+                                 "    return alignof(AlignedType);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -5649,8 +5653,6 @@ Test ExploratoryTestsOfClangAST[] =
 /* some missing test cases
 
 1. anonymous namespace types and internal-linkage types used inside Attributes:
-"struct alignas((anonymous type)::SomeAnonymousType) AlignedToAnonymousType {};"
-"static const int DefaultValue = 3;\nstruct alignas(DefaultValue < 8 ? 8 : DefaultValue) AlignedType { char c; }; inline int AlignasUser() { return alignof(AlignedType); }\n"
 
 2. forward reference of anonymous namespace type doesn't serialize properly: InternalA leaves off the field, InternalB* b. :(
 "namespace { struct InternalA; struct InternalB { InternalA* a; }; struct InternalA { InternalB* b; }; } struct ExternalRecursive { InternalA value; };\n"
