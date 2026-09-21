@@ -101,11 +101,16 @@ namespace OdrCop3
 
             if (fieldDecl->isBitField())
             {
+                out += " : ";
                 std::string bitWidth;
-                llvm::raw_string_ostream os(bitWidth);
-                fieldDecl->getBitWidth()->printPretty(os, nullptr, contextItems.printPolicy);
-                os.flush();
-                out += " : " + bitWidth;
+                if (contextItems.serializationNeeds.hasInternalLinkageRef)
+                    bitWidth = IndentBlock(SerializeExpr(contextItems, fieldDecl->getBitWidth()), LengthOfLastLine(out));
+                else {
+                    llvm::raw_string_ostream os(bitWidth);
+                    fieldDecl->getBitWidth()->printPretty(os, nullptr, contextItems.printPolicy);
+                    os.flush();
+                }
+                out += bitWidth;
             }
             if (fieldDecl->hasInClassInitializer())
             {

@@ -5538,7 +5538,7 @@ Test ExploratoryTestsOfClangAST[] =
                                 "inline void  StaticAssertUser() { static_assert(DefaultValue == 3, \"must match\"); }\n"
 
                                 "inline constexpr int DoubledValueUser = DefaultValue*2;\n"
-                                //"struct BitFieldHolder { unsigned a : DefaultValue; unsigned b : 29; }; inline int BitFieldUser() { BitFieldHolder h{}; return sizeof(h); }\n"
+                                "struct BitFieldHolder { unsigned a : DefaultValue; unsigned b : 29; }; inline int BitFieldUser() { BitFieldHolder h{}; return sizeof(h); }\n"
                                 //"enum class DefaultEnum : int { Value = DefaultValue }; inline int EnumeratorUser() { return static_cast<int>(DefaultEnum::Value); }\n"
                                 //"template <int N = DefaultValue> struct DefaultParamHolder { static const int value = N; }; inline int DefaultParamUser() { return DefaultParamHolder<>::value; }\n"
                                 //"inline auto IfConstexprUser() { if constexpr (DefaultValue == 3) { return 1; } else { return 2L; } }\n"
@@ -5550,15 +5550,19 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(2, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(3, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(1, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(7, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(8, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct BitFieldHolder {\n"
+                                 "    unsigned int a : DefaultValue /* static const int DefaultValue = 3; */;\n"
+                                 "    unsigned int b : 29;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <int N> requires (N == DefaultValue /* static const int DefaultValue = 3; */) struct Constrained {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <int N> struct Holder {\n"
@@ -5592,6 +5596,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Internal linkage references:\n"
                                  "   static const int DefaultValue = 3;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int BitFieldUser() {\n"
+                                 "    BitFieldHolder h{};\n"
+                                 "    return sizeof (h);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int Increment(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value + 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
