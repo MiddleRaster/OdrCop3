@@ -886,7 +886,7 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.enumMap.begin();
                 Assert::AreEqual("enum (unnamed enum at input.cc:2:1) {\n"
                                  "    R,\n"
-                                 "    G = 1,\n"
+                                 "    G = 1 + 0,\n"
                                  "    B\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
@@ -3309,7 +3309,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum class CodeCoverage {\n"
                                  "    A = 1,\n"
-                                 "    B = 2\n"
+                                 "    B = A + 1\n"
                                  "};\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum class E : unsigned short {\n"
                                  "    A,\n"
@@ -5539,12 +5539,11 @@ Test ExploratoryTestsOfClangAST[] =
 
                                 "inline constexpr int DoubledValueUser = DefaultValue*2;\n"
                                 "struct BitFieldHolder { unsigned a : DefaultValue; unsigned b : 29; }; inline int BitFieldUser() { BitFieldHolder h{}; return sizeof(h); }\n"
-                                //"enum class DefaultEnum : int { Value = DefaultValue }; inline int EnumeratorUser() { return static_cast<int>(DefaultEnum::Value); }\n"
+                                "enum class DefaultEnum : int { Value = DefaultValue }; inline int EnumeratorUser() { return static_cast<int>(DefaultEnum::Value); }\n"
                                 //"template <int N = DefaultValue> struct DefaultParamHolder { static const int value = N; }; inline int DefaultParamUser() { return DefaultParamHolder<>::value; }\n"
                                 //"inline auto IfConstexprUser() { if constexpr (DefaultValue == 3) { return 1; } else { return 2L; } }\n"
                                 //"inline int LocalClassUser() { struct LocalArrayHolder { int arr[DefaultValue]; }; return sizeof(LocalArrayHolder); }\n"
                                 //"struct FriendHost { friend int FriendDefaultUser(int value = DefaultValue) { return value; } };\n"
-
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -5552,10 +5551,10 @@ Test ExploratoryTestsOfClangAST[] =
 
             Assert::AreEqual(3, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(1, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(8, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(9, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -5577,6 +5576,9 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum class DefaultEnum : int {\n"
+                                 "    Value = DefaultValue /* static const int DefaultValue = 3; */\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -5599,6 +5601,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline int BitFieldUser() {\n"
                                  "    BitFieldHolder h{};\n"
                                  "    return sizeof (h);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int EnumeratorUser() {\n"
+                                 "    return static_cast<int>(DefaultEnum::Value);\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int Increment(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value + 1;\n"

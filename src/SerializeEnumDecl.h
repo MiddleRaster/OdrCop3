@@ -90,14 +90,18 @@ namespace OdrCop3
             for (const EnumConstantDecl* enumeratorDecl : enumDecl->enumerators())
             {
                 fqe += "    " + enumeratorDecl->getName().str();
-                if (const Expr* Init = enumeratorDecl->getInitExpr())
+                if (const Expr* init = enumeratorDecl->getInitExpr())
                 {
-                    llvm::APSInt value = enumeratorDecl->getInitVal();
-                    Expr::EvalResult Result;
-                    if (Init->EvaluateAsInt(Result, contextItems.context) && (value == Result.Val.getInt()))
-                        fqe += " = " + llvm::toString(value, 10); // Clang's semantic value is valid.
-                    else
-                        fqe += " = " + Lexer::getSourceText(CharSourceRange::getTokenRange(Init->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts()).str(); // go with what the user typed
+                    if (contextItems.serializationNeeds.AreAllFalse())
+                    {
+                        llvm::APSInt value = enumeratorDecl->getInitVal();
+                        Expr::EvalResult Result;
+                        if (init->EvaluateAsInt(Result, contextItems.context) && (value == Result.Val.getInt()))
+                            fqe += " = " + llvm::toString(value, 10); // Clang's semantic value is valid.
+                        else
+                            fqe += " = " + Lexer::getSourceText(CharSourceRange::getTokenRange(init->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts()).str(); // go with what the user typed
+                    } else
+                        fqe += " = " + IndentBlock(SerializeExpr(contextItems, init), LengthOfLastLine(fqe));
                 }
                 fqe += ",\n";
             }
