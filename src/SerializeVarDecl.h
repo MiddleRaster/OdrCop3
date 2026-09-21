@@ -121,17 +121,17 @@ namespace OdrCop3
             }
 
             std::string initStr;
-            if (contextItems.serializationNeeds.hasNamespaceAlias)
+            if (contextItems.serializationNeeds.AreAllFalse())
             {
-                if (const auto* ctorExpr = llvm::dyn_cast<clang::CXXConstructExpr>(expr->IgnoreImplicit()); ctorExpr && ctorExpr->getParenOrBraceRange().isInvalid())
-                    return ""; // implicit default-construction, nothing written — initStr.g. "Foo x;" via a typedef chain
-                initStr = IndentBlock(SerializeExpr(contextItems, expr), 0);
-            } else {
                 llvm::raw_string_ostream os(initStr);
                 expr->printPretty(os, nullptr, contextItems.printPolicy);
                 os.flush();
                 if (initStr == "")
                     return "";
+            } else {
+                if (const auto* ctorExpr = llvm::dyn_cast<clang::CXXConstructExpr>(expr->IgnoreImplicit()); ctorExpr && ctorExpr->getParenOrBraceRange().isInvalid())
+                    return ""; // implicit default-construction, nothing written — initStr.g. "Foo x;" via a typedef chain
+                initStr = IndentBlock(SerializeExpr(contextItems, expr), 0);
             }
             switch (varDecl->getInitStyle())
             {

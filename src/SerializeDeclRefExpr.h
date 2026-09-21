@@ -28,6 +28,8 @@ namespace OdrCop3
                 const clang::ValueDecl* valueDecl = declRefExpr->getDecl();
                 if (const auto* recordDecl = dyn_cast<CXXRecordDecl>(valueDecl->getDeclContext()))
                     return "(" + TrimRightIf(IndentBlock(SerializeDecl(contextItems, recordDecl), 1), ";") + ")::" + valueDecl->getNameAsString();
+                if (const auto* enumDecl = dyn_cast<EnumDecl>(valueDecl->getDeclContext()))
+                    return "(" + TrimRightIf(IndentBlock(SerializeDecl(contextItems, enumDecl), 1), ";") + ")::" + valueDecl->getNameAsString();
             }
             std::string out = declRefExpr->getDecl()->getQualifiedNameAsString();
             if (contextItems.serializationNeeds.hasInternalLinkageRef)

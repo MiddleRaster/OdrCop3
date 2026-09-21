@@ -2366,23 +2366,29 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("struct Foo foo;\n"                          , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int globalInt = Take(foo, &Foo::member);\n" , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("int (Foo::*var)(double) = &Foo::member;\n"  , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("FooMemberPtr var2 = &Foo::member;\n"        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Foo foo;\n"                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int globalInt = Take(foo, &Foo::member);\n"  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int (Foo::*var)(double) = &Foo::member;\n"   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("FooMemberPtr var2 = &Foo::member;\n"         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("FooMemberPtr2 var3 = &Foo::member;\n"        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int (struct (anonymous namespace)::FooAnon {\n"
                                  "         int member(double) {\n"
                                  "             return 42;\n"
                                  "         }\n"
-                                 "     }::*var4)(double) = &FooAnon::member;\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "     }::*var4)(double) = &(struct (anonymous namespace)::FooAnon {\n"
+                                 "                               int member(double) {\n"
+                                 "                                   return 42;\n"
+                                 "                               }\n"
+                                 "                           })::member;\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int (struct (anonymous namespace)::FooAnon {\n"
                                  "         int member(double) {\n"
                                  "             return 42;\n"
                                  "         }\n"
-                                 "     }::*var5)(double) = &FooAnon::member;\n"
-                              , (*it++).second[0].fullyQualified);
+                                 "     }::*var5)(double) = &(struct (anonymous namespace)::FooAnon {\n"
+                                 "                               int member(double) {\n"
+                                 "                                   return 42;\n"
+                                 "                               }\n"
+                                 "                           })::member;\n", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -3260,7 +3266,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    A,\n"
                                  "    B,\n"
                                  "    C\n"
-                                 "} ea = AnonymousE::A;\n"                     , (*it++).second[0].fullyQualified);
+                                 "} ea = (enum class (anonymous namespace)::AnonymousE : unsigned short {\n"
+                                 "            A,\n"
+                                 "            B,\n"
+                                 "            C\n"
+                                 "        })::A;\n"                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("E *p;\n"                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("E &r = e2;\n"                                , (*it++).second[0].fullyQualified);
             }
@@ -3407,33 +3417,45 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("inline constexpr int inlineConstexprVariable = 0;\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline constexpr int inlineConstexprVariable = 0;\n"          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline enum (anonymous namespace)::InlineEnum1 {\n"
                                  "           InlineEnum1A,\n"
                                  "           InlineEnum1B\n"
-                                 "       } inlineEnumVariable1 = InlineEnum1A;\n"          , (*it++).second[0].fullyQualified);
+                                 "       } inlineEnumVariable1 = (enum (anonymous namespace)::InlineEnum1 {\n"
+                                 "                                    InlineEnum1A,\n"
+                                 "                                    InlineEnum1B\n"
+                                 "                                })::InlineEnum1A;\n"          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline constexpr enum (anonymous namespace)::InlineEnum2 {\n"
                                  "                     InlineEnum2A,\n"
                                  "                     InlineEnum2B\n"
-                                 "                 } inlineEnumVariable2 = InlineEnum2A;\n", (*it++).second[0].fullyQualified);
+                                 "                 } inlineEnumVariable2 = (enum (anonymous namespace)::InlineEnum2 {\n"
+                                 "                                              InlineEnum2A,\n"
+                                 "                                              InlineEnum2B\n"
+                                 "                                          })::InlineEnum2A;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline enum (anonymous namespace)::InlineEnum3 {\n"
                                  "           InlineEnum3A,\n"
                                  "           InlineEnum3B\n"
-                                 "       } inlineEnumVariable3 = InlineEnum3A;\n"          , (*it++).second[0].fullyQualified);
+                                 "       } inlineEnumVariable3 = (enum (anonymous namespace)::InlineEnum3 {\n"
+                                 "                                    InlineEnum3A,\n"
+                                 "                                    InlineEnum3B\n"
+                                 "                                })::InlineEnum3A;\n"          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline enum (anonymous namespace)::InlineEnum4 {\n"
                                  "           InlineEnum4A,\n"
                                  "           InlineEnum4B\n"
-                                 "       } inlineEnumVariable4 = InlineEnum4A;\n"          , (*it++).second[0].fullyQualified);
+                                 "       } inlineEnumVariable4 = (enum (anonymous namespace)::InlineEnum4 {\n"
+                                 "                                    InlineEnum4A,\n"
+                                 "                                    InlineEnum4B\n"
+                                 "                                })::InlineEnum4A;\n"          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline struct (anonymous namespace)::InlineStructAliasSource {\n"
                                  "           int value;\n"
-                                 "       } inlineStructAliasVariable = {};\n"              , (*it++).second[0].fullyQualified);
+                                 "       } inlineStructAliasVariable = {};\n"                   , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline struct (anonymous namespace)::InlineStructTypedefSource {\n"
                                  "           int value;\n"
-                                 "       } inlineStructTypedefVariable = {};\n"            , (*it++).second[0].fullyQualified);
+                                 "       } inlineStructTypedefVariable = {};\n"                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline struct (anonymous namespace)::InlineStruct {\n"
                                  "           int value;\n"
-                                 "       } inlineStructVariable = {};\n"                   , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline int inlineVariable = 0;\n"                        , (*it++).second[0].fullyQualified);
+                                 "       } inlineStructVariable = {};\n"                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int inlineVariable = 0;\n"                             , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -3535,24 +3557,30 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.varMap.begin();
                 Assert::AreEqual("constinit enum (anonymous namespace)::AnonymousConstinitEnum {\n"
                                  "              AnonymousConstinitValue\n"
-                                 "          } constinitAnonymousEnum = AnonymousConstinitValue;\n"             , (*it++).second[0].fullyQualified);
+                                 "          } constinitAnonymousEnum = (enum (anonymous namespace)::AnonymousConstinitEnum {\n"
+                                 "                                          AnonymousConstinitValue\n"
+                                 "                                      })::AnonymousConstinitValue;\n"             , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constinit struct (anonymous namespace)::AnonymousConstinitStruct {\n"
-                                 "          } constinitAnonymousStruct{};\n"                                   , (*it++).second[0].fullyQualified);
+                                 "          } constinitAnonymousStruct{};\n"                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constinit enum (anonymous namespace)::AnonymousConstinitTypedefEnum {\n"
                                  "              AnonymousConstinitTypedefValue\n"
-                                 "          } constinitEnumTypedefVariable = AnonymousConstinitTypedefValue;\n", (*it++).second[0].fullyQualified);
+                                 "          } constinitEnumTypedefVariable = (enum (anonymous namespace)::AnonymousConstinitTypedefEnum {\n"
+                                 "                                                AnonymousConstinitTypedefValue\n"
+                                 "                                            })::AnonymousConstinitTypedefValue;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constinit enum (anonymous namespace)::AnonymousConstinitUsingEnum {\n"
                                  "              AnonymousConstinitUsingValue\n"
-                                 "          } constinitEnumUsingVariable = AnonymousConstinitUsingValue;\n"    , (*it++).second[0].fullyQualified);
+                                 "          } constinitEnumUsingVariable = (enum (anonymous namespace)::AnonymousConstinitUsingEnum {\n"
+                                 "                                              AnonymousConstinitUsingValue\n"
+                                 "                                          })::AnonymousConstinitUsingValue;\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constinit struct (anonymous namespace)::AnonymousConstinitTypedefStruct {\n"
-                                 "          } constinitTypedefVariable{};\n"                                   , (*it++).second[0].fullyQualified);
+                                 "          } constinitTypedefVariable{};\n"                                        , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constinit struct (anonymous namespace)::AnonymousConstinitUsingStruct {\n"
-                                 "          } constinitUsingVariable{};\n"                                     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("constinit int constinitVariable = 0;\n"                                      , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("constinit inline const int inlineConstinitConstVariable = 0;\n"              , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("constinit inline int inlineConstinitVariable = 0;\n"                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("constinit thread_local inline int inlineThreadLocalConstinitVariable = 0;\n" , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("constinit thread_local int threadLocalConstinitVariable = 0;\n"              , (*it++).second[0].fullyQualified);
+                                 "          } constinitUsingVariable{};\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit int constinitVariable = 0;\n"                                           , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit inline const int inlineConstinitConstVariable = 0;\n"                   , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit inline int inlineConstinitVariable = 0;\n"                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit thread_local inline int inlineThreadLocalConstinitVariable = 0;\n"      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constinit thread_local int threadLocalConstinitVariable = 0;\n"                   , (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -3626,7 +3654,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct ConstexprStaticMemberAnonymousEnumHolder {\n"
                                  "    static constexpr enum (anonymous namespace)::ConstexprStaticMemberAnonymousEnum {\n"
                                  "                         ConstexprStaticMemberAnonymousValue\n"
-                                 "                     } value = ConstexprStaticMemberAnonymousValue;\n"
+                                 "                     } value = (enum (anonymous namespace)::ConstexprStaticMemberAnonymousEnum {\n"
+                                 "                                    ConstexprStaticMemberAnonymousValue\n"
+                                 "                                })::ConstexprStaticMemberAnonymousValue;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConstexprStaticNestedAnonymousHolder {\n"
                                  "    struct Nested {\n"
@@ -3635,7 +3665,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConstexprStaticPointer {\n"
-                                 "    static constexpr const int *value = &constexprStaticPointerTarget;\n"
+                                 "    static constexpr const int *value = &constexprStaticPointerTarget /* constexpr int constexprStaticPointerTarget = 42; */;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConstexprStaticTypedefAnonymousMember {\n"
                                  "    static constexpr struct (anonymous namespace)::ConstexprStaticTypedefAnonymousType {\n"
@@ -5506,13 +5536,22 @@ Test ExploratoryTestsOfClangAST[] =
                                 "inline void  NoexceptTarget() noexcept(DefaultValue == 3) {}\n"
                                 "template <int N> requires (N == DefaultValue) struct Constrained {}; inline Constrained<DefaultValue> RequiresClauseUser() { return {}; }\n"
                                 "inline void  StaticAssertUser() { static_assert(DefaultValue == 3, \"must match\"); }\n"
+
+                                "inline constexpr int DoubledValueUser = DefaultValue*2;\n"
+                                //"struct BitFieldHolder { unsigned a : DefaultValue; unsigned b : 29; }; inline int BitFieldUser() { BitFieldHolder h{}; return sizeof(h); }\n"
+                                //"enum class DefaultEnum : int { Value = DefaultValue }; inline int EnumeratorUser() { return static_cast<int>(DefaultEnum::Value); }\n"
+                                //"template <int N = DefaultValue> struct DefaultParamHolder { static const int value = N; }; inline int DefaultParamUser() { return DefaultParamHolder<>::value; }\n"
+                                //"inline auto IfConstexprUser() { if constexpr (DefaultValue == 3) { return 1; } else { return 2L; } }\n"
+                                //"inline int LocalClassUser() { struct LocalArrayHolder { int arr[DefaultValue]; }; return sizeof(LocalArrayHolder); }\n"
+                                //"struct FriendHost { friend int FriendDefaultUser(int value = DefaultValue) { return value; } };\n"
+
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
             Assert::AreEqual(2, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(1, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
@@ -5529,6 +5568,7 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("inline constexpr int DoubledValueUser = DefaultValue /* static const int DefaultValue = 3; */ * 2;\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
