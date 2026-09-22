@@ -23,6 +23,7 @@
 #include "SerializeFunctionTemplateDecl.h"
 #include "SerializeCXXRecordDecl.h"
 #include "SerializeEnumDecl.h"
+#include "SerializeEnumConstantDecl.h"
 #include "SerializeFieldDecl.h"
 #include "SerializeVarDecl.h"
 #include "SerializeParamVarDecl.h"
@@ -345,6 +346,7 @@ namespace OdrCop3
             case clang::Decl::Kind::Friend:                             if (const FriendDecl *                       friendDecl = dyn_cast<                            FriendDecl>(decl)) return                             FriendDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,         friendDecl).Serialize(); break;
             case clang::Decl::Kind::Concept:                            if (const ConceptDecl *                     conceptDecl = dyn_cast<                           ConceptDecl>(decl)) return                            ConceptDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,        conceptDecl).Serialize(); break;
             case clang::Decl::Kind::Using:                              if (const UsingDecl *                         usingDecl = dyn_cast<                             UsingDecl>(decl)) return                              UsingDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,          usingDecl).Serialize(); break;
+            case clang::Decl::Kind::EnumConstant:                       if (const EnumConstantDecl *           enumConstantDecl = dyn_cast<                      EnumConstantDecl>(decl)) return                       EnumConstantDeclSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,   enumConstantDecl).Serialize(); break;
             default: break;
             }
             // when this is released, comment out the next two lines, so that it won't throw but will print something

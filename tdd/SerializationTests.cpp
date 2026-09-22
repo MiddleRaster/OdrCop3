@@ -2207,6 +2207,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                                                      } &rhs) {\n"
                                  "               return lhs.value <=> rhs.value;\n"
                                  "           }\n"
+                                 "           /* Internal linkage references:\n"
+                                 "              int value;\n"
+                                 "           */\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Public2 {\n"
@@ -2282,6 +2285,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                                           } &rhs) {\n"
                                  "    return lhs.value <=> rhs.value;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   int value;\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::Ordering {\n"
                                  "} operator<=>(const Public2 &, const Public2 &) {\n"
@@ -2293,12 +2299,15 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                                           } &rhs) {\n"
                                  "    return lhs.value <=> rhs.value;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   int value;\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::Ordering {\n"
                                  "} operator<=>(const Public4 &, const Public4 &) {\n"
                                  "    return {};\n"
                                  "}\n"
-                    , (*it++).second[0].fullyQualified);
+                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::Ordering {\n"
                                  "} operator<=>(const Public5 &, const struct (anonymous namespace)::Hidden1 {\n"
                                  "                                         int value;\n"
@@ -2311,6 +2320,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                                           } &rhs) {\n"
                                  "    return lhs.value <=> rhs.value;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   int value;\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("bool operator==(strong_ordering, strong_ordering) = default;\n", (*it++).second[0].fullyQualified);
             }
@@ -2420,6 +2432,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "     }::*FunctionReturningPointerToMember4())(double) {\n"
                                  "    return &FooAnon::member;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   int member(double) {\n"
+                                 "       return 42;\n"
+                                 "   }\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int (struct (anonymous namespace)::FooAnon {\n"
                                  "         int member(double) {\n"
@@ -2428,6 +2445,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "     }::*FunctionReturningPointerToMember5())(double) {\n"
                                  "    return &FooAnon::member;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   int member(double) {\n"
+                                 "       return 42;\n"
+                                 "   }\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int Take(Foo &foo, int (Foo::*pmf)(double)) {\n"
                                  "    return (foo .* pmf)(3.1400000000000001);\n"
@@ -5541,20 +5563,22 @@ Test ExploratoryTestsOfClangAST[] =
                                 "struct BitFieldHolder { unsigned a : DefaultValue; unsigned b : 29; }; inline int BitFieldUser() { BitFieldHolder h{}; return sizeof(h); }\n"
                                 "enum class DefaultEnum : int { Value = DefaultValue }; inline int EnumeratorUser() { return static_cast<int>(DefaultEnum::Value); }\n"
                                 "template <int N = DefaultValue> struct DefaultParamHolder { static const int value = N; }; inline int DefaultParamUser() { return DefaultParamHolder<>::value; }\n"
-                                //"inline auto IfConstexprUser() { if constexpr (DefaultValue == 3) { return 1; } else { return 2L; } }\n"
-                                //"inline int LocalClassUser() { struct LocalArrayHolder { int arr[DefaultValue]; }; return sizeof(LocalArrayHolder); }\n"
-                                //"struct FriendHost { friend int FriendDefaultUser(int value = DefaultValue) { return value; } };\n"
+                                "inline auto IfConstexprUser() { if constexpr (DefaultValue == 3) { return 1; } else { return 2L; } }\n"
+                                "inline int LocalClassUser() { struct LocalArrayHolder { int arr[DefaultValue]; }; return sizeof(LocalArrayHolder); }\n"
+                                "struct FriendHost { friend int FriendDefaultUser(int value = DefaultValue) { return value; } };\n"
+                                
+                                "namespace { enum class AnonymousComboE : int { Value = 7 }; } inline int ComboLinkageUser() { AnonymousComboE e = AnonymousComboE::Value; return static_cast<int>(e) + DefaultValue; }\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual( 4, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 5, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 1, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(10, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(14, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -5566,6 +5590,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <int N = DefaultValue /* static const int DefaultValue = 3; */> struct DefaultParamHolder {\n" 
                                  "    static const int value = N;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendHost {\n"
+                                 "    friend int FriendDefaultUser(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
+                                 "        return value;\n"
+                                 "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <int N> struct Holder {\n"
                                  "    static const int value = N;\n"
@@ -5605,15 +5634,45 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    BitFieldHolder h{};\n"
                                  "    return sizeof (h);\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ComboLinkageUser() {\n"
+                                 "    AnonymousComboE e = AnonymousComboE::Value;\n"
+                                 "    return static_cast<int>(e) + DefaultValue;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   (anonymous namespace)::AnonymousComboE::Value = 7;\n"
+                                 "   static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int DefaultParamUser() {\n"
                                  "    return DefaultParamHolder<>::value;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int EnumeratorUser() {\n"
                                  "    return static_cast<int>(DefaultEnum::Value);\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("int FriendDefaultUser(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
+                                 "    return value;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int IfConstexprUser() {\n"
+                                 "    if (DefaultValue == 3) {\n"
+                                 "        return 1;\n"
+                                 "    } else {\n"
+                                 "        return 2L;\n"
+                                 "    }\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int Increment(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value + 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int LocalClassUser() {\n"
+                                 "    struct LocalArrayHolder {\n"
+                                 "        int arr[3];\n"
+                                 "    };\n"
+                                 "    return sizeof(LocalArrayHolder);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void NoexceptTarget() noexcept(DefaultValue /* static const int DefaultValue = 3; */ == 3) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline Constrained<DefaultValue /* static const int DefaultValue = 3; */> RequiresClauseUser() {\n"

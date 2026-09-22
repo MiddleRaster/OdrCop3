@@ -201,32 +201,35 @@ namespace OdrCop3
             PrintingPolicy policy{contextItems.printPolicy};
             policy.FullyQualifiedName = contextItems.serializationNeeds.hasNamespaceAlias;
             funcDecl->getBody()->printPretty(os, nullptr, policy);
+            os.flush();
 
-            if (contextItems.serializationNeeds.isAnonymous           == false && // if it's internal-linkage because of being in an anonymous namespace, don't print the body specially
-                contextItems.serializationNeeds.hasInternalLinkageRef == true)    // yes, but is it really in the body?
+            if (!contextItems.serializationNeeds.AreAllFalse())
             {
                 class InternalLinkageReferenceCollector : public RecursiveASTVisitor<InternalLinkageReferenceCollector>
                 {
-                    std::set<const NamedDecl*> references;
+                    llvm::SetVector<const NamedDecl*> references; // removes dupes, keeps insertion order
+
                     static const NamedDecl* InternalLinkageDecl(const Decl* decl)
                     {
                         if (const auto* named = dyn_cast<NamedDecl>(decl))
                             return named->getFormalLinkage() == Linkage::Internal ? named : nullptr;
                         return nullptr;
                     }
-                    void Print(raw_ostream& os, const PrintingPolicy& policy) const
+                    std::string Print(const ContextItems& contextItems) const
                     {
                         if (references.empty())
-                            return;
+                            return {};
 
-                        os << "/* Internal linkage references:\n";
+                        std::string out;
+                        out += "/* Internal linkage references:\n";
                         for (const NamedDecl* named : references)
                         {
-                            os << "   ";
-                            named->print(os, policy);
-                            os << ";\n";
+                            out += "   ";
+                            out += IndentBlock(SerializeDecl(contextItems, named), LengthOfLastLine(out));
+                            out += "\n";
                         }
-                        os << "*/\n";
+                        out += "*/\n";
+                        return out;
                     }
 
                     friend RecursiveASTVisitor<InternalLinkageReferenceCollector>; // so that the following methods can stay private
@@ -251,22 +254,15 @@ namespace OdrCop3
                         return true;
                     }
                 public:
-                    static void PrintReferences(const Stmt* stmt, raw_ostream& os, const PrintingPolicy& policy)
+                    static std::string PrintReferences(const Stmt* stmt, const ContextItems& contextItems)
                     {
                         InternalLinkageReferenceCollector collector;
                         collector.TraverseStmt(const_cast<Stmt*>(stmt));
-                        collector.Print(os, policy);
-                    }
-                    static void PrintReferences(const Decl* decl, raw_ostream& os, const PrintingPolicy& policy)
-                    {
-                        InternalLinkageReferenceCollector collector;
-                        collector.TraverseDecl(const_cast<Decl*>(decl));
-                        collector.Print(os, policy);
+                        return collector.Print(contextItems);
                     }
                 };
-                InternalLinkageReferenceCollector::PrintReferences(funcDecl->getBody(), os, policy);
+                body += InternalLinkageReferenceCollector::PrintReferences(funcDecl->getBody(), contextItems);
             }
-            os.flush();
             return body;
         }
         bool hasTrailingReturn() const
