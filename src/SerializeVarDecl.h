@@ -157,7 +157,10 @@ namespace OdrCop3
                             }
                             else if (capture.capturesVariable())
                             {
-                                if (capture.getCaptureKind() == LCK_ByRef)
+                                lambda += capture.getCapturedVar()->getNameAsString();
+                                if (capture.isPackExpansion())
+                                    lambda += "...";
+                                else if (capture.getCaptureKind() == LCK_ByRef)
                                     lambda += "&";
                                 lambda += capture.getCapturedVar()->getNameAsString();
                             }
@@ -215,7 +218,7 @@ namespace OdrCop3
                     lambdaExpr->getBody()->printPretty(os, nullptr, contextItems.printPolicy);
                     os.flush(); // result is in "body"
 
-                    lambda += IndentBlock(body, 0);
+                    lambda += IndentBlock(body, 0) + "\n";
                     lambda += InternalLinkageReferenceCollector::PrintReferences<SerializeDecl>(lambdaExpr->getBody(), contextItems);
 
                     body = lambda;

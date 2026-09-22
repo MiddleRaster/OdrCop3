@@ -5579,17 +5579,28 @@ Test ExploratoryTestsOfClangAST[] =
                                 "inline int LambdaCaptureUser() { auto lambda = [value = DefaultValue]() { return value; }; return lambda(); }\n"
                                 "using DefaultArrayType = int[DefaultValue]; inline DefaultArrayType DefaultArrayAliasUser; inline int DefaultArrayAliasFunc() { return sizeof(DefaultArrayAliasUser); }\n"
                                 "inline auto LambdaCaptureUser2 = [value = DefaultValue]() { return value; };\n"
+                                
+                                "auto LambdaWithInternalType = []<typename T, typename U>(T first, U second) mutable -> int requires (first > 0) { int local = DefaultValue; return local + sizeof(first) + sizeof(second); };\n"
+                                "void LambdaCaptureTest() { int byCopy = 3; int byRef = 4; static auto LambdaCaptureTestValue = [byCopy, &byRef](int first, int second) mutable -> int { int local = DefaultValue; byRef += first; return local + byCopy + byRef + first + second; }; }\n"
+
+                                // these tests are supposed to capture this and *this, but they currently throw an unhandled Stmt::StmtClass: clang::Stmt::LambdaExprClass
+                                //"namespace std { template <typename T> struct function { template <typename U> function(U); }; }\n"
+                                //"struct LambdaThisCaptureTest     { int member = 1; std::function<int(int, int)> LambdaThisCaptureTestValue     = [ this](int first, int second) mutable -> int { int local = DefaultValue; return local + member + first + second; }; };\n"
+                                //"struct LambdaStarThisCaptureTest { int member = 1; std::function<int(int, int)> LambdaStarThisCaptureTestValue = [*this](int first, int second) mutable -> int { int local = DefaultValue; return local + member + first + second; }; };\n"
+                                
+                                // this doesn't work. Ask Claude, 'cuz ChatGPT is useless.
+                                //"template <typename... Values> struct LambdaCapturePackTest { std::function<int(int, int)>  LambdaCapturePackTestValue = []<typename T, typename U>(T first, U second) { int local = DefaultValue; return local + sizeof(first) + sizeof(second); }; };\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
             Assert::AreEqual(10, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual( 5, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 6, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 1, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(22, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(23, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -5634,7 +5645,14 @@ Test ExploratoryTestsOfClangAST[] =
                                    (*it++).second[0].fullyQualified); // However, it doesn't matter that much, 3 get serialized. That's enough to find ODR violations, just not as pretty.
                 Assert::AreEqual("inline (lambda at input.cc:25:34) LambdaCaptureUser2 = [value = DefaultValue /* static const int DefaultValue = 3; */]() {\n"
                                  "                                                           return value;\n"
-                                 "                                                       };\n", (*it++).second[0].fullyQualified);
+                                 "                                                       };\n"                                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("(lambda at input.cc:26:31) LambdaWithInternalType = []<typename T, typename U>(T first, U second) mutable -> int requires (first > 0) {\n"
+                                 "                                                        int local = DefaultValue;\n"
+                                 "                                                        return local + sizeof (first) + sizeof (second);\n"
+                                 "                                                    }\n"
+                                 "                                                    /* Internal linkage references:\n"
+                                 "                                                       static const int DefaultValue = 3;\n"
+                                 "                                                    */;\n"                                           , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <int N> inline int VarTemplate = N;\n"                                                      , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -5712,6 +5730,18 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline int Increment(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value + 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void LambdaCaptureTest() {\n"
+                                 "    int byCopy = 3;\n"
+                                 "    int byRef = 4;\n"
+                                 "    static auto LambdaCaptureTestValue = [byCopy, &byRef](int first, int second) mutable -> int {\n"
+                                 "        int local = DefaultValue;\n"
+                                 "        byRef += first;\n"
+                                 "        return local + byCopy + byRef + first + second;\n"
+                                 "    };\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int LambdaCaptureUser() {\n"
                                  "    auto lambda = [value = DefaultValue]() {\n"
                                  "        return value;\n"
