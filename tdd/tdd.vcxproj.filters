@@ -21,7 +21,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InitialTests.cpp">
+    <ClCompile Include="SerializationTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="modules\tdd20.ixx">
