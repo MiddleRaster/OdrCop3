@@ -5568,27 +5568,46 @@ Test ExploratoryTestsOfClangAST[] =
                                 "struct FriendHost { friend int FriendDefaultUser(int value = DefaultValue) { return value; } };\n"
                                 
                                 "namespace { enum class AnonymousComboE : int { Value = 7 }; } inline int ComboLinkageUser() { AnonymousComboE e = AnonymousComboE::Value; return static_cast<int>(e) + DefaultValue; }\n"
+
+                                "struct DefaultMemberHolder { int value = DefaultValue; }; inline int DefaultMemberUser() { return DefaultMemberHolder{}.value; }\n"
+                                "inline int ExternalArrayVar[DefaultValue]; inline int ExternalArrayUser() { return sizeof(ExternalArrayVar) / sizeof(int); }\n"
+                                "template <int N> inline int VarTemplate = N; inline int VarTemplateUser() { return VarTemplate<DefaultValue>; }\n"
+                                "template <int N> struct ReturnTypeHolder { using type = long; }; template <> struct ReturnTypeHolder<3> { using type = int; }; inline typename ReturnTypeHolder<DefaultValue>::type TrailingReturnUser() { return DefaultValue; }\n"
+                                "template <int N> concept MatchesDefault = (N == DefaultValue); template <int N> requires MatchesDefault<N> struct ConceptConstrained {}; inline ConceptConstrained<DefaultValue> ConceptUser() { return {}; }\n"
+
+                                "struct AlignasUser { alignas(DefaultValue+1) int value; }; inline int AlignasUserFunc() { return sizeof(AlignasUser); }\n"
+                                "inline int LambdaCaptureUser() { auto lambda = [value = DefaultValue]() { return value; }; return lambda(); }\n"
+                                "using DefaultArrayType = int[DefaultValue]; inline DefaultArrayType DefaultArrayAliasUser; inline int DefaultArrayAliasFunc() { return sizeof(DefaultArrayAliasUser); }\n"
+                                "inline auto LambdaCaptureUser2 = [value = DefaultValue]() { return value; };\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual( 5, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual( 1, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(10, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 5, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(14, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual( 1, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(22, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct AlignasUser {\n"
+                                 "    alignas(DefaultValue /* static const int DefaultValue = 3; */ + 1) int value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct BitFieldHolder {\n"
                                  "    unsigned int a : DefaultValue /* static const int DefaultValue = 3; */;\n"
                                  "    unsigned int b : 29;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N> requires MatchesDefault<N> struct ConceptConstrained {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <int N> requires (N == DefaultValue /* static const int DefaultValue = 3; */) struct Constrained {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <int N = DefaultValue /* static const int DefaultValue = 3; */> struct DefaultParamHolder {\n" 
+                Assert::AreEqual("struct DefaultMemberHolder {\n"
+                                 "    int value = DefaultValue /* static const int DefaultValue = 3; */;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N = DefaultValue /* static const int DefaultValue = 3; */> struct DefaultParamHolder {\n"
                                  "    static const int value = N;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendHost {\n"
@@ -5599,11 +5618,24 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <int N> struct Holder {\n"
                                  "    static const int value = N;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> struct ReturnTypeHolder<3> {\n"
+                                 "    using type = int;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N> struct ReturnTypeHolder {\n"
+                                 "    using type = long;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("inline int DefaultArrayAliasUser[3];\n"                                                              , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline constexpr int DoubledValueUser = DefaultValue /* static const int DefaultValue = 3; */ * 2;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ExternalArrayVar[3];\n", // Unfortunately, clang/AST has lost the DefaultValue completely as soon as we hit the Serialize<>::Types function.
+                                   (*it++).second[0].fullyQualified); // However, it doesn't matter that much, 3 get serialized. That's enough to find ODR violations, just not as pretty.
+                Assert::AreEqual("inline (lambda at input.cc:25:34) LambdaCaptureUser2 = [value = DefaultValue /* static const int DefaultValue = 3; */]() {\n"
+                                 "                                                           return value;\n"
+                                 "                                                       };\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N> inline int VarTemplate = N;\n"                                                      , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -5619,10 +5651,14 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.conceptMap.begin();
+                Assert::AreEqual("template <int N> concept MatchesDefault = (N == DefaultValue /* static const int DefaultValue = 3; */);\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("inline int AlignasUserFunc() {\n"
+                                 "    return sizeof(AlignasUser);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int ArrayBoundUser() {\n"
                                  "    int arr[3];\n"
                                  "    return sizeof (arr);\n"
@@ -5642,11 +5678,23 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   (anonymous namespace)::AnonymousComboE::Value = 7;\n"
                                  "   static const int DefaultValue = 3;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline ConceptConstrained<DefaultValue /* static const int DefaultValue = 3; */> ConceptUser() {\n"
+                                 "    return {};\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int DefaultArrayAliasFunc() {\n"
+                                 "    return sizeof (DefaultArrayAliasUser);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int DefaultMemberUser() {\n"
+                                 "    return DefaultMemberHolder{}.value;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int DefaultParamUser() {\n"
                                  "    return DefaultParamHolder<>::value;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int EnumeratorUser() {\n"
                                  "    return static_cast<int>(DefaultEnum::Value);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ExternalArrayUser() {\n"
+                                 "    return sizeof (ExternalArrayVar) / sizeof(int);\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int FriendDefaultUser(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value;\n"
@@ -5664,6 +5712,15 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline int Increment(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value + 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int LambdaCaptureUser() {\n"
+                                 "    auto lambda = [value = DefaultValue]() {\n"
+                                 "        return value;\n"
+                                 "    };\n"
+                                 "    return lambda();\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int LocalClassUser() {\n"
                                  "    struct LocalArrayHolder {\n"
                                  "        int arr[3];\n"
@@ -5697,6 +5754,18 @@ Test ExploratoryTestsOfClangAST[] =
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int TemplateArgUser() {\n"
                                  "    return Holder<DefaultValue>::value;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int TrailingReturnUser() {\n"
+                                 "    return DefaultValue;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int DefaultValue = 3;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int VarTemplateUser() {\n"
+                                 "    return VarTemplate<DefaultValue>;\n"
                                  "}\n"
                                  "/* Internal linkage references:\n"
                                  "   static const int DefaultValue = 3;\n"

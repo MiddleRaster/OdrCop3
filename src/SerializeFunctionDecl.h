@@ -204,65 +204,8 @@ namespace OdrCop3
             os.flush();
 
             if (!contextItems.serializationNeeds.AreAllFalse())
-            {
-                class InternalLinkageReferenceCollector : public RecursiveASTVisitor<InternalLinkageReferenceCollector>
-                {
-                    llvm::SetVector<const NamedDecl*> references; // removes dupes, keeps insertion order
+                body += InternalLinkageReferenceCollector::PrintReferences<SerializeDecl>(funcDecl->getBody(), contextItems);
 
-                    static const NamedDecl* InternalLinkageDecl(const Decl* decl)
-                    {
-                        if (const auto* named = dyn_cast<NamedDecl>(decl))
-                            return named->getFormalLinkage() == Linkage::Internal ? named : nullptr;
-                        return nullptr;
-                    }
-                    std::string Print(const ContextItems& contextItems) const
-                    {
-                        if (references.empty())
-                            return {};
-
-                        std::string out;
-                        out += "/* Internal linkage references:\n";
-                        for (const NamedDecl* named : references)
-                        {
-                            out += "   ";
-                            out += IndentBlock(SerializeDecl(contextItems, named), LengthOfLastLine(out));
-                            out += "\n";
-                        }
-                        out += "*/\n";
-                        return out;
-                    }
-
-                    friend RecursiveASTVisitor<InternalLinkageReferenceCollector>; // so that the following methods can stay private
-                    bool VisitDeclRefExpr(const DeclRefExpr* declRefExpr)
-                    {
-                        if (const NamedDecl* named = InternalLinkageDecl(declRefExpr->getDecl()))
-                            references.insert(named);
-                        return true;
-                    }
-                    bool VisitMemberExpr(const MemberExpr* memberExpr)
-                    {
-                        if (const NamedDecl* named = InternalLinkageDecl(memberExpr->getMemberDecl()))
-                            references.insert(named);
-                        return true;
-                    }
-                    bool TraverseAttributedStmt(clang::AttributedStmt* stmt)
-                    {
-                        for (const clang::Attr* attr : stmt->getAttrs())
-                            if (const auto* assumeAttr = llvm::dyn_cast<clang::CXXAssumeAttr>(attr))
-                                this->TraverseStmt(assumeAttr->getAssumption());
-                        RecursiveASTVisitor<InternalLinkageReferenceCollector>::TraverseAttributedStmt(stmt);
-                        return true;
-                    }
-                public:
-                    static std::string PrintReferences(const Stmt* stmt, const ContextItems& contextItems)
-                    {
-                        InternalLinkageReferenceCollector collector;
-                        collector.TraverseStmt(const_cast<Stmt*>(stmt));
-                        return collector.Print(contextItems);
-                    }
-                };
-                body += InternalLinkageReferenceCollector::PrintReferences(funcDecl->getBody(), contextItems);
-            }
             return body;
         }
         bool hasTrailingReturn() const

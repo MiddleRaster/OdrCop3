@@ -103,15 +103,122 @@ namespace OdrCop3
             {
                 std::string body;
                 llvm::raw_string_ostream os(body);
-                lambdaExpr->printPretty(os, nullptr, contextItems.printPolicy);
-                os.flush();
-
-                auto pos = body.find("{");
-                if (pos != std::string::npos)
+                if (!contextItems.serializationNeeds.hasInternalLinkageRef &&
+                    !contextItems.serializationNeeds.hasNamespaceAlias)
                 {
-                    std::string requiresStr = get_RequiresClause(lambdaExpr); // insert requires clause, if necessary
-                    std::string captureAndArgs = body.substr(0, pos);
-                    body = captureAndArgs + (requiresStr == "" ? "" : "requires " + requiresStr + " ") + body.substr(pos);
+                    lambdaExpr->printPretty(os, nullptr, contextItems.printPolicy);
+                    os.flush();
+
+                    auto pos = body.find("{");
+                    if (pos != std::string::npos)
+                    {
+                        std::string requiresStr = get_RequiresClause(lambdaExpr); // insert requires clause, if necessary
+                        std::string captureAndArgs = body.substr(0, pos);
+                        body = captureAndArgs + (requiresStr == "" ? "" : "requires " + requiresStr + " ") + body.substr(pos);
+                    }
+                } else {
+
+                    // first the capture stuff
+                    std::string lambda;
+                    lambda += "[";
+                    switch (lambdaExpr->getCaptureDefault())
+                    {
+                    default:
+                    case LCD_None:                     break;
+                    case LCD_ByCopy: lambda += "=";    break;
+                    case LCD_ByRef:  lambda += "&";    break;
+                    }
+                    bool firstCapture = lambdaExpr->getCaptureDefault() == LCD_None;
+                    auto init = lambdaExpr->capture_init_begin();
+                    for (const LambdaCapture& capture : lambdaExpr->captures())
+                    {
+                        if (!capture.isImplicit())
+                        {
+                            if (firstCapture)
+                                firstCapture = false;
+                            else
+                                lambda += ", ";
+
+                            if (capture.isPackExpansion())
+                                lambda += "...";
+
+                            if (capture.capturesThis())
+                            {
+                                if (capture.getCaptureKind() == LCK_StarThis)
+                                    lambda += "*this";
+                                else
+                                    lambda += "this";
+                            }
+                            else if (lambdaExpr->isInitCapture(&capture))
+                            {
+                                lambda += capture.getCapturedVar()->getNameAsString();
+                                lambda += " = ";
+                                lambda += IndentBlock(SerializeExpr(contextItems, *init), LengthOfLastLine(lambda));
+                            }
+                            else if (capture.capturesVariable())
+                            {
+                                if (capture.getCaptureKind() == LCK_ByRef)
+                                    lambda += "&";
+                                lambda += capture.getCapturedVar()->getNameAsString();
+                            }
+                        }
+                        ++init;
+                    }
+                    lambda += "]";
+
+                    // then the explicit template parameters
+                    if (const TemplateParameterList* templateParameters = lambdaExpr->getTemplateParameterList();
+                        templateParameters && templateParameters->getLAngleLoc().isValid()) // if any
+                    {
+                        lambda += "<";
+                        for (unsigned index=0; index<templateParameters->size(); ++index)
+                        {
+                            if (index != 0)
+                                lambda += ", ";
+                            lambda += TrimRightIf(IndentBlock(SerializeDecl(contextItems, templateParameters->getParam(index)), LengthOfLastLine(lambda)), ";");
+                        }
+                        lambda += ">";
+                    }
+
+                    // then the parameters
+                    const CXXMethodDecl* callOperator = lambdaExpr->getCallOperator();
+                    lambda += "(";
+                    for (unsigned index = 0; index < callOperator->getNumParams(); ++index)
+                    {
+                        if (index != 0)
+                            lambda += ", ";
+
+                        lambda += TrimRightIf(IndentBlock(SerializeDecl(contextItems, callOperator->getParamDecl(index)), LengthOfLastLine(lambda)), ";");
+                    }
+                    lambda += ")";
+
+                    if (lambdaExpr->isMutable())
+                        lambda += " mutable";
+
+                    // then the explicit return type
+                    if (lambdaExpr->hasExplicitResultType())
+                    {
+                        lambda += " -> ";
+                        lambda += IndentBlock(SerializeType(contextItems, callOperator->getReturnType()), LengthOfLastLine(lambda));
+                    }
+
+                    // then the trailing requires-clause
+                    const AssociatedConstraint& trailingRequires = lambdaExpr->getTrailingRequiresClause();
+                    if (trailingRequires.ConstraintExpr != nullptr)
+                    {
+                        lambda += " requires ";
+                        lambda += IndentBlock(SerializeExpr(contextItems, trailingRequires.ConstraintExpr), LengthOfLastLine(lambda));
+                    }
+
+                    // finally the body
+                    lambda += " ";
+                    lambdaExpr->getBody()->printPretty(os, nullptr, contextItems.printPolicy);
+                    os.flush(); // result is in "body"
+
+                    lambda += IndentBlock(body, 0);
+                    lambda += InternalLinkageReferenceCollector::PrintReferences<SerializeDecl>(lambdaExpr->getBody(), contextItems);
+
+                    body = lambda;
                 }
 
                 if (isa<InitListExpr>(varDecl->getInit()->IgnoreImplicit()))
