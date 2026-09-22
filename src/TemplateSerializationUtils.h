@@ -31,18 +31,23 @@ namespace OdrCop3
         auto AddParameterPackAndNameAndDefaultArgument = [](const ContextItems& contextItems, const auto* tp) -> std::string
                                                          {
                                                             std::string out;
-                                                             if (tp->isParameterPack())
-                                                                 out += "...";
-                                                             if (!tp->getName().empty())
-                                                                 out += tp->getName().str();
-                                                             if (tp->hasDefaultArgument())
-                                                             {
-                                                                 std::string defaultStr;
-                                                                 llvm::raw_string_ostream defaultStream(defaultStr);
-                                                                 tp->getDefaultArgument().getArgument().getAsExpr()->printPretty(defaultStream, nullptr, contextItems.printPolicy);
-                                                                 out += " = " + defaultStr;
-                                                             }
-                                                             return TrimRightIf(out, " ");
+                                                            if (tp->isParameterPack())
+                                                                out += "...";
+                                                            if (!tp->getName().empty())
+                                                                out += tp->getName().str();
+                                                            if (tp->hasDefaultArgument())
+                                                            {
+                                                                out += " = ";
+                                                                if (contextItems.serializationNeeds.AreAllFalse())
+                                                                {
+                                                                    std::string defaultStr;
+                                                                    llvm::raw_string_ostream defaultStream(defaultStr);
+                                                                    tp->getDefaultArgument().getArgument().getAsExpr()->printPretty(defaultStream, nullptr, contextItems.printPolicy);
+                                                                    out += defaultStr;
+                                                                } else
+                                                                    out += IndentBlock(SerializeExpr(contextItems, tp->getDefaultArgument().getArgument().getAsExpr()), LengthOfLastLine(out));
+                                                            }
+                                                            return TrimRightIf(out, " ");
                                                          };
 
         std::string out = "template <";
