@@ -27,6 +27,7 @@
 #include "SerializeTypeTraitExpr.h"
 #include "SerializeUnaryExprOrTypeTraitExpr.h"
 #include "SerializeParenExpr.h"
+#include "SerializeLambdaExpr.h"
 #include "SerializeCXXConstructExpr.h"
 #include "SerializeImplicitCastExpr.h"
 #include "SerializeUnresolvedLookupExpr.h"
@@ -54,7 +55,8 @@ namespace OdrCop3
             static std::string Serialize(const ContextItems& contextItems, const clang::UnresolvedLookupExpr     *      unresolvedLookupExpr) { return      UnresolvedLookupExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,      unresolvedLookupExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::RequiresExpr             *              requiresExpr) { return              RequiresExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,              requiresExpr).Serialize(); }
             static std::string Serialize(const ContextItems& contextItems, const clang::TypeTraitExpr            *             typeTraitExpr) { return             TypeTraitExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,             typeTraitExpr).Serialize(); }
-            static std::string Serialize(const ContextItems& contextItems, const clang::CallExpr                 *                 parenExpr) { return                  CallExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,                 parenExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::CallExpr                 *                  callExpr) { return                  CallExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,                  callExpr).Serialize(); }
+            static std::string Serialize(const ContextItems& contextItems, const clang::LambdaExpr               *                lambdaExpr) { return                LambdaExprSerializer<SerializeDecl, SerializeType, SerializeExpr>(contextItems,                lambdaExpr).Serialize(); }
         };
 
         template<auto SerializeDecl, auto SerializeType>
@@ -109,6 +111,7 @@ namespace OdrCop3
                 case clang::Stmt::StmtClass::TypeTraitExprClass            : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::TypeTraitExpr            >(expr));
                 case clang::Stmt::StmtClass::CallExprClass                 : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::CallExpr                 >(expr));
                 case clang::Stmt::StmtClass::ConditionalOperatorClass      : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::ConditionalOperator      >(expr));
+                case clang::Stmt::StmtClass::LambdaExprClass               : return ExprSerializer::Serialize(contextItems2, dyn_cast<clang::LambdaExpr               >(expr));
                 default:
                     break;
                 };

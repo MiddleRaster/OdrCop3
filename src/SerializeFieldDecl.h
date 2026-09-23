@@ -50,7 +50,7 @@ namespace OdrCop3
             for (const Attr* attr : fieldDecl->attrs())   // attributes on data-members
                 out += Serialize::Attrs<SerializeDecl, SerializeType, SerializeExpr>(contextItems, attr);
 
-            if (NeedsManualSerialization(contextItems, fieldDecl->getType().getCanonicalType()))
+            if (NeedsManualSerialization(contextItems, fieldDecl->getType().getCanonicalType()) || contextItems.serializationNeeds.hasInternalLinkageRef)
             {
                 QualType qualType;
                 if (fieldDecl->getType()->isFunctionPointerType() || fieldDecl->getType()->isMemberPointerType()) // getCanonicalType() sees right through the ParenType which totally hoses the pointer-to-function case.
@@ -67,6 +67,7 @@ namespace OdrCop3
                 fieldDecl->print(os, contextItems.printPolicy);
                 os.flush();
                 out += fieldStr;
+                return out; // FieldDecl::print prints the whole thing
             }
             else if (auto* suppressedAnonymousCXXRecord = fieldDecl->getType()->getAsCXXRecordDecl();
                            suppressedAnonymousCXXRecord && suppressedAnonymousCXXRecord->getName().empty())

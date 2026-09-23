@@ -5583,19 +5583,14 @@ Test ExploratoryTestsOfClangAST[] =
                                 "auto LambdaWithInternalType = []<typename T, typename U>(T first, U second) mutable -> int requires (first > 0) { int local = DefaultValue; return local + sizeof(first) + sizeof(second); };\n"
                                 "void LambdaCaptureTest() { int byCopy = 3; int byRef = 4; static auto LambdaCaptureTestValue = [byCopy, &byRef](int first, int second) mutable -> int { int local = DefaultValue; byRef += first; return local + byCopy + byRef + first + second; }; }\n"
 
-                                // these tests are supposed to capture this and *this, but they currently throw an unhandled Stmt::StmtClass: clang::Stmt::LambdaExprClass
-                                //"namespace std { template <typename T> struct function { template <typename U> function(U); }; }\n"
-                                //"struct LambdaThisCaptureTest     { int member = 1; std::function<int(int, int)> LambdaThisCaptureTestValue     = [ this](int first, int second) mutable -> int { int local = DefaultValue; return local + member + first + second; }; };\n"
-                                //"struct LambdaStarThisCaptureTest { int member = 1; std::function<int(int, int)> LambdaStarThisCaptureTestValue = [*this](int first, int second) mutable -> int { int local = DefaultValue; return local + member + first + second; }; };\n"
-                                
-                                // this doesn't work. Ask Claude, 'cuz ChatGPT is useless.
-                                //"template <typename... Values> struct LambdaCapturePackTest { std::function<int(int, int)>  LambdaCapturePackTestValue = []<typename T, typename U>(T first, U second) { int local = DefaultValue; return local + sizeof(first) + sizeof(second); }; };\n"
+                                "namespace std { template <typename T> struct function { template <typename U> function(U); }; }\n"
+                                "struct Container { std::function<int()> valueOnly = [value = DefaultValue]() { return value; }; };\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(10, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(12, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 6, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
@@ -5614,6 +5609,11 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <int N> requires MatchesDefault<N> struct ConceptConstrained {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <int N> requires (N == DefaultValue /* static const int DefaultValue = 3; */) struct Constrained {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Container {\n"
+                                 "    std::function<int ()> valueOnly = [value = DefaultValue /* static const int DefaultValue = 3; */]() {\n"
+                                 "                                          return value;\n"
+                                 "                                      };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct DefaultMemberHolder {\n"
                                  "    int value = DefaultValue /* static const int DefaultValue = 3; */;\n"
@@ -5634,6 +5634,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <int N> struct ReturnTypeHolder {\n"
                                  "    using type = long;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct function {\n"
+                                 "    template <typename U> function<T>(U);\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
