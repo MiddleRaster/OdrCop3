@@ -5584,13 +5584,15 @@ Test ExploratoryTestsOfClangAST[] =
                                 "void LambdaCaptureTest() { int byCopy = 3; int byRef = 4; static auto LambdaCaptureTestValue = [byCopy, &byRef](int first, int second) mutable -> int { int local = DefaultValue; byRef += first; return local + byCopy + byRef + first + second; }; }\n"
 
                                 "namespace std { template <typename T> struct function { template <typename U> function(U); }; }\n"
-                                "struct Container { std::function<int()> valueOnly = [value = DefaultValue]() { return value; }; };\n"
+                                "struct Container  { std::function<int()> valueOnly = [=, value = DefaultValue,  this]() { return value; }; };\n"
+                                "struct Container2 { std::function<int()> valueOnly = [&, value = DefaultValue, *this]() { return value; }; };\n"
+                                "template <typename... Ts> struct Container3 { std::function<int()> valueOnly = [...values = Ts{}, value = DefaultValue, *this]() { return sizeof...(values); }; };\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(12, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(14, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 6, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
@@ -5611,8 +5613,18 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <int N> requires (N == DefaultValue /* static const int DefaultValue = 3; */) struct Constrained {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Container {\n"
-                                 "    std::function<int ()> valueOnly = [value = DefaultValue /* static const int DefaultValue = 3; */]() {\n"
+                                 "    std::function<int ()> valueOnly = [=, value = DefaultValue /* static const int DefaultValue = 3; */, this]() {\n"
                                  "                                          return value;\n"
+                                 "                                      };\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Container2 {\n"
+                                 "    std::function<int ()> valueOnly = [&, value = DefaultValue /* static const int DefaultValue = 3; */, *this]() {\n"
+                                 "                                          return value;\n"
+                                 "                                      };\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename ...Ts> struct Container3 {\n"
+                                 "    std::function<int ()> valueOnly = [...values = Ts{}, value = DefaultValue /* static const int DefaultValue = 3; */, *this]() {\n"
+                                 "                                          return sizeof...(values);\n"
                                  "                                      };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct DefaultMemberHolder {\n"

@@ -20,6 +20,16 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         const LambdaExpr  * lambdaExpr;
+
+        static bool IsPackExpansion(const LambdaCapture& capture)
+        {
+            if (capture.isPackExpansion())
+                return true;
+            if (!capture.capturesVariable())
+                return false;
+            const VarDecl* variable = dyn_cast_or_null<VarDecl>(capture.getCapturedVar());
+            return variable && variable->isParameterPack();
+        }
     public:
         LambdaExprSerializer(const ContextItems& contextItems, const LambdaExpr* lambdaExpr) : contextItems(contextItems), lambdaExpr(lambdaExpr) {}
         std::string Serialize() const
@@ -33,9 +43,9 @@ namespace OdrCop3
             switch (lambdaExpr->getCaptureDefault())
             {
             default:
-            case LCD_None:                     break;
-            case LCD_ByCopy: out += "=";    break;
-            case LCD_ByRef:  out += "&";    break;
+            case LCD_None:               break;
+            case LCD_ByCopy: out += "="; break;
+            case LCD_ByRef:  out += "&"; break;
             }
             bool firstCapture = lambdaExpr->getCaptureDefault() == LCD_None;
             auto init = lambdaExpr->capture_init_begin();
@@ -48,7 +58,7 @@ namespace OdrCop3
                     else
                         out += ", ";
 
-                    if (capture.isPackExpansion())
+                    if (IsPackExpansion(capture))
                         out += "...";
 
                     if (capture.capturesThis())
@@ -66,9 +76,7 @@ namespace OdrCop3
                     }
                     else if (capture.capturesVariable())
                     {
-                        if (capture.isPackExpansion())
-                            out += "...";
-                        else if (capture.getCaptureKind() == LCK_ByRef)
+                        if (capture.getCaptureKind() == LCK_ByRef)
                             out += "&";
                         out += capture.getCapturedVar()->getNameAsString();
                     }
