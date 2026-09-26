@@ -3905,17 +3905,26 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("class A {\n"
-                                 "    template <typename T> friend class Wrapper;\n"
+                                 "    template <typename T> friend class Wrapper {\n"
+                                 "    public:\n"
+                                 "        T value;\n"
+                                 "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> class FriendClassTemplateAlreadyDefined {\n"
                                  "public:\n"
                                  "    T value;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendClassTemplateAlreadyDefinedFriend {\n"
-                                 "    template <typename T> friend class FriendClassTemplateAlreadyDefined;\n"
+                                 "    template <typename T> friend class FriendClassTemplateAlreadyDefined {\n"
+                                 "    public:\n"
+                                 "        T value;\n"
+                                 "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendClassTemplateForwardDeclaration {\n"
-                                 "    template <typename T> friend class FriendClassTemplateForwardDeclared;\n"
+                                 "    template <typename T> friend class FriendClassTemplateForwardDeclared {\n"
+                                 "    public:\n"
+                                 "        T value;\n"
+                                 "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> class FriendClassTemplateForwardDeclared {\n"
                                  "public:\n"
@@ -3924,7 +3933,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T, typename U> requires (sizeof(T) > 0 && sizeof(U) > 0) class FriendClassTemplateMultipleRequires {\n"
                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendClassTemplateMultipleRequiresFriend {\n"
-                                 "    template <typename T, typename U> requires (sizeof(T) > 0 && sizeof(U) > 0) friend class FriendClassTemplateMultipleRequires;\n"
+                                 "    template <typename T, typename U> requires (sizeof(T) > 0 && sizeof(U) > 0) friend class FriendClassTemplateMultipleRequires {\n"
+                                 "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename U> class FriendClassTemplateNestedFriend {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -3933,7 +3943,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    T value[N];\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendClassTemplateNonTypeParameterFriend {\n"
-                                 "    template <typename T, int N> friend class FriendClassTemplateNonTypeParameter;\n"
+                                 "    template <typename T, int N> friend class FriendClassTemplateNonTypeParameter {\n"
+                                 "    public:\n"
+                                 "        T value[N];\n"
+                                 "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct FriendClassTemplateOuter {\n"
                                  "    template <typename U> friend class FriendClassTemplateNestedFriend;\n"
@@ -3946,10 +3959,15 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <template <typename> class C> class FriendClassTemplateTemplateParameter {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendClassTemplateTemplateParameterFriend {\n"
-                                 "    template <template <typename> class C> friend class FriendClassTemplateTemplateParameter;\n"
+                                 "    template <template <typename> class C> friend class FriendClassTemplateTemplateParameter {\n"
+                                 "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendClassTemplateTwoParameterFriend {\n"
-                                 "    template <typename T, typename U> friend class FriendClassTemplateTwoParameters;\n"
+                                 "    template <typename T, typename U> friend class FriendClassTemplateTwoParameters {\n"
+                                 "    public:\n"
+                                 "        T value1;\n"
+                                 "        U value2;\n"
+                                 "    };\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T, typename U> class FriendClassTemplateTwoParameters {\n"
                                  "public:\n"
@@ -5890,15 +5908,60 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"Nested, forward declared anonymous namespace types", []
+        {
+            std::string code =
+                                "namespace { struct InternalA; struct InternalB { InternalA* a; }; struct InternalA { InternalB* b; }; } struct ExternalRecursive { InternalA value; };\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(1, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(0, maps.functionMap.size(),"wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct ExternalRecursive {\n"
+                                 "    struct (anonymous namespace)::InternalA {\n"
+                                 "        struct (anonymous namespace)::InternalB {\n"
+                                 "            struct (anonymous namespace)::InternalA *a;\n"
+                                 "        } *b;\n"
+                                 "    } value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.guideMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 
 };
 /* some missing test cases
 
-1. anonymous namespace types and internal-linkage types used inside Attributes:
-
-2. forward reference of anonymous namespace type doesn't serialize properly: InternalA leaves off the field, InternalB* b. :(
-"namespace { struct InternalA; struct InternalB { InternalA* a; }; struct InternalA { InternalB* b; }; } struct ExternalRecursive { InternalA value; };\n"
 
 
 

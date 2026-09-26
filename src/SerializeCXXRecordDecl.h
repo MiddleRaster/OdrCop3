@@ -164,8 +164,15 @@ namespace OdrCop3
             return false;
         }
 
+        static const CXXRecordDecl* GetDefinition(const CXXRecordDecl* cxxRecordDecl)
+        {
+            if (const CXXRecordDecl* definition = cxxRecordDecl->getDefinition())
+                return definition; // not the forward declaration
+            return cxxRecordDecl;
+        }
+
     public:
-        CXXRecordDeclSerializer(const ContextItems& contextItems, const CXXRecordDecl* cxxRecordDecl) : contextItems(contextItems), cxxRecordDecl(cxxRecordDecl) {}
+        CXXRecordDeclSerializer(const ContextItems& contextItems, const CXXRecordDecl* cxxRecordDecl) : contextItems(contextItems), cxxRecordDecl(GetDefinition(cxxRecordDecl)) {}
         std::string Serialize() const
         {
             std::string out;

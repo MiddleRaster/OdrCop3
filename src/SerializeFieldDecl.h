@@ -67,6 +67,7 @@ namespace OdrCop3
                 fieldDecl->print(os, contextItems.printPolicy);
                 os.flush();
                 out += fieldStr;
+                out += ";\n";
                 return out; // FieldDecl::print prints the whole thing
             }
             else if (auto* suppressedAnonymousCXXRecord = fieldDecl->getType()->getAsCXXRecordDecl();
