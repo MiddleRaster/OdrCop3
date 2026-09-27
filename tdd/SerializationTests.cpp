@@ -125,7 +125,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    [[nodiscard(\"\")]] const Bar *GetBar() const & override {\n"
                                  "        return this;\n"
                                  "    }\n"
-                                 "    (lambda at input.cc:2:333) make_lambda() const {\n"
+                                 "    auto make_lambda() const {\n"
                                  "        return [this](int x) {\n"
                                  "            return x + this->i;\n"
                                  "        };\n"
@@ -997,7 +997,7 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.varMap.begin();
                 Assert::AreEqual("class (anonymous namespace)::(lambda at input.cc:4:32) {\n"
-                                 "    inline constexpr int operator()(int x) const {\n"
+                                 "    inline constexpr auto operator()(int x) const {\n"
                                  "        return x + 1;\n"
                                  "    }\n"
                                  "} b = [](int x) {\n"
@@ -1005,7 +1005,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "      };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("class (anonymous namespace)::(lambda at input.cc:4:32) {\n"
-                                 "    inline constexpr int operator()(int x) const {\n"
+                                 "    inline constexpr auto operator()(int x) const {\n"
                                  "        return x + 1;\n"
                                  "    }\n"
                                  "} c = [](int x) {\n"
@@ -1016,7 +1016,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                     };\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("class (anonymous namespace)::(lambda at input.cc:3:44) {\n"
-                                 "    inline constexpr int operator()(int x) const {\n"
+                                 "    inline constexpr auto operator()(int x) const {\n"
                                  "        return x + 1;\n"
                                  "    }\n"
                                  "} global_lambda = [](int x) {\n"
@@ -1267,11 +1267,11 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct StructWithLambdaField {\n"
                                  "    class (anonymous namespace)::(lambda at input.cc:4:27) {\n"
-                                 "        inline constexpr int operator()(int x) const {\n"
+                                 "        inline constexpr auto operator()(int x) const {\n"
                                  "            return x * 2;\n"
                                  "        }\n"
                                  "    } mpf = (anonymous namespace)::Lambda /* class (anonymous namespace)::(lambda at input.cc:4:27) {\n"
-                                 "                                                 inline constexpr int operator()(int x) const {\n"
+                                 "                                                 inline constexpr auto operator()(int x) const {\n"
                                  "                                                     return x * 2;\n"
                                  "                                                 }\n"
                                  "                                             } Lambda = [](int x) {\n"
@@ -2160,9 +2160,9 @@ Test ExploratoryTestsOfClangAST[] =
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct Public8 {\n"
-                                 "    friend std::strong_ordering operator<=>(const Public8 &, const struct Outer::(anonymous namespace)::Hidden8 {\n"
-                                 "                                                                       int value;\n"
-                                 "                                                                   } &) {\n"
+                                 "    friend auto operator<=>(const Public8 &, const struct Outer::(anonymous namespace)::Hidden8 {\n"
+                                 "                                                       int value;\n"
+                                 "                                                   } &) {\n"
                                  "               return 0 <=> 0;\n"
                                  "           }\n"
                                  "};\n"
@@ -2170,7 +2170,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Point {\n"
                                  "    int x;\n"
                                  "    int y;\n"
-                                 "    std::strong_ordering operator<=>(const Point &) const = default;\n"
+                                 "    auto operator<=>(const Point &) const = default;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Point2 {\n"
@@ -2183,28 +2183,28 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Point3 {\n"
                                  "    int value;\n"
-                                 "    std::strong_ordering operator<=>(const Point3 &) const & = default;\n"
+                                 "    auto operator<=>(const Point3 &) const & = default;\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Point4 {\n"
                                  "    int value;\n"
-                                 "    std::strong_ordering operator<=>(const Point4 &rhs) const && {\n"
+                                 "    auto operator<=>(const Point4 &rhs) const && {\n"
                                  "        return this->value <=> rhs.value;\n"
                                  "    }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Point5 {\n"
                                  "    int value;\n"
-                                 "    std::strong_ordering operator<=>(const Point5 &rhs) const noexcept {\n"
+                                 "    auto operator<=>(const Point5 &rhs) const noexcept {\n"
                                  "        return this->value <=> rhs.value;\n"
                                  "    }\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Public1 {\n"
                                  "    int value;\n"
-                                 "    friend std::strong_ordering operator<=>(const Public1 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
-                                 "                                                                          int value;\n"
-                                 "                                                                      } &rhs) {\n"
+                                 "    friend auto operator<=>(const Public1 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                                          int value;\n"
+                                 "                                                      } &rhs) {\n"
                                  "               return lhs.value <=> rhs.value;\n"
                                  "           }\n"
                                  "           /* Internal linkage references:\n"
@@ -2241,9 +2241,9 @@ Test ExploratoryTestsOfClangAST[] =
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Public7 {\n"
                                  "    int value;\n"
-                                 "    friend std::strong_ordering operator<=>(const Public7 &, const struct (anonymous namespace)::Hidden1 {\n"
-                                 "                                                                       int value;\n"
-                                 "                                                                   } &);\n"
+                                 "    friend auto operator<=>(const Public7 &, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                                       int value;\n"
+                                 "                                                   } &);\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct strong_ordering {\n"
@@ -2274,15 +2274,15 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
-                Assert::AreEqual("std::strong_ordering operator<=>(const Public8 &, const struct Outer::(anonymous namespace)::Hidden8 {\n"
-                                 "                                                            int value;\n"
-                                 "                                                        } &) {\n"
+                Assert::AreEqual("auto operator<=>(const Public8 &, const struct Outer::(anonymous namespace)::Hidden8 {\n"
+                                 "                                            int value;\n"
+                                 "                                        } &) {\n"
                                  "    return 0 <=> 0;\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("std::strong_ordering operator<=>(const Public1 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
-                                 "                                                               int value;\n"
-                                 "                                                           } &rhs) {\n"
+                Assert::AreEqual("auto operator<=>(const Public1 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                               int value;\n"
+                                 "                                           } &rhs) {\n"
                                  "    return lhs.value <=> rhs.value;\n"
                                  "}\n"
                                  "/* Internal linkage references:\n"
@@ -2294,9 +2294,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return Ordering{};\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("std::strong_ordering operator<=>(const Public3 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
-                                 "                                                               int value;\n"
-                                 "                                                           } &rhs) {\n"
+                Assert::AreEqual("auto operator<=>(const Public3 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                               int value;\n"
+                                 "                                           } &rhs) {\n"
                                  "    return lhs.value <=> rhs.value;\n"
                                  "}\n"
                                  "/* Internal linkage references:\n"
@@ -2315,9 +2315,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    return {};\n"
                                  "}\n"
                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("std::strong_ordering operator<=>(const Public7 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
-                                 "                                                               int value;\n"
-                                 "                                                           } &rhs) {\n"
+                Assert::AreEqual("auto operator<=>(const Public7 &lhs, const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                                               int value;\n"
+                                 "                                           } &rhs) {\n"
                                  "    return lhs.value <=> rhs.value;\n"
                                  "}\n"
                                  "/* Internal linkage references:\n"
@@ -5750,7 +5750,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("int FriendDefaultUser(int value = DefaultValue /* static const int DefaultValue = 3; */) {\n"
                                  "    return value;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline int IfConstexprUser() {\n"
+                Assert::AreEqual("inline auto IfConstexprUser() {\n"
                                  "    if (DefaultValue == 3) {\n"
                                  "        return 1;\n"
                                  "    } else {\n"
@@ -5833,6 +5833,247 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Internal linkage references:\n"
                                  "   static const int DefaultValue = 3;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+    {"additional internal-linkage values read by external-linkage types", []
+        {
+            std::string code =
+                                "static const int ReadOnlyContextValue = 11;\n"
+                                "inline int ReadOnlyContextSizeof     () { return sizeof (int[ReadOnlyContextValue]); }\n"
+                                "inline int ReadOnlyContextAlignof    () { return alignof(int[ReadOnlyContextValue]); }\n"
+                                "using ReadOnlyContextArray = int[ReadOnlyContextValue];\n"
+                                "inline ReadOnlyContextArray ReadOnlyContextArrayUser;\n"
+                                "inline int ReadOnlyContextTypeid     () { return sizeof(decltype(ReadOnlyContextArrayUser)); }\n"
+                                "inline int ReadOnlyContextConditional() { return ReadOnlyContextValue ? 17 : 23; }\n"
+                                "inline int ReadOnlyContextComma      () { int value = 29; return (value += ReadOnlyContextValue, value); }\n"
+                                "inline int ReadOnlyContextUnary      () { return +ReadOnlyContextValue; }\n"
+                                "inline int ReadOnlyContextCast       () { return static_cast<long>(ReadOnlyContextValue); }\n"
+                                "inline int ReadOnlyContextNoexcept   () noexcept (ReadOnlyContextValue == 11) { return 31; }\n"                                
+          "template <typename T> inline int ReadOnlyContextRequires   () requires (ReadOnlyContextValue == 11) { return 37; }\n"
+
+                                // address and reference binding to internal-linkage entities"
+                                "static int InternalAddressObject = 47;\n"
+                                "static int InternalReferenceObject = 53;\n"
+                                "static int InternalAddressFunction(int value) { return value + 1; }\n"
+                                "inline int *ExternalObjectAddress() { return &InternalAddressObject; }\n"
+                                "inline int &ExternalObjectReference() { return InternalReferenceObject; }\n"
+                                "inline auto ExternalFunctionAddress() { return &InternalAddressFunction; }\n"
+//                                "inline int ExternalFunctionReference(int (&function)(int)) { return function(7); }\n"
+//                                "inline int ExternalBoundReference() { int &reference = InternalReferenceObject; return reference; }\n"
+//                                ;
+////    {"anonymous namespace type in inline signature", []
+//
+//                                "namespace { struct AnonymousSignatureType { int value; }; }\n"
+//                                "inline AnonymousSignatureType AnonymousSignatureReturn(AnonymousSignatureType value) { return value; }\n"
+//                                "inline void AnonymousSignatureParameter(const AnonymousSignatureType &) {}\n"
+//                                "inline AnonymousSignatureType *AnonymousSignaturePointer(AnonymousSignatureType *value) { return value; }\n"
+//                                "template <typename T> struct AnonymousSignatureHolder { T value; };\n"
+//                                "inline AnonymousSignatureHolder<AnonymousSignatureType> AnonymousSignatureInstantiation() { return {}; }\n"
+//                                "inline AnonymousSignatureHolder<AnonymousSignatureType> AnonymousSignatureVariable;\n"
+//                                ;
+////    {"anonymous namespace type in inline template instantiation", []
+//
+//                                "namespace { struct AnonymousInstantiationType { long value; }; }\n"
+//                                "template <typename T> struct AnonymousInstantiationHolder { static int Use(T value) { return sizeof(value); } };\n"
+//                                "inline int AnonymousInstantiationUser() { return AnonymousInstantiationHolder<AnonymousInstantiationType>::Use({}); }\n"
+//                                "template <typename T> inline int AnonymousInstantiationFunction(T value) { return sizeof(value); }\n"
+//                                "inline int AnonymousInstantiationCall() { return AnonymousInstantiationFunction(AnonymousInstantiationType{}); }\n"
+//                                ;
+//
+//
+////    {"macro expansion differing between TUs at identical call site", []
+//                                "#ifdef ODR_VARIANT_B\n"
+//                                "#define MacroVariantValue 71\n"
+//                                "#else\n"
+//                                "#define MacroVariantValue 73\n"
+//                                "#endif\n"
+//                                "inline int MacroVariantTarget() { return MacroVariantValue; }\n"
+//                                "inline int MacroVariantCaller() { return MacroVariantTarget(); }\n"
+//                                "#undef MacroVariantValue\n"
+//                                ;
+//
+////  {"macro expansion differing in inline expression at identical call site", []
+//                                "#ifdef ODR_VARIANT_B\n"
+//                                "#define MacroExpressionValue(x) ((x) + 101)\n"
+//                                "#else\n"
+//                                "#define MacroExpressionValue(x) ((x) + 103)\n"
+//                                "#endif\n"
+//                                "inline int MacroExpressionUser(int value) { return MacroExpressionValue(value); }\n"
+//                                "#undef MacroExpressionValue\n"
+//                                ;
+//    //    {"internal-linkage object as non-type template argument", []
+//
+//                                    "static int InternalNttpObject = 79;\n"
+//                                    "template <int *Value> struct PointerNttpHolder { static int Get() { return *Value; } };\n"
+//                                    "inline int InternalObjectNttpUser() { return PointerNttpHolder<&InternalNttpObject>::Get(); }\n"
+//                                    "static const int InternalNttpArray[2] = { 83, 89 };\n"
+//                                    "template <const int *Value> struct ConstPointerNttpHolder { static int Get() { return Value[0]; } };\n"
+//                                    "inline int InternalConstObjectNttpUser() { return ConstPointerNttpHolder<InternalNttpArray>::Get(); }\n"
+//                                    ;
+//
+//    //    {"internal-linkage function as non-type template argument", []
+//
+//                                    "static int InternalNttpFunction(int value) { return value + 97; }\n"
+//                                    "template <int (*Function)(int)> struct FunctionNttpHolder { static int Call(int value) { return Function(value); } };\n"
+//                                    "inline int InternalFunctionNttpUser() { return FunctionNttpHolder<&InternalNttpFunction>::Call(3); }\n"
+//                                    ;
+//    //    {"ADL divergence from surrounding internal declaration", []
+//                                    "namespace AdlDivergenceNamespace { struct Argument {}; static int Process(Argument) { return 107; } }\n"
+//                                    "inline int AdlDivergenceUser() { AdlDivergenceNamespace::Argument value; return Process(value); }\n"
+//                                    ;
+//
+//
+//    //  {"overload resolution involving internal-linkage overload", []
+//                                    "namespace OverloadDivergenceNamespace { struct Argument {}; inline int Process(Argument) { return 109; } static int Process(Argument &) { return 113; } }\n"
+//                                    "inline int OverloadDivergenceUser() { OverloadDivergenceNamespace::Argument value; return Process(value); }\n"
+//                                    ;
+//
+//    //    {"ADL divergence through internal-linkage namespace function", []
+//
+//                                    "namespace AdlInternalFunctionNamespace { struct Argument {}; static int Resolve(Argument) { return 127; } }\n"
+//                                    "inline int AdlInternalFunctionUser(AdlInternalFunctionNamespace::Argument value) { return Resolve(value); }\n"
+//                                    ;
+//
+//    //    {"layout query on same-named differently-defined type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutVariantType { int first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutVariantType { int first; int second; };\n"
+//                                    "#endif\n"
+//                                    "inline int LayoutVariantSize() { return sizeof(LayoutVariantType); }\n"
+//                                    "inline int LayoutVariantAlignment() { return alignof(LayoutVariantType); }\n"
+//                                    "inline int LayoutVariantOffset() { return __builtin_offsetof(LayoutVariantType, second); }\n"
+//                                    ;
+//
+//    //    {"layout-dependent member access on same-named type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutAccessVariant { char first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutAccessVariant { int first; double second; };\n"
+//                                    "#endif\n"
+//                                    "inline double LayoutAccessUser(LayoutAccessVariant value) { return value.second; }\n"
+//                                    ;
+//
+//    //    {"layout-dependent aggregate initialization on same-named type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutAggregateVariant { int first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutAggregateVariant { double first; int second; };\n"
+//                                    "#endif\n"
+//                                    "inline int LayoutAggregateUser() { LayoutAggregateVariant value{}; return sizeof(value); }\n"
+//                                    ;
+//
+
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual( 0, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 1, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(12, maps.functionMap.size(),"wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                Assert::AreEqual("inline int ReadOnlyContextArrayUser[11];\n" // unfortunately NOT using "ReadOnlyContextValue" and the C-style comment
+                              , (*it++).second[0].fullyQualified);            // but sufficient for ODR violation detection
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.guideMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("inline auto ExternalFunctionAddress() {\n"
+                                 "    return &InternalAddressFunction;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int InternalAddressFunction(int value) {\n"
+                                 "       return value + 1;\n"
+                                 "   }\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int *ExternalObjectAddress() {\n"
+                                 "    return &InternalAddressObject;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int InternalAddressObject = 47;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int &ExternalObjectReference() {\n"
+                                 "    return InternalReferenceObject;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int InternalReferenceObject = 53;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ReadOnlyContextAlignof() {\n"
+                                 "    return alignof(int[11]);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int ReadOnlyContextValue = 11;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ReadOnlyContextCast() {\n"
+                                 "    return static_cast<long>(ReadOnlyContextValue);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int ReadOnlyContextValue = 11;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ReadOnlyContextComma() {\n"
+                                 "    int value = 29;\n"
+                                 "    return (value += ReadOnlyContextValue , value);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int ReadOnlyContextValue = 11;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ReadOnlyContextConditional() {\n"
+                                 "    return ReadOnlyContextValue ? 17 : 23;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int ReadOnlyContextValue = 11;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ReadOnlyContextNoexcept() noexcept(ReadOnlyContextValue /* static const int ReadOnlyContextValue = 11; */ == 11) {\n"
+                                 "    return 31;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> inline int ReadOnlyContextRequires() requires (ReadOnlyContextValue == 11) {\n"
+                                 "    return 37;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ReadOnlyContextSizeof() {\n"
+                                 "    return sizeof(int[11]);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int ReadOnlyContextValue = 11;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ReadOnlyContextTypeid() {\n"
+                                 "    return sizeof(decltype(ReadOnlyContextArrayUser));\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ReadOnlyContextUnary() {\n"
+                                 "    return +ReadOnlyContextValue;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int ReadOnlyContextValue = 11;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
@@ -5962,27 +6203,6 @@ Test ExploratoryTestsOfClangAST[] =
 };
 /* some missing test cases
 
-
-
-
-
-
-
-
-
-internal linkage issues:
-TU1:
-static const int DefaultValue = 3;              // internal linkage
-inline int Increment(int value = DefaultValue)  // external linkage
-{ return value + 1; }
-
-TU2:
-static const int DefaultValue = 4;              // internal linkage
-inline int Increment(int value = DefaultValue)  // external linkage
-{ return value + 1; }
-
-Conclusion: the default values are different, therefore an ODR violation, but they look EXACTLY the same.
-Solution  : add a C-style comment containing = 3 or = 4 to each external linkage item containing an internal linkage variable.
 
 1. Same mechanism, other read-only contexts
 2. Calling an internal-linkage function, not reading a variable

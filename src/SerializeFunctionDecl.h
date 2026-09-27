@@ -214,6 +214,10 @@ namespace OdrCop3
                 return fpt->hasTrailingReturn();
             return false; // K&R, pre-C99, etc.
         }
+        bool isAutoReturnType() const
+        {
+            return funcDecl->getDeclaredReturnType()->getContainedAutoType();
+        }
 
         std::string SerializePastFriend(auto returnType, auto functionName) const
         {
@@ -229,7 +233,7 @@ namespace OdrCop3
             fqn += get_Constexpr();
             fqn += get_ConstEval();
 
-            if (true == hasTrailingReturn())
+            if (hasTrailingReturn() || isAutoReturnType())
                 fqn += "auto "; // has trailing-return syntax
             else
                 fqn += IndentBlock(returnType(), LengthOfLastLine(fqn));
@@ -239,7 +243,7 @@ namespace OdrCop3
             if (fqn.substr(fqn.size()-1) != " ") // certainly don't want two spaces in a row
                 fqn += " ";                      // e.g., "int" does
 
-            if (hasTrailingReturn() || (false == IsType::EventuallyArrayOrFunctionPointer(funcDecl->getReturnType()))) // if not that returning-reference-to-array syntax
+            if (hasTrailingReturn() || isAutoReturnType() || (false == IsType::EventuallyArrayOrFunctionPointer(funcDecl->getReturnType()))) // if not that returning-reference-to-array syntax
                 fqn += IndentBlock(SerializeFromCallingConventionToTrailingReturn(returnType, functionName), LengthOfLastLine(fqn));
 
             fqn += get_TrailingRequiresClause();
