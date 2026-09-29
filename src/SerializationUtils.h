@@ -39,6 +39,7 @@ namespace OdrCop3
         bool wantFunctionBody       = true;
         bool needsFriend            = false;
         bool suppressTemplatePrefix = false;
+        bool noComment              = false;
         ContextItems(ASTContext* context, const PrintingPolicy& policy, const std::string& TU, std::unordered_set<const Decl*>& recursingDecls, const std::string& aux="")
             : context       (*context)
             , printPolicy   (policy)
@@ -47,10 +48,11 @@ namespace OdrCop3
             , aux           (aux)
         {}
 
-        ContextItems withWantFunctionBody(                bool       value       ) const { auto result = *this; result.wantFunctionBody       = value;                         return result; }
-        ContextItems withNeedsFriend(                     bool       value = true) const { auto result = *this; result.needsFriend            = value;                         return result; }
-        ContextItems withSuppressTemplatePrefix(          bool       value = true) const { auto result = *this; result.suppressTemplatePrefix = value;                         return result; }
-        ContextItems withAux(                      std::string       value       ) const { auto result = *this; result.aux                    = std::move(value);              return result; }
+        ContextItems withSuppressTemplatePrefix (         bool       value = true) const { auto result = *this; result.suppressTemplatePrefix = value;                         return result; }
+        ContextItems withWantFunctionBody      (          bool       value       ) const { auto result = *this; result.wantFunctionBody       = value;                         return result; }
+        ContextItems withNeedsFriend          (           bool       value = true) const { auto result = *this; result.needsFriend            = value;                         return result; }
+        ContextItems withAux                 (     std::string       value       ) const { auto result = *this; result.aux                    = std::move(value);              return result; }
+        ContextItems withNoComment          (             bool       value = true) const { auto result = *this; result.noComment              = value;                         return result; }
         ContextItems withSerializationNeeds(SerializationNeeds serializationNeeds) const { auto result = *this; result.serializationNeeds     = std::move(serializationNeeds); return result; }
     };
 
@@ -574,14 +576,17 @@ namespace OdrCop3
     class InternalLinkageReferenceCollector : public RecursiveASTVisitor<InternalLinkageReferenceCollector>
     {
         llvm::SetVector<const NamedDecl*> references; // removes dupes, keeps insertion order
+        const ContextItems& contextItems;
 
-        static const NamedDecl* InternalLinkageDecl(const Decl* decl)
+        InternalLinkageReferenceCollector(const ContextItems& contextItems) : contextItems(contextItems) {}
+
+        const NamedDecl* InternalLinkageDecl(const Decl* decl) const
         {
             if (const auto* named = dyn_cast<NamedDecl>(decl))
-                return named->getFormalLinkage() == Linkage::Internal ? named : nullptr;
+                return named->getFormalLinkage() == Linkage::Internal || NeedsManualSerialization(contextItems, decl) ? named : nullptr;
             return nullptr;
         }
-        template <auto SerializeDecl> std::string Print(const ContextItems& contextItems) const
+        template <auto SerializeDecl> std::string Print() const
         {
             if (references.empty())
                 return {};
@@ -591,7 +596,7 @@ namespace OdrCop3
             for (const NamedDecl* named : references)
             {
                 out += "   ";
-                out += IndentBlock(SerializeDecl(contextItems, named), LengthOfLastLine(out));
+                out += IndentBlock(SerializeDecl(contextItems.withNoComment(), named), LengthOfLastLine(out));
                 out += "\n";
             }
             out += "*/\n";
@@ -622,9 +627,12 @@ namespace OdrCop3
     public:
         template<auto SerializeDecl> static std::string PrintReferences(const Stmt* stmt, const ContextItems& contextItems)
         {
-            InternalLinkageReferenceCollector collector;
+            if (contextItems.noComment)
+                return {};
+
+            InternalLinkageReferenceCollector collector(contextItems);
             collector.TraverseStmt(const_cast<Stmt*>(stmt));
-            return collector.Print<SerializeDecl>(contextItems);
+            return collector.Print<SerializeDecl>();
         }
     };
 }

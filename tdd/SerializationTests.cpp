@@ -1000,6 +1000,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    inline constexpr auto operator()(int x) const {\n"
                                  "        return x + 1;\n"
                                  "    }\n"
+                                 "    /* Internal linkage references:\n"
+                                 "       int x\n"
+                                 "    */\n"
                                  "} b = [](int x) {\n"
                                  "          return x + 1;\n"
                                  "      };\n"
@@ -1008,6 +1011,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    inline constexpr auto operator()(int x) const {\n"
                                  "        return x + 1;\n"
                                  "    }\n"
+                                 "    /* Internal linkage references:\n"
+                                 "       int x\n"
+                                 "    */\n"
                                  "} c = [](int x) {\n"
                                  "          return x + 1;\n"
                                  "      };\n"
@@ -1019,6 +1025,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    inline constexpr auto operator()(int x) const {\n"
                                  "        return x + 1;\n"
                                  "    }\n"
+                                 "    /* Internal linkage references:\n"
+                                 "       int x\n"
+                                 "    */\n"
                                  "} global_lambda = [](int x) {\n"
                                  "                      return x + 1;\n"
                                  "                  };\n"
@@ -1270,6 +1279,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        inline constexpr auto operator()(int x) const {\n"
                                  "            return x * 2;\n"
                                  "        }\n"
+                                 "        /* Internal linkage references:\n"
+                                 "           int x\n"
+                                 "        */\n"
                                  "    } mpf = (anonymous namespace)::Lambda /* class (anonymous namespace)::(lambda at input.cc:4:27) {\n"
                                  "                                                 inline constexpr auto operator()(int x) const {\n"
                                  "                                                     return x * 2;\n"
@@ -2209,6 +2221,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "           }\n"
                                  "           /* Internal linkage references:\n"
                                  "              int value;\n"
+                                 "              const struct (anonymous namespace)::Hidden1 {\n"
+                                 "                        int value;\n"
+                                 "                    } &rhs\n"
                                  "           */\n"
                                  "};\n"
                               , (*it++).second[0].fullyQualified);
@@ -2287,6 +2302,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Internal linkage references:\n"
                                  "   int value;\n"
+                                 "   const struct (anonymous namespace)::Hidden1 {\n"
+                                 "             int value;\n"
+                                 "         } &rhs\n"
                                  "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::Ordering {\n"
@@ -2301,6 +2319,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Internal linkage references:\n"
                                  "   int value;\n"
+                                 "   const struct (anonymous namespace)::Hidden1 {\n"
+                                 "             int value;\n"
+                                 "         } &rhs\n"
                                  "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct (anonymous namespace)::Ordering {\n"
@@ -2322,6 +2343,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Internal linkage references:\n"
                                  "   int value;\n"
+                                 "   const struct (anonymous namespace)::Hidden1 {\n"
+                                 "             int value;\n"
+                                 "         } &rhs\n"
                                  "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("bool operator==(strong_ordering, strong_ordering) = default;\n", (*it++).second[0].fullyQualified);
@@ -2474,6 +2498,18 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                       }::*pmf)(double)) {\n"
                                  "    return (foo .* pmf)(3.1400000000000001);\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   struct (anonymous namespace)::FooAnon {\n"
+                                 "       int member(double) {\n"
+                                 "           return 42;\n"
+                                 "       }\n"
+                                 "   } &foo\n"
+                                 "   int (struct (anonymous namespace)::FooAnon {\n"
+                                 "            int member(double) {\n"
+                                 "                return 42;\n"
+                                 "            }\n"
+                                 "        }::*pmf)(double)\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int Take5(struct (anonymous namespace)::FooAnon {\n"
                                  "              int member(double) {\n"
@@ -2486,6 +2522,18 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                       }::*pmf)(double)) {\n"
                                  "    return (foo .* pmf)(3.1400000000000001);\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   struct (anonymous namespace)::FooAnon {\n"
+                                 "       int member(double) {\n"
+                                 "           return 42;\n"
+                                 "       }\n"
+                                 "   } &foo\n"
+                                 "   int (struct (anonymous namespace)::FooAnon {\n"
+                                 "            int member(double) {\n"
+                                 "                return 42;\n"
+                                 "            }\n"
+                                 "        }::*pmf)(double)\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
@@ -2557,6 +2605,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    static FooAnon array[2][3];\n"
                                  "    return array;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static struct (anonymous namespace)::FooAnon {\n"
+                                 "              int value;\n"
+                                 "          } array[2][3];\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void Function5(struct (anonymous namespace)::FooAnon {\n"
                                  "                   int value;\n"
@@ -2569,6 +2622,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    static ArrayType4 array{};\n"
                                  "    return array;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static struct (anonymous namespace)::FooAnon {\n"
+                                 "              int value;\n"
+                                 "          } array[2][3]{};\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
@@ -2740,6 +2798,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "} (&ReturnInvisibleArray1D(int, double) noexcept)[3] {\n"
                                  "    return invisibleColorArray1D;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   enum (anonymous namespace)::InvisibleColor {\n"
+                                 "       InvisibleRed,\n"
+                                 "       InvisibleGreen,\n"
+                                 "       InvisibleBlue\n"
+                                 "   } invisibleColorArray1D[3];\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> enum (anonymous namespace)::InvisibleColor {\n"
                                  "    InvisibleRed,\n"
@@ -2748,6 +2813,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "} (&ReturnInvisibleArray2D(int &))[2][3] requires (sizeof(T) == 4) {\n"
                                  "    return invisibleColorArray2D;\n"
                                  "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   enum (anonymous namespace)::InvisibleColor {\n"
+                                 "       InvisibleRed,\n"
+                                 "       InvisibleGreen,\n"
+                                 "       InvisibleBlue\n"
+                                 "   } invisibleColorArray2D[2][3];\n"
+                                 "*/\n"
                               , (*it++).second[0].fullyQualified);
             }
         }
@@ -3121,7 +3193,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                    } &) {\n"
                                  "    static AnonymousStructAlias x{};\n"
                                  "    return x;\n"
-                                 "}\n"                                          , (*it++).second[0].fullyQualified);
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static struct (anonymous namespace)::AnonymousStructForAlias {\n"
+                                 "          } x{};\n"
+                                 "*/\n"                                          , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int &UniqueReferenceReturningFunction(int) {\n"
                                  "    static int x{};\n"
                                  "    return x;\n"
@@ -4949,6 +5025,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        static ArrayElementType instance[4];\n"
                                  "        return &instance;\n"
                                  "    }\n"
+                                 "    /* Internal linkage references:\n"
+                                 "       static struct (anonymous namespace)::ArrayElementType {\n"
+                                 "              } instance[4];\n"
+                                 "    */\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_AnonymousArrayReference {\n"
                                  "    operator struct (anonymous namespace)::ArrayElementType {\n"
@@ -4956,6 +5036,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        static ArrayElementType instance[4];\n"
                                  "        return instance;\n"
                                  "    }\n"
+                                 "    /* Internal linkage references:\n"
+                                 "       static struct (anonymous namespace)::ArrayElementType {\n"
+                                 "              } instance[4];\n"
+                                 "    */\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct ConversionOperatorClass_AnonymousFunctionPointer {\n"
                                  "    operator struct (anonymous namespace)::HiddenFunctionReturn {\n"
@@ -5727,6 +5811,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Internal linkage references:\n"
                                  "   (anonymous namespace)::AnonymousComboE::Value = 7;\n"
+                                 "   enum class (anonymous namespace)::AnonymousComboE : int {\n"
+                                 "       Value = 7\n"
+                                 "   } e = (enum class (anonymous namespace)::AnonymousComboE : int {\n"
+                                 "              Value = 7\n"
+                                 "          })::Value;\n"
                                  "   static const int DefaultValue = 3;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline ConceptConstrained<DefaultValue /* static const int DefaultValue = 3; */> ConceptUser() {\n"
@@ -5860,24 +5949,22 @@ Test ExploratoryTestsOfClangAST[] =
                                 "inline int *ExternalObjectAddress() { return &InternalAddressObject; }\n"
                                 "inline int &ExternalObjectReference() { return InternalReferenceObject; }\n"
                                 "inline auto ExternalFunctionAddress() { return &InternalAddressFunction; }\n"
-//                                "inline int ExternalFunctionReference(int (&function)(int)) { return function(7); }\n"
-//                                "inline int ExternalBoundReference() { int &reference = InternalReferenceObject; return reference; }\n"
-//                                ;
-////    {"anonymous namespace type in inline signature", []
-//
-//                                "namespace { struct AnonymousSignatureType { int value; }; }\n"
-//                                "inline AnonymousSignatureType AnonymousSignatureReturn(AnonymousSignatureType value) { return value; }\n"
-//                                "inline void AnonymousSignatureParameter(const AnonymousSignatureType &) {}\n"
-//                                "inline AnonymousSignatureType *AnonymousSignaturePointer(AnonymousSignatureType *value) { return value; }\n"
-//                                "template <typename T> struct AnonymousSignatureHolder { T value; };\n"
-//                                "inline AnonymousSignatureHolder<AnonymousSignatureType> AnonymousSignatureInstantiation() { return {}; }\n"
-//                                "inline AnonymousSignatureHolder<AnonymousSignatureType> AnonymousSignatureVariable;\n"
-//                                ;
-////    {"anonymous namespace type in inline template instantiation", []
-//
-//                                "namespace { struct AnonymousInstantiationType { long value; }; }\n"
-//                                "template <typename T> struct AnonymousInstantiationHolder { static int Use(T value) { return sizeof(value); } };\n"
-//                                "inline int AnonymousInstantiationUser() { return AnonymousInstantiationHolder<AnonymousInstantiationType>::Use({}); }\n"
+                                "inline int ExternalFunctionReference(int (&function)(int)) { return function(7); }\n"
+                                "inline int ExternalBoundReference() { int &reference = InternalReferenceObject; return reference; }\n"
+
+                                // anonymous namespace type in inline signature
+                                "namespace { struct AnonymousSignatureType { int value; }; }\n"
+                                "inline AnonymousSignatureType AnonymousSignatureReturn(AnonymousSignatureType value) { return value; }\n"
+                                "inline void AnonymousSignatureParameter(const AnonymousSignatureType &) {}\n"
+                                "inline AnonymousSignatureType *AnonymousSignaturePointer(AnonymousSignatureType *value) { return value; }\n"
+                                "template <typename T> struct AnonymousSignatureHolder { T value; };\n"
+                                "inline AnonymousSignatureHolder<AnonymousSignatureType> AnonymousSignatureInstantiation() { return {}; }\n"
+                                "inline AnonymousSignatureHolder<AnonymousSignatureType> AnonymousSignatureVariable;\n"
+
+                                // anonymous namespace type in inline template instantiation
+                                "namespace { struct AnonymousInstantiationType { long value; }; }\n"
+                                "template <typename T> struct AnonymousInstantiationHolder { static int Use(T value) { return sizeof(value); } };\n"
+                                "inline int AnonymousInstantiationUser() { return AnonymousInstantiationHolder<AnonymousInstantiationType>::Use({}); }\n"
 //                                "template <typename T> inline int AnonymousInstantiationFunction(T value) { return sizeof(value); }\n"
 //                                "inline int AnonymousInstantiationCall() { return AnonymousInstantiationFunction(AnonymousInstantiationType{}); }\n"
 //                                ;
@@ -5974,20 +6061,30 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual( 0, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual( 1, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 2, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 2, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(12, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(19, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct AnonymousInstantiationHolder {\n"
+                                 "    static int Use(T value) {\n"
+                                 "        return sizeof (value);\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct AnonymousSignatureHolder {\n"
+                                 "    T value;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("inline AnonymousSignatureHolder<struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "                                    int value;\n"
+                                 "                                }> AnonymousSignatureVariable;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int ReadOnlyContextArrayUser[11];\n" // unfortunately NOT using "ReadOnlyContextValue" and the C-style comment
                               , (*it++).second[0].fullyQualified);            // but sufficient for ODR violation detection
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -6006,6 +6103,56 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("inline int AnonymousInstantiationUser() {\n"
+                                 "    return AnonymousInstantiationHolder<AnonymousInstantiationType>::Use({});\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int Use(struct (anonymous namespace)::AnonymousInstantiationType {\n"
+                                 "                      long value;\n"
+                                 "                  } value) {\n"
+                                 "       return sizeof (value);\n"
+                                 "   }\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline AnonymousSignatureHolder<struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "                                    int value;\n"
+                                 "                                }> AnonymousSignatureInstantiation() {\n"
+                                 "    return {};\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void AnonymousSignatureParameter(const struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "                                                  int value;\n"
+                                 "                                              } &) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "           int value;\n"
+                                 "       } *AnonymousSignaturePointer(struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "                                        int value;\n"
+                                 "                                    } *value) {\n"
+                                 "    return value;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "       int value;\n"
+                                 "   } *value\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "           int value;\n"
+                                 "       } AnonymousSignatureReturn(struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "                                      int value;\n"
+                                 "                                  } value) {\n"
+                                 "    return value;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   struct (anonymous namespace)::AnonymousSignatureType {\n"
+                                 "       int value;\n"
+                                 "   } value\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ExternalBoundReference() {\n"
+                                 "    int &reference = InternalReferenceObject;\n"
+                                 "    return reference;\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int InternalReferenceObject = 53;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline auto ExternalFunctionAddress() {\n"
                                  "    return &InternalAddressFunction;\n"
                                  "}\n"
@@ -6014,6 +6161,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "       return value + 1;\n"
                                  "   }\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int ExternalFunctionReference(int (&function)(int)) {\n"
+                                 "    return function(7);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int *ExternalObjectAddress() {\n"
                                  "    return &InternalAddressObject;\n"
                                  "}\n"
@@ -6072,6 +6222,21 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Internal linkage references:\n"
                                  "   static const int ReadOnlyContextValue = 11;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

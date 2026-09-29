@@ -29,8 +29,7 @@ namespace OdrCop3
             if (qt.isConstQualified   ()) out += "const ";
             if (qt.isVolatileQualified()) out += "volatile ";
 
-            ContextItems ci(&contextItems.context, contextItems.printPolicy, contextItems.TU, contextItems.recursingDecls); // defaults for aux, friend, etc.
-            out += IndentBlock(SerializeDecl(ci, recordType->getDecl()), LengthOfLastLine(out));
+            out += IndentBlock(SerializeDecl(contextItems.withAux("").withNeedsFriend(false), recordType->getDecl()), LengthOfLastLine(out)); // no aux, no friend; everything else stays the same
             out  = TrimRightIf(out, ";");
             out += (contextItems.aux.size() > 0 ? " " + contextItems.aux : "");
             return out;
