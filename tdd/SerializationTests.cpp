@@ -5965,8 +5965,8 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace { struct AnonymousInstantiationType { long value; }; }\n"
                                 "template <typename T> struct AnonymousInstantiationHolder { static int Use(T value) { return sizeof(value); } };\n"
                                 "inline int AnonymousInstantiationUser() { return AnonymousInstantiationHolder<AnonymousInstantiationType>::Use({}); }\n"
-//                                "template <typename T> inline int AnonymousInstantiationFunction(T value) { return sizeof(value); }\n"
-//                                "inline int AnonymousInstantiationCall() { return AnonymousInstantiationFunction(AnonymousInstantiationType{}); }\n"
+                                "template <typename T> inline int AnonymousInstantiationFunction(T value) { return sizeof(value); }\n"
+                                "inline int AnonymousInstantiationCall() { return AnonymousInstantiationFunction(AnonymousInstantiationType{}); }\n"
 //                                ;
 //
 //
@@ -6066,7 +6066,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(19, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(21, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6103,6 +6103,21 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("inline int AnonymousInstantiationCall() {\n"
+                                 "    return AnonymousInstantiationFunction(AnonymousInstantiationType{});\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   inline int AnonymousInstantiationFunction<struct (anonymous namespace)::AnonymousInstantiationType {\n"
+                                 "                                                 long value;\n"
+                                 "                                             }>(struct (anonymous namespace)::AnonymousInstantiationType {\n"
+                                 "                                                    long value;\n"
+                                 "                                                } value) {\n"
+                                 "       return sizeof (value);\n"
+                                 "   }\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> inline int AnonymousInstantiationFunction(T value) {\n"
+                                 "    return sizeof (value);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int AnonymousInstantiationUser() {\n"
                                  "    return AnonymousInstantiationHolder<AnonymousInstantiationType>::Use({});\n"
                                  "}\n"

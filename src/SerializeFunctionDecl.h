@@ -314,20 +314,35 @@ namespace OdrCop3
                     if (i > 0)
                         out += ", ";
 
-                    std::string str;
-                    {
-                        llvm::raw_string_ostream os(str);
-                        args->get(i).print(contextItems.printPolicy, os, false);
-                        os.flush();
-
-                        // strip off <> from template packs, if any
-                        if (str.starts_with("<")) str = str.substr(1);
-                        str = TrimRightIf(str, ">");
+                    const TemplateArgument& arg = args->get(i);
+                    bool serialized = false;
+                    if (arg.getKind() == TemplateArgument::ArgKind::Type) {
+                        if (true == NeedsManualSerialization(contextItems, arg.getAsType())) {
+                            out += IndentBlock(SerializeType(contextItems, arg.getAsType()), LengthOfLastLine(out));
+                            serialized = true;
+                        }
+                    } else if (arg.getKind() == TemplateArgument::ArgKind::Declaration) {
+                        if (true == NeedsManualSerialization(contextItems, static_cast<const Decl*>(arg.getAsDecl()))) {
+                            out += IndentBlock(SerializeDecl(contextItems,                          arg.getAsDecl()), LengthOfLastLine(out));
+                            serialized = true;
+                        }
                     }
-                    out += str;
+                    if (serialized == false) {
+                        std::string str;
+                        {
+                            llvm::raw_string_ostream os(str);
+                            args->get(i).print(contextItems.printPolicy, os, false);
+                            os.flush();
+
+                            // strip off <> from template packs, if any
+                            if (str.starts_with("<")) str = str.substr(1);
+                            str = TrimRightIf(str, ">");
+                        }
+                        out += str;
+                    }
                 }
                 out += ">";
-                name += out;
+                name += IndentBlock(out, LengthOfLastLine(name));
             }
             return name;
         }
