@@ -5991,42 +5991,7 @@ Test ExploratoryTestsOfClangAST[] =
 
                                 // ADL divergence through internal-linkage namespace function
                                 "namespace AdlInternalFunctionNamespace { struct Argument {}; static int Resolve(Argument) { return 127; } }\n"
-                                //"inline int AdlInternalFunctionUser(AdlInternalFunctionNamespace::Argument value) { return Resolve(value); }\n"
-                                    
-//
-//    //    {"layout query on same-named differently-defined type", []
-//
-//                                    "#ifdef ODR_VARIANT_B\n"
-//                                    "struct LayoutVariantType { int first; double second; };\n"
-//                                    "#else\n"
-//                                    "struct LayoutVariantType { int first; int second; };\n"
-//                                    "#endif\n"
-//                                    "inline int LayoutVariantSize() { return sizeof(LayoutVariantType); }\n"
-//                                    "inline int LayoutVariantAlignment() { return alignof(LayoutVariantType); }\n"
-//                                    "inline int LayoutVariantOffset() { return __builtin_offsetof(LayoutVariantType, second); }\n"
-//                                    ;
-//
-//    //    {"layout-dependent member access on same-named type", []
-//
-//                                    "#ifdef ODR_VARIANT_B\n"
-//                                    "struct LayoutAccessVariant { char first; double second; };\n"
-//                                    "#else\n"
-//                                    "struct LayoutAccessVariant { int first; double second; };\n"
-//                                    "#endif\n"
-//                                    "inline double LayoutAccessUser(LayoutAccessVariant value) { return value.second; }\n"
-//                                    ;
-//
-//    //    {"layout-dependent aggregate initialization on same-named type", []
-//
-//                                    "#ifdef ODR_VARIANT_B\n"
-//                                    "struct LayoutAggregateVariant { int first; double second; };\n"
-//                                    "#else\n"
-//                                    "struct LayoutAggregateVariant { double first; int second; };\n"
-//                                    "#endif\n"
-//                                    "inline int LayoutAggregateUser() { LayoutAggregateVariant value{}; return sizeof(value); }\n"
-//                                    ;
-//
-
+                                "inline int AdlInternalFunctionUser(AdlInternalFunctionNamespace::Argument value) { return Resolve(value); }\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -6037,7 +6002,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(27, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(28, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6070,11 +6035,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        return *Value;\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -6083,19 +6043,15 @@ Test ExploratoryTestsOfClangAST[] =
                                  "                                }> AnonymousSignatureVariable;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int ReadOnlyContextArrayUser[11];\n" // unfortunately NOT using "ReadOnlyContextValue" and the C-style comment
                               , (*it++).second[0].fullyQualified);            // but sufficient for ODR violation detection
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.guideMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -6106,6 +6062,14 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Internal linkage references:\n"
                                  "   static int Process(Argument) {\n"
                                  "       return 107;\n"
+                                 "   }\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int AdlInternalFunctionUser(AdlInternalFunctionNamespace::Argument value) {\n"
+                                 "    return Resolve(value);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int Resolve(Argument) {\n"
+                                 "       return 127;\n"
                                  "   }\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int AnonymousInstantiationCall() {\n"
@@ -6274,12 +6238,235 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Internal linkage references:\n"
                                  "   static const int ReadOnlyContextValue = 11;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+    {"Macros", []
+        {
+            std::string code1 =
+                                // macro expansion differing between TUs at identical call site
+                                "#define MacroVariantValue 71\n"
+                                "inline int MacroVariantTarget() { return MacroVariantValue; }\n"
+                                "inline int MacroVariantCaller() { return MacroVariantTarget(); }\n"
+                                "#undef MacroVariantValue\n"
+
+                                "#define MacroExpressionValue(x) ((x) + 101)\n"
+                                "inline int MacroExpressionUser(int value) { return MacroExpressionValue(value); }\n"
+                                "#undef MacroExpressionValue\n"
+
+                                    ;
+
+            std::string code2 =
+                                // macro expansion differing between TUs at identical call site
+                                "#define MacroVariantValue 73\n"
+                                "inline int MacroVariantTarget() { return MacroVariantValue; }\n"
+                                "inline int MacroVariantCaller() { return MacroVariantTarget(); }\n"
+                                "#undef MacroVariantValue\n"
+
+                                "#define MacroExpressionValue(x) ((x) + 103)\n"
+                                "inline int MacroExpressionUser(int value) { return MacroExpressionValue(value); }\n"
+                                "#undef MacroExpressionValue\n"
+
+                                    ;
+
+                //  {"macro expansion differing in inline expression at identical call site", []
+                                //"#ifdef ODR_VARIANT_B\n"
+                                //"#define MacroExpressionValue(x) ((x) + 101)\n"
+                                //"#else\n"
+                                //"#define MacroExpressionValue(x) ((x) + 103)\n"
+                                //"#endif\n"
+                                //"inline int MacroExpressionUser(int value) { return MacroExpressionValue(value); }\n"
+                                //"#undef MacroExpressionValue\n"
+                                    
+//    //    {"layout query on same-named differently-defined type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutVariantType { int first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutVariantType { int first; int second; };\n"
+//                                    "#endif\n"
+//                                    "inline int LayoutVariantSize() { return sizeof(LayoutVariantType); }\n"
+//                                    "inline int LayoutVariantAlignment() { return alignof(LayoutVariantType); }\n"
+//                                    "inline int LayoutVariantOffset() { return __builtin_offsetof(LayoutVariantType, second); }\n"
+//                                    ;
+//
+//    //    {"layout-dependent member access on same-named type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutAccessVariant { char first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutAccessVariant { int first; double second; };\n"
+//                                    "#endif\n"
+//                                    "inline double LayoutAccessUser(LayoutAccessVariant value) { return value.second; }\n"
+//                                    ;
+//
+//    //    {"layout-dependent aggregate initialization on same-named type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutAggregateVariant { int first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutAggregateVariant { double first; int second; };\n"
+//                                    "#endif\n"
+//                                    "inline int LayoutAggregateUser() { LayoutAggregateVariant value{}; return sizeof(value); }\n"
+//                                    ;
+//
+
+
+
+#ifdef KEEP
+
+
+
+                        // copy below here so I don't lose it
+
+                                // macro expansion differing between TUs at identical call site
+                                //"#ifdef ODR_VARIANT_B\n"
+                                //"#define MacroVariantValue 71\n"
+                                //"#else\n"
+                                //"#define MacroVariantValue 73\n"
+                                //"#endif\n"
+                                //"inline int MacroVariantTarget() { return MacroVariantValue; }\n"
+                                //"inline int MacroVariantCaller() { return MacroVariantTarget(); }\n"
+                                //"#undef MacroVariantValue\n"
+
+                //  {"macro expansion differing in inline expression at identical call site", []
+                                //"#ifdef ODR_VARIANT_B\n"
+                                //"#define MacroExpressionValue(x) ((x) + 101)\n"
+                                //"#else\n"
+                                //"#define MacroExpressionValue(x) ((x) + 103)\n"
+                                //"#endif\n"
+                                //"inline int MacroExpressionUser(int value) { return MacroExpressionValue(value); }\n"
+                                //"#undef MacroExpressionValue\n"
+
+//    //    {"layout query on same-named differently-defined type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutVariantType { int first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutVariantType { int first; int second; };\n"
+//                                    "#endif\n"
+//                                    "inline int LayoutVariantSize() { return sizeof(LayoutVariantType); }\n"
+//                                    "inline int LayoutVariantAlignment() { return alignof(LayoutVariantType); }\n"
+//                                    "inline int LayoutVariantOffset() { return __builtin_offsetof(LayoutVariantType, second); }\n"
+//                                    ;
+//
+//    //    {"layout-dependent member access on same-named type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutAccessVariant { char first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutAccessVariant { int first; double second; };\n"
+//                                    "#endif\n"
+//                                    "inline double LayoutAccessUser(LayoutAccessVariant value) { return value.second; }\n"
+//                                    ;
+//
+//    //    {"layout-dependent aggregate initialization on same-named type", []
+//
+//                                    "#ifdef ODR_VARIANT_B\n"
+//                                    "struct LayoutAggregateVariant { int first; double second; };\n"
+//                                    "#else\n"
+//                                    "struct LayoutAggregateVariant { double first; int second; };\n"
+//                                    "#endif\n"
+//                                    "inline int LayoutAggregateUser() { LayoutAggregateVariant value{}; return sizeof(value); }\n"
+//                                    ;
+//
+#endif
+
+                                    ;
+            OdrCop3::AllMaps maps1, maps2;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps1), code1, { "-x", "c++", "-std=c++23" }, "tu1.cpp");
+            Assert::IsTrue(ok);
+                 ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps2), code2, { "-x", "c++", "-std=c++23" }, "tu2.cpp");
+            Assert::IsTrue(ok);
+
+            // TU1
+            Assert::AreEqual(0, maps1.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(0, maps1.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps1.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps1.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(0, maps1.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(3, maps1.functionMap.size(),"wrong number of functions in map");
+
+            // TU2
+            Assert::AreEqual(0, maps2.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(0, maps2.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps2.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps2.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(0, maps2.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(3, maps2.functionMap.size(),"wrong number of functions in map");
+
+
+            // TU1
+            {
+                auto it = maps1.udtMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps1.varMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps1.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps1.guideMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps1.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps1.functionMap.begin();
+                Assert::AreEqual("inline int MacroExpressionUser(int value) {\n"
+                                 "    return ((value) + 101);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int MacroVariantCaller() {\n"
+                                 "    return MacroVariantTarget();\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int MacroVariantTarget() {\n"
+                                 "    return 71;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+
+            // TU2
+            {
+                auto it = maps2.udtMap.begin();
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps2.varMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps2.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps2.guideMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps2.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps2.functionMap.begin();
+                Assert::AreEqual("inline int MacroExpressionUser(int value) {\n"
+                                 "    return ((value) + 103);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int MacroVariantCaller() {\n"
+                    "    return MacroVariantTarget();\n"
+                    "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int MacroVariantTarget() {\n"
+                    "    return 73;\n"
+                    "}\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -6287,6 +6474,7 @@ Test ExploratoryTestsOfClangAST[] =
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
+
         }
     },
     {"Attributes and internal-linkage types", []
@@ -6423,27 +6611,6 @@ Test ExploratoryTestsOfClangAST[] =
 6. Address of an internal-linkage object as a non-type template argument
 7. ADL/overload-resolution divergence from surrounding declarations
 8. Layout-dependent queries on a same-named-but-differently-defined type
-
-
-// {"macro expansion differing between TUs at identical call site", []
-                                "#ifdef ODR_VARIANT_B\n"
-                                "#define MacroVariantValue 71\n"
-                                "#else\n"
-                                "#define MacroVariantValue 73\n"
-                                "#endif\n"
-                                "inline int MacroVariantTarget() { return MacroVariantValue; }\n"
-                                "inline int MacroVariantCaller() { return MacroVariantTarget(); }\n"
-                                "#undef MacroVariantValue\n"
-
-//  {"macro expansion differing in inline expression at identical call site", []
-                                "#ifdef ODR_VARIANT_B\n"
-                                "#define MacroExpressionValue(x) ((x) + 101)\n"
-                                "#else\n"
-                                "#define MacroExpressionValue(x) ((x) + 103)\n"
-                                "#endif\n"
-                                "inline int MacroExpressionUser(int value) { return MacroExpressionValue(value); }\n"
-                                "#undef MacroExpressionValue\n"
-
 
     // namespace-scope is hard:
     // or maybe not:  serialize/print all types as canonical
