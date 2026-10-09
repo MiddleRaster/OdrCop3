@@ -3,23 +3,22 @@
 // See LICENSE file in the project root for full license information.
 
 export module tdd20;
-
 import std;
 
 export namespace TDD20
 {
-	template<typename T>			inline std::string ToString(const            T&) { static_assert(sizeof(T) == 0, "test writer must write a specialization for this type"); return {}; }
+	template<typename T>			inline std::string ToString(const            T&  ) { static_assert(sizeof(T) == 0, "test writer must write a specialization for this type"); return {}; }
 	template<typename T>			inline std::string ToString(                 T* t) { return std::format("0x{:X}", reinterpret_cast<std::uintptr_t>(t)); } // generic pointer converted to hex string
 	template<std::integral       T> inline std::string ToString(const            T& t) { return std::to_string(t); }
-	template<std::floating_point T> inline std::string ToString(const            T& t) { return std::format("{:.15f}", t); } // 15 digits of precision
+	template<std::floating_point T> inline std::string ToString(const            T& t) { return std::format("{}", std::common_type_t<T, double>(t)); } // shortest round-trip as a double (floats widened first), so differing values never print alike
 									inline std::string ToString(const         bool& t) { return t ? "true" : "false"; }	// an overload, not a specialization
 	template <>						inline std::string ToString(const  std::string& t) { return t; }
 	template <>						inline std::string ToString(const         char* t) { return std::string(t); }
-	template <>						inline std::string ToString(const std::wstring& t)
-	{
+	template <>						inline std::string ToString(              char* t) { return std::string(t); }
+	template <>						inline std::string ToString(const std::wstring& t) {
 		std::string s;
 		for (wchar_t wc : t)
-			s += static_cast<char>(wc); // lossy:  drops high bits
+			s += wc <= 0x7E ? std::string(1, static_cast<char>(wc)) : std::format("\\u{:04X}", static_cast<unsigned>(wc));
 		return s;
 	}
 	template <>						inline std::string ToString(const      wchar_t* t) { return ToString(std::wstring(t)); }
@@ -46,10 +45,10 @@ export namespace TDD20
 			if (ToString(expected) == Actual)
 				throw AssertException(std::format("Unexpected equality <{}>{}", Actual, message.empty() ? "" : " - " + message), loc.line(), loc.file_name());
 		}
-		static void AreWithin(double expected, double actual, double tolerance, const std::string& message="", std::source_location loc=std::source_location::current())
+		template<std::floating_point T> static void AreWithin(T expected, T actual, T tolerance, const std::string& message="", std::source_location loc=std::source_location::current())
 		{
-			if (std::fabs(expected - actual) > tolerance)
-				throw AssertException(std::format("Expected <{}> to be within <{}> of <{}>{}", ToString(expected), ToString(tolerance), ToString(actual), message.empty() ? "" : " - " + message), loc.line(), loc.file_name());
+			if (!(std::fabs(expected - actual) <= tolerance)) // must be done this way so that NaN works
+				throw AssertException(std::format("Expected <{}> to be within <{}> of <{}>{}", ToString(actual), ToString(tolerance), ToString(expected), message.empty() ? "" : " - " + message), loc.line(), loc.file_name());
 		}
 		static void IsFalse(bool actual, const std::string& message="", std::source_location loc=std::source_location::current()) { AreEqual(false, actual, message, loc); }
 		static void IsTrue (bool actual, const std::string& message="", std::source_location loc=std::source_location::current()) { AreEqual(true,  actual, message, loc); }
@@ -69,7 +68,7 @@ export namespace TDD20
 		static std::pair<int, int> RunTests(auto&& matcher, auto&& out)
 		{
 			int passed = 0, failed = 0;
-			for (auto& [name, func] : tests) {
+			for (auto& [name, func] : std::vector(std::move(tests))) { // move tests into a private snapshot so registration of additional tests cannot invalidate this iteration
 				if (false == matcher.WantTest(name))
 					continue;
 
@@ -85,6 +84,6 @@ export namespace TDD20
 			}
 			return {passed, failed};
 		}
-		Test(const std::string& name, std::function<void()> func) { tests.push_back(std::pair{name, func}); }
+		Test(const std::string& name, std::function<void()> func) { tests.emplace_back(name, std::move(func)); }
 	};
 }

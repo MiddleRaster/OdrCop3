@@ -5967,61 +5967,32 @@ Test ExploratoryTestsOfClangAST[] =
                                 "inline int AnonymousInstantiationUser() { return AnonymousInstantiationHolder<AnonymousInstantiationType>::Use({}); }\n"
                                 "template <typename T> inline int AnonymousInstantiationFunction(T value) { return sizeof(value); }\n"
                                 "inline int AnonymousInstantiationCall() { return AnonymousInstantiationFunction(AnonymousInstantiationType{}); }\n"
-//                                ;
-//
-//
-////    {"macro expansion differing between TUs at identical call site", []
-//                                "#ifdef ODR_VARIANT_B\n"
-//                                "#define MacroVariantValue 71\n"
-//                                "#else\n"
-//                                "#define MacroVariantValue 73\n"
-//                                "#endif\n"
-//                                "inline int MacroVariantTarget() { return MacroVariantValue; }\n"
-//                                "inline int MacroVariantCaller() { return MacroVariantTarget(); }\n"
-//                                "#undef MacroVariantValue\n"
-//                                ;
-//
-////  {"macro expansion differing in inline expression at identical call site", []
-//                                "#ifdef ODR_VARIANT_B\n"
-//                                "#define MacroExpressionValue(x) ((x) + 101)\n"
-//                                "#else\n"
-//                                "#define MacroExpressionValue(x) ((x) + 103)\n"
-//                                "#endif\n"
-//                                "inline int MacroExpressionUser(int value) { return MacroExpressionValue(value); }\n"
-//                                "#undef MacroExpressionValue\n"
-//                                ;
-//    //    {"internal-linkage object as non-type template argument", []
-//
-//                                    "static int InternalNttpObject = 79;\n"
-//                                    "template <int *Value> struct PointerNttpHolder { static int Get() { return *Value; } };\n"
-//                                    "inline int InternalObjectNttpUser() { return PointerNttpHolder<&InternalNttpObject>::Get(); }\n"
-//                                    "static const int InternalNttpArray[2] = { 83, 89 };\n"
-//                                    "template <const int *Value> struct ConstPointerNttpHolder { static int Get() { return Value[0]; } };\n"
-//                                    "inline int InternalConstObjectNttpUser() { return ConstPointerNttpHolder<InternalNttpArray>::Get(); }\n"
-//                                    ;
-//
-//    //    {"internal-linkage function as non-type template argument", []
-//
-//                                    "static int InternalNttpFunction(int value) { return value + 97; }\n"
-//                                    "template <int (*Function)(int)> struct FunctionNttpHolder { static int Call(int value) { return Function(value); } };\n"
-//                                    "inline int InternalFunctionNttpUser() { return FunctionNttpHolder<&InternalNttpFunction>::Call(3); }\n"
-//                                    ;
-//    //    {"ADL divergence from surrounding internal declaration", []
-//                                    "namespace AdlDivergenceNamespace { struct Argument {}; static int Process(Argument) { return 107; } }\n"
-//                                    "inline int AdlDivergenceUser() { AdlDivergenceNamespace::Argument value; return Process(value); }\n"
-//                                    ;
-//
-//
-//    //  {"overload resolution involving internal-linkage overload", []
-//                                    "namespace OverloadDivergenceNamespace { struct Argument {}; inline int Process(Argument) { return 109; } static int Process(Argument &) { return 113; } }\n"
-//                                    "inline int OverloadDivergenceUser() { OverloadDivergenceNamespace::Argument value; return Process(value); }\n"
-//                                    ;
-//
-//    //    {"ADL divergence through internal-linkage namespace function", []
-//
-//                                    "namespace AdlInternalFunctionNamespace { struct Argument {}; static int Resolve(Argument) { return 127; } }\n"
-//                                    "inline int AdlInternalFunctionUser(AdlInternalFunctionNamespace::Argument value) { return Resolve(value); }\n"
-//                                    ;
+
+                                // internal-linkage object as non-type template argument
+                                "static int InternalNttpObject = 79;\n"
+                                "template <int *Value> struct PointerNttpHolder { static int Get() { return *Value; } };\n"
+                                "inline int InternalObjectNttpUser() { return PointerNttpHolder<&InternalNttpObject>::Get(); }\n"
+                                "static const int InternalNttpArray[2] = { 83, 89 };\n"
+                                "template <const int *Value> struct ConstPointerNttpHolder { static int Get() { return Value[0]; } };\n"
+                                "inline int InternalConstObjectNttpUser() { return ConstPointerNttpHolder<InternalNttpArray>::Get(); }\n"
+
+                                // internal-linkage function as non-type template argument
+                                "static int InternalNttpFunction(int value) { return value + 97; }\n"
+                                "template <int (*Function)(int)> struct FunctionNttpHolder { static int Call(int value) { return Function(value); } };\n"
+                                "inline int InternalFunctionNttpUser() { return FunctionNttpHolder<&InternalNttpFunction>::Call(3); }\n"
+                                
+                                // ADL divergence from surrounding internal declaration
+                                "namespace AdlDivergenceNamespace { struct Argument {}; static int Process(Argument) { return 107; } }\n"
+                                "inline int AdlDivergenceUser() { AdlDivergenceNamespace::Argument value; return Process(value); }\n"
+
+                                // overload resolution involving internal-linkage overload
+                                "namespace OverloadDivergenceNamespace { struct Argument {}; inline int Process(Argument) { return 109; } static int Process(Argument *) { return 113; } }\n"
+                                "inline int OverloadDivergenceUser() { OverloadDivergenceNamespace::Argument value; return Process(&value); }\n"
+
+                                // ADL divergence through internal-linkage namespace function
+                                "namespace AdlInternalFunctionNamespace { struct Argument {}; static int Resolve(Argument) { return 127; } }\n"
+                                //"inline int AdlInternalFunctionUser(AdlInternalFunctionNamespace::Argument value) { return Resolve(value); }\n"
+                                    
 //
 //    //    {"layout query on same-named differently-defined type", []
 //
@@ -6061,15 +6032,19 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual( 2, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 8, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 2, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(21, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(27, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Argument {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Argument {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct AnonymousInstantiationHolder {\n"
                                  "    static int Use(T value) {\n"
                                  "        return sizeof (value);\n"
@@ -6078,6 +6053,27 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> struct AnonymousSignatureHolder {\n"
                                  "    T value;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <const int *Value> struct ConstPointerNttpHolder {\n"
+                                 "    static int Get() {\n"
+                                 "        return Value[0];\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int (*Function)(int)> struct FunctionNttpHolder {\n"
+                                 "    static int Call(int value) {\n"
+                                 "        return Function(value);\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Argument {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int *Value> struct PointerNttpHolder {\n"
+                                 "    static int Get() {\n"
+                                 "        return *Value;\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -6103,6 +6099,15 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("inline int AdlDivergenceUser() {\n"
+                                 "    AdlDivergenceNamespace::Argument value;\n"
+                                 "    return Process(value);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int Process(Argument) {\n"
+                                 "       return 107;\n"
+                                 "   }\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int AnonymousInstantiationCall() {\n"
                                  "    return AnonymousInstantiationFunction(AnonymousInstantiationType{});\n"
                                  "}\n"
@@ -6191,6 +6196,38 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Internal linkage references:\n"
                                  "   static int InternalReferenceObject = 53;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int InternalConstObjectNttpUser() {\n"
+                                 "    return ConstPointerNttpHolder<InternalNttpArray>::Get();\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static const int InternalNttpArray[2] = {83, 89};\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int InternalFunctionNttpUser() {\n"
+                                 "    return FunctionNttpHolder<&InternalNttpFunction>::Call(3);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int InternalNttpFunction(int value) {\n"
+                                 "       return value + 97;\n"
+                                 "   }\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int InternalObjectNttpUser() {\n"
+                                 "    return PointerNttpHolder<&InternalNttpObject>::Get();\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int InternalNttpObject = 79;\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int Process(Argument) {\n"
+                                 "    return 109;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int OverloadDivergenceUser() {\n"
+                                 "    OverloadDivergenceNamespace::Argument value;\n"
+                                 "    return Process(&value);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   static int Process(Argument *) {\n"
+                                 "       return 113;\n"
+                                 "   }\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int ReadOnlyContextAlignof() {\n"
                                  "    return alignof(int[11]);\n"
                                  "}\n"
@@ -6237,12 +6274,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Internal linkage references:\n"
                                  "   static const int ReadOnlyContextValue = 11;\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -6392,6 +6423,26 @@ Test ExploratoryTestsOfClangAST[] =
 6. Address of an internal-linkage object as a non-type template argument
 7. ADL/overload-resolution divergence from surrounding declarations
 8. Layout-dependent queries on a same-named-but-differently-defined type
+
+
+// {"macro expansion differing between TUs at identical call site", []
+                                "#ifdef ODR_VARIANT_B\n"
+                                "#define MacroVariantValue 71\n"
+                                "#else\n"
+                                "#define MacroVariantValue 73\n"
+                                "#endif\n"
+                                "inline int MacroVariantTarget() { return MacroVariantValue; }\n"
+                                "inline int MacroVariantCaller() { return MacroVariantTarget(); }\n"
+                                "#undef MacroVariantValue\n"
+
+//  {"macro expansion differing in inline expression at identical call site", []
+                                "#ifdef ODR_VARIANT_B\n"
+                                "#define MacroExpressionValue(x) ((x) + 101)\n"
+                                "#else\n"
+                                "#define MacroExpressionValue(x) ((x) + 103)\n"
+                                "#endif\n"
+                                "inline int MacroExpressionUser(int value) { return MacroExpressionValue(value); }\n"
+                                "#undef MacroExpressionValue\n"
 
 
     // namespace-scope is hard:
