@@ -26,7 +26,8 @@ namespace OdrCop3
         bool isAnonymous            = false;
         bool hasNamespaceAlias      = false;
         bool hasInternalLinkageRef  = false;
-        bool AreAllFalse() const { return !(isAnonymous || hasNamespaceAlias || hasInternalLinkageRef); }
+        bool hasUnqualifiedCalls    = false;
+        bool AreAllFalse() const { return !(isAnonymous || hasNamespaceAlias || hasInternalLinkageRef || hasUnqualifiedCalls); }
     };
     struct ContextItems
     {
@@ -36,6 +37,7 @@ namespace OdrCop3
         std::unordered_set<const Decl*>& recursingDecls;
         std::string aux;
         SerializationNeeds serializationNeeds;
+        llvm::SmallPtrSet<const NamedDecl*, 8> shadowUsingDeclTargets;
         bool wantFunctionBody       = true;
         bool needsFriend            = false;
         bool suppressTemplatePrefix = false;
@@ -47,6 +49,7 @@ namespace OdrCop3
             , recursingDecls(recursingDecls)
             , aux           (aux)
         {}
+        ContextItems(const ContextItems&) = default;
 
         ContextItems withSuppressTemplatePrefix (         bool       value = true) const { auto result = *this; result.suppressTemplatePrefix = value;                         return result; }
         ContextItems withWantFunctionBody      (          bool       value       ) const { auto result = *this; result.wantFunctionBody       = value;                         return result; }
@@ -633,6 +636,73 @@ namespace OdrCop3
             InternalLinkageReferenceCollector collector(contextItems);
             collector.TraverseStmt(const_cast<Stmt*>(stmt));
             return collector.Print<SerializeDecl>();
+        }
+    };
+    class UnqualifiedCallCollector : public RecursiveASTVisitor<UnqualifiedCallCollector>
+    {
+        const ContextItems& contextItems;
+        struct Reference
+        {
+            const CallExpr* call;
+            const FunctionDecl* callee;
+        };
+        std::vector<Reference> references;
+
+        UnqualifiedCallCollector(const ContextItems& contextItems) : contextItems(contextItems) {}
+
+        friend RecursiveASTVisitor<UnqualifiedCallCollector>;
+        bool VisitCallExpr(const CallExpr* call)
+        {
+            const FunctionDecl* callee = call->getDirectCallee();
+            if (!callee)
+                return true;
+
+            const Expr* calleeExpr = call->getCallee()->IgnoreParenImpCasts();
+            const auto* declRef = dyn_cast<DeclRefExpr>(calleeExpr);
+            if (!declRef || declRef->hasQualifier())
+                return true;
+
+            if (!contextItems.shadowUsingDeclTargets.contains(callee->getCanonicalDecl()))
+                return true;
+
+            if (callee->getQualifiedNameAsString() == callee->getNameAsString())
+                return true;
+
+            references.push_back({ call, callee });
+            return true;
+        }
+    public:
+        static std::string PrintUnqualifiedCalls(const Stmt* stmt, const ContextItems& contextItems)
+        {
+            if (contextItems.noComment)
+                return {};
+            if (contextItems.shadowUsingDeclTargets.size() == 0)
+                return {};
+
+            UnqualifiedCallCollector collector(contextItems);
+            collector.TraverseStmt(const_cast<Stmt*>(stmt));
+
+            std::string out;
+            if (collector.references.empty())
+                return out;
+
+            out += "/* Unqualified calls:\n";
+            for (const Reference& reference : collector.references)
+            {
+                out += "   ";
+                out += reference.callee->getQualifiedNameAsString();
+                out += "\n";
+            }
+            out += "*/\n";
+            return out;
+        }
+        static bool HasUnqualifiedCalls(const Decl* decl, const ContextItems& contextItems)
+        {
+            if (contextItems.shadowUsingDeclTargets.size() == 0)
+                return false;
+            if (const FunctionDecl        *         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedCalls(        functionDecl->getBody(), contextItems);
+            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedCalls(functionTemplateDecl->getBody(), contextItems);
+            return false;
         }
     };
 }

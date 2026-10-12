@@ -204,8 +204,10 @@ namespace OdrCop3
             os.flush();
 
             if (!contextItems.serializationNeeds.AreAllFalse())
+            {
                 body += InternalLinkageReferenceCollector::PrintReferences<SerializeDecl>(funcDecl->getBody(), contextItems);
-
+                body += UnqualifiedCallCollector::PrintUnqualifiedCalls(funcDecl->getBody(), contextItems);
+            }
             return body;
         }
         bool hasTrailingReturn() const

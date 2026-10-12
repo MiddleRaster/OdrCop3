@@ -395,7 +395,8 @@ namespace OdrCop3
             {
                 .isAnonymous           = !Can(contextItems, decls).Print(decl),
                 .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(decl),
-                .hasInternalLinkageRef = nullptr != InternalLinkageRefFinder::FindReference(decl)
+                .hasInternalLinkageRef = nullptr != InternalLinkageRefFinder::FindReference(decl),
+                .hasUnqualifiedCalls   = UnqualifiedCallCollector::HasUnqualifiedCalls(decl, contextItems),
             };
             if (serializationNeeds.AreAllFalse() == true)
                 return Print::Decl(contextItems, decl);

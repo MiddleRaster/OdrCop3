@@ -6555,20 +6555,63 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
+    {"using namespace tests and unqualified calls", []
+        {
+            std::string code =
+                                "namespace lib1 { void process(int) {} } using lib1::process; inline void run() { process(42); }\n"
+
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(0, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(2, maps.functionMap.size(),"wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.guideMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("void process(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void run() {\n"
+                                 "    process(42);\n"
+                                 "}\n"
+                                 "/* Unqualified calls:\n"
+                                 "   lib1::process\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
 
 
 };
 /* some missing test cases
-
-
-1. Same mechanism, other read-only contexts
-2. Calling an internal-linkage function, not reading a variable
-3. Taking the address of / binding a reference to the internal-linkage entity
-4. Anonymous-namespace types threaded through an inline entity's signature or instantiation
-5. Macros whose expansion differs by TU even though the call-site tokens don't
-6. Address of an internal-linkage object as a non-type template argument
-7. ADL/overload-resolution divergence from surrounding declarations
-8. Layout-dependent queries on a same-named-but-differently-defined type
 
     // namespace-scope is hard:
     // or maybe not:  serialize/print all types as canonical
