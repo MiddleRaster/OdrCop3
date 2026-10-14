@@ -35,15 +35,15 @@ export namespace TDD20
 		static void Fail(const std::string& msg="", std::source_location loc=std::source_location::current()) { throw AssertException(msg, loc.line(), loc.file_name()); }
 		template<typename S, typename T> static void AreEqual(const S& expected, const T& actual, const std::string& message="", std::source_location loc=std::source_location::current())
 		{
-			std::string Expected{ToString(expected)}, Actual{ToString(actual)};
+			const std::string Expected{ToString(expected)}, Actual{ToString(actual)};
 			if (Expected != Actual)
-				throw AssertException(std::format("Expected <{}> Actual <{}>{}", Expected, Actual, message.empty() ? "" : " - " + message), loc.line(), loc.file_name());
+				throw AssertException(std::format("Expected <{}> Actual <{}>{}", Expected, Actual,  message.empty() ? "" : " - " + message), loc.line(), loc.file_name());
 		}
 		template<typename S, typename T> static void AreNotEqual(const S& expected, const T& actual, const std::string& message="", std::source_location loc=std::source_location::current())
 		{
-			std::string Actual{ToString(actual)};
+			const std::string Actual{ToString(actual)};
 			if (ToString(expected) == Actual)
-				throw AssertException(std::format("Unexpected equality <{}>{}", Actual, message.empty() ? "" : " - " + message), loc.line(), loc.file_name());
+				throw AssertException(std::format("Unexpected equality <{}>{}", Actual,  message.empty() ? "" : " - " + message), loc.line(), loc.file_name());
 		}
 		template<std::floating_point T> static void AreWithin(T expected, T actual, T tolerance, const std::string& message="", std::source_location loc=std::source_location::current())
 		{
