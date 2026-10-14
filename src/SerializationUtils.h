@@ -640,6 +640,7 @@ namespace OdrCop3
     class UnqualifiedCallCollector : public RecursiveASTVisitor<UnqualifiedCallCollector>
     {
         const ContextItems& contextItems;
+        const DeclContext* callerContext;
         struct Reference
         {
             const CallExpr* call;
@@ -647,7 +648,7 @@ namespace OdrCop3
         };
         std::vector<Reference> references;
 
-        UnqualifiedCallCollector(const ContextItems& contextItems) : contextItems(contextItems) {}
+        UnqualifiedCallCollector(const ContextItems& contextItems, const DeclContext* callerContext) : contextItems(contextItems), callerContext(callerContext) {}
 
         friend RecursiveASTVisitor<UnqualifiedCallCollector>;
         bool VisitCallExpr(const CallExpr* call)
@@ -660,22 +661,25 @@ namespace OdrCop3
             if (!declRef || declRef->hasQualifier())
                 return true;
 
-            if (!isa<UsingShadowDecl>(declRef->getFoundDecl()))
+            const DeclContext* calleeContext = callee->getDeclContext()->getRedeclContext();
+            if (calleeContext->isRecord()) // static members found through the class or a base: not a namespace-lookup hazard
                 return true;
 
-            if (callee->getQualifiedNameAsString() == callee->getNameAsString())
+            const bool viaUsingDeclaration = isa<UsingShadowDecl>(declRef->getFoundDecl());
+            const bool viaOtherScope       = !calleeContext->Encloses(callerContext); // using-directive or ADL
+            if (!viaUsingDeclaration && !viaOtherScope)
                 return true;
 
-            references.push_back({ call, callee });
+            references.push_back({call, callee});
             return true;
         }
     public:
-        static std::string PrintUnqualifiedCalls(const Stmt* stmt, const ContextItems& contextItems)
+        static std::string PrintUnqualifiedCalls(const DeclContext* callerContext, const Stmt* stmt, const ContextItems& contextItems)
         {
             if (contextItems.noComment)
                 return {};
 
-            UnqualifiedCallCollector collector(contextItems);
+            UnqualifiedCallCollector collector(contextItems, callerContext);
             collector.TraverseStmt(const_cast<Stmt*>(stmt));
 
             std::string out;
@@ -701,8 +705,8 @@ namespace OdrCop3
         }
         static bool HasUnqualifiedCalls(const Decl* decl, const ContextItems& contextItems)
         {
-            if (const FunctionDecl        *         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedCalls(        functionDecl->getBody(), contextItems);
-            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedCalls(functionTemplateDecl->getBody(), contextItems);
+            if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedCalls(        functionDecl,                             functionDecl->getBody(), contextItems);
+            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedCalls(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getBody(), contextItems);
             return false;
         }
     };

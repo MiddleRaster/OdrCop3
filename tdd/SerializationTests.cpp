@@ -6063,6 +6063,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   static int Process(Argument) {\n"
                                  "       return 107;\n"
                                  "   }\n"
+                                 "*/\n"
+                                 "/* Unqualified calls:\n"
+                                 "   static int AdlDivergenceNamespace::Process(AdlDivergenceNamespace::Argument)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int AdlInternalFunctionUser(AdlInternalFunctionNamespace::Argument value) {\n"
                                  "    return Resolve(value);\n"
@@ -6071,6 +6074,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   static int Resolve(Argument) {\n"
                                  "       return 127;\n"
                                  "   }\n"
+                                 "*/\n"
+                                 "/* Unqualified calls:\n"
+                                 "   static int AdlInternalFunctionNamespace::Resolve(AdlInternalFunctionNamespace::Argument)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int AnonymousInstantiationCall() {\n"
                                  "    return AnonymousInstantiationFunction(AnonymousInstantiationType{});\n"
@@ -6191,6 +6197,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   static int Process(Argument *) {\n"
                                  "       return 113;\n"
                                  "   }\n"
+                                 "*/\n"
+                                 "/* Unqualified calls:\n"
+                                 "   static int OverloadDivergenceNamespace::Process(OverloadDivergenceNamespace::Argument *)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int ReadOnlyContextAlignof() {\n"
                                  "    return alignof(int[11]);\n"
@@ -6555,7 +6564,7 @@ Test ExploratoryTestsOfClangAST[] =
             }
         }
     },
-    {"using namespace tests and unqualified calls", []
+    {"using namespaces and unqualified calls", []
         {
             std::string code =
                                 "namespace lib1 { void process(int) {} } using lib1::process; inline void run() { process(42); }\n"
@@ -6564,17 +6573,25 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace ns2 { void func(float ) {}   using ns2::func; }"
                                 "inline void Foo() { func(4); }\n"
 
+                                "namespace dir1 { void handle(int) {} } using namespace dir1; inline void runDirective() { handle(42); }\n"
+
+                                "namespace outerA { void work(int  ) {} }"
+                                "namespace outerB { void work(float) {}   using namespace outerA; }"
+                                "inline void callWork() { using namespace outerB; work(4); }\n"
+
+                                // need to test template function versions, too
+
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(0, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(5, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual( 0, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(10, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6604,11 +6621,24 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified calls:\n"
                                  "   void ns1::func(double)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void callWork() {\n"
+                                 "    using namespace outerB;\n"
+                                 "    work(4);\n"
+                                 "}\n"
+                                 "/* Unqualified calls:\n"
+                                 "   void outerA::work(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void handle(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void process(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void func(double) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void func(float) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void work(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void work(float) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void run() {\n"
                                  "    process(42);\n"
@@ -6616,13 +6646,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified calls:\n"
                                  "   void lib1::process(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void runDirective() {\n"
+                                 "    handle(42);\n"
+                                 "}\n"
+                                 "/* Unqualified calls:\n"
+                                 "   void dir1::handle(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },
-
-
 };
 /* some missing test cases
 
@@ -6639,4 +6672,8 @@ Test ExploratoryTestsOfClangAST[] =
     using lib1::process;             using lib2::process;
     #include "shared_header.h"       #include "shared_header.h"
 
+
+
+
+    TODO:  test unqualified types, similar to above
 */
