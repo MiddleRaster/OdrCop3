@@ -6579,8 +6579,18 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace outerB { void work(float) {}   using namespace outerA; }"
                                 "inline void callWork() { using namespace outerB; work(4); }\n"
 
-                                // need to test template function versions, too
+                                // function templates
+                                "namespace tlib1 { template<typename T> void tprocess(T ) {} } using tlib1::tprocess; inline void runT() { tprocess(42); }\n"
 
+                                "namespace tns1 { template<typename T> void tfunc(T  ) {} } using tns1::tfunc;"
+                                "namespace tns2 { template<typename T> void tfunc(T *) {}   using tns2::tfunc; }"
+                                "inline void FooT() { tfunc(4); }\n"
+
+                                "namespace tdir1 { template<typename T> void thandle(T ) {} } using namespace tdir1; inline void runDirectiveT() { thandle(42); }\n"
+
+                                "namespace touterA { template<typename T> void twork(T  ) {} }"
+                                "namespace touterB { template<typename T> void twork(T *) {}   using namespace touterA; }"
+                                "inline void callWorkT() { using namespace touterB; twork(4); }\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -6591,7 +6601,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(10, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(20, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6621,12 +6631,25 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified calls:\n"
                                  "   void ns1::func(double)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void FooT() {\n"
+                                 "    tfunc(4);\n"
+                                 "}\n"
+                                 "/* Unqualified calls:\n"
+                                 "   template<> void tns1::tfunc<int>(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void callWork() {\n"
                                  "    using namespace outerB;\n"
                                  "    work(4);\n"
                                  "}\n"
                                  "/* Unqualified calls:\n"
                                  "   void outerA::work(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void callWorkT() {\n"
+                                 "    using namespace touterB;\n"
+                                 "    twork(4);\n"
+                                 "}\n"
+                                 "/* Unqualified calls:\n"
+                                 "   template<> void touterA::twork<int>(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void handle(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -6652,6 +6675,30 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified calls:\n"
                                  "   void dir1::handle(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void runDirectiveT() {\n"
+                                 "    thandle(42);\n"
+                                 "}\n"
+                                 "/* Unqualified calls:\n"
+                                 "   template<> void tdir1::thandle<int>(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void runT() {\n"
+                                 "    tprocess(42);\n"
+                                 "}\n"
+                                 "/* Unqualified calls:\n"
+                                 "   template<> void tlib1::tprocess<int>(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void thandle(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void tprocess(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void tfunc(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void tfunc(T *) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void twork(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void twork(T *) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
