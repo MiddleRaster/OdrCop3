@@ -677,20 +677,36 @@ namespace OdrCop3
 
         bool VisitTypeLoc(TypeLoc typeLoc)
         {
-            auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>();
-            if (!usingTypeLoc)
+            NestedNameSpecifierLoc qualifier;
+            const Decl* target       = nullptr;
+            bool        viaUsingDecl = false;
+
+            if (auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>())
+            {
+                qualifier    = usingTypeLoc.getQualifierLoc();
+                target       = usingTypeLoc.getTypePtr()->getDecl()->getTargetDecl();
+                viaUsingDecl = true;
+            }
+            else if (auto tagTypeLoc = typeLoc.getAs<TagTypeLoc>())
+            {
+                qualifier    = tagTypeLoc.getQualifierLoc();
+                target       = tagTypeLoc.getTypePtr()->getDecl();
+            } else
+                return true;
+            if (qualifier) // written with a qualifier (tyB::Sprocket): not an unqualified lookup
                 return true;
 
-            if (usingTypeLoc.getQualifierLoc())     // written with a qualifier (tyA::Gadget): not an unqualified lookup
+            const DeclContext* targetContext = target->getDeclContext()->getRedeclContext();
+            if (targetContext->isRecord())                               // member types found through a class or base
+                return true;
+            if (target->isInAnonymousNamespace())                        // implicit using-directive; handled elsewhere
+                return true;
+            if (!viaUsingDecl && targetContext->Encloses(callerContext)) // found in an enclosing scope: ordinary lookup
                 return true;
 
-            const UsingShadowDecl* shadow = usingTypeLoc.getTypePtr()->getDecl();
-            if (shadow->getTargetDecl()->getDeclContext()->getRedeclContext()->isRecord()) // member types found through a class or base
-                return true;
-
-            types.push_back(usingTypeLoc.getType().getCanonicalType());
+            types.push_back(typeLoc.getType().getCanonicalType());
             return true;
-        }
+        }         
 
     public:
         static std::string PrintUnqualifiedNames(const DeclContext* callerContext, const Stmt* stmt, const ContextItems& contextItems)
@@ -699,8 +715,11 @@ namespace OdrCop3
                 return {};
 
             UnqualifiedNameCollector collector(contextItems, callerContext);
-            collector.TraverseStmt(const_cast<Stmt*>(stmt));
 
+            if (const auto* function = dyn_cast<FunctionDecl>(Decl::castFromDeclContext(callerContext)))
+                for (const ParmVarDecl* parameter : function->parameters())
+                    collector.TraverseDecl(const_cast<ParmVarDecl*>(parameter)); // traverse each param
+            collector.TraverseStmt(const_cast<Stmt*>(stmt));                     // traverse body
             if (collector.references.empty() && collector.types.empty())
                 return {};
 

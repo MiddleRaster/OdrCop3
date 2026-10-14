@@ -6711,8 +6711,8 @@ Test ExploratoryTestsOfClangAST[] =
                                 // using-declaration, local variable
                                 "namespace tyA { struct Gadget {}; } using tyA::Gadget; inline void useLocal() { Gadget g; }\n"
 
-                                //// using-directive, parameter
-                                //"namespace tyB { struct Sprocket {}; } using namespace tyB; inline void useParam(Sprocket s) {}\n"
+                                // using-directive, parameter
+                                "namespace tyB { struct Sprocket {}; } using namespace tyB; inline void useParam(Sprocket s) {}\n"
 
                                 //// transitive using-directive, return type
                                 //"namespace tyC1 { struct Bolt {}; }"
@@ -6753,16 +6753,18 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(1, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(2, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(2, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(3, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct Gadget {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Sprocket {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -6791,6 +6793,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   tyA::Gadget\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useParam(Sprocket s) {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyB::Sprocket\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
