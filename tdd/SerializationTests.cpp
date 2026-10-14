@@ -6064,7 +6064,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "       return 107;\n"
                                  "   }\n"
                                  "*/\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   static int AdlDivergenceNamespace::Process(AdlDivergenceNamespace::Argument)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int AdlInternalFunctionUser(AdlInternalFunctionNamespace::Argument value) {\n"
@@ -6075,7 +6075,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "       return 127;\n"
                                  "   }\n"
                                  "*/\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   static int AdlInternalFunctionNamespace::Resolve(AdlInternalFunctionNamespace::Argument)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int AnonymousInstantiationCall() {\n"
@@ -6198,7 +6198,7 @@ Test ExploratoryTestsOfClangAST[] =
                                  "       return 113;\n"
                                  "   }\n"
                                  "*/\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   static int OverloadDivergenceNamespace::Process(OverloadDivergenceNamespace::Argument *)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int ReadOnlyContextAlignof() {\n"
@@ -6628,27 +6628,27 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline void Foo() {\n"
                                  "    func(4);\n"
                                  "}\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   void ns1::func(double)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void FooT() {\n"
                                  "    tfunc(4);\n"
                                  "}\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   template<> void tns1::tfunc<int>(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void callWork() {\n"
                                  "    using namespace outerB;\n"
                                  "    work(4);\n"
                                  "}\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   void outerA::work(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void callWorkT() {\n"
                                  "    using namespace touterB;\n"
                                  "    twork(4);\n"
                                  "}\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   template<> void touterA::twork<int>(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void handle(int) {\n"
@@ -6666,25 +6666,25 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline void run() {\n"
                                  "    process(42);\n"
                                  "}\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   void lib1::process(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void runDirective() {\n"
                                  "    handle(42);\n"
                                  "}\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   void dir1::handle(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void runDirectiveT() {\n"
                                  "    thandle(42);\n"
                                  "}\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   template<> void tdir1::thandle<int>(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void runT() {\n"
                                  "    tprocess(42);\n"
                                  "}\n"
-                                 "/* Unqualified calls:\n"
+                                 "/* Unqualified names:\n"
                                  "   template<> void tlib1::tprocess<int>(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> void thandle(T) {\n"
@@ -6699,6 +6699,99 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> void twork(T *) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+        }
+    },
+    {"using namespaces and unqualified types", []
+        {
+            std::string code =
+                                "template<typename T> inline void takeType() {}\n"
+
+                                // using-declaration, local variable
+                                "namespace tyA { struct Gadget {}; } using tyA::Gadget; inline void useLocal() { Gadget g; }\n"
+
+                                //// using-directive, parameter
+                                //"namespace tyB { struct Sprocket {}; } using namespace tyB; inline void useParam(Sprocket s) {}\n"
+
+                                //// transitive using-directive, return type
+                                //"namespace tyC1 { struct Bolt {}; }"
+                                //"namespace tyC2 { using namespace tyC1; }"
+                                //"using namespace tyC2; inline Bolt useReturn() { return {}; }\n"
+
+                                //// using-declaration, data member
+                                //"namespace tyD { struct Washer {}; } using tyD::Washer; struct HasMember { Washer w; };\n"
+
+                                //// using-directive, base class
+                                //"namespace tyE { struct Chassis {}; } using namespace tyE; struct Truck : Chassis {};\n"
+
+                                //// function-local using-directive, sizeof
+                                //"namespace tyF { struct Rivet { int x; }; } inline int useSizeof() { using namespace tyF; return sizeof(Rivet); }\n"
+
+                                //// using-declaration, cast
+                                //"namespace tyG { struct Gear {}; } using tyG::Gear; inline void * useCast(void * p) { return static_cast<Gear *>(p); }\n"
+
+                                //// using-directive, template argument
+                                //"namespace tyH { struct Cog {}; } using namespace tyH; inline void useTemplateArg() { takeType<Cog>(); }\n"
+
+                                //// alias and typedef, reported as the underlying type
+                                //"namespace tyI { struct Pulley {}; using PulleyAlias = Pulley; typedef Pulley PulleyTypedef; }"
+                                //"using tyI::PulleyAlias; using tyI::PulleyTypedef; inline void useAlias() { PulleyAlias a; PulleyTypedef t; }\n"
+
+                                //// nearer scope wins over a using-directive
+                                //"namespace tyJ1 { struct Pin {}; } using namespace tyJ1;"
+                                //"namespace tyJ2 { struct Pin {}; inline void useNearer() { Pin p; } }\n"
+
+                                //// block-scope using-declaration hides the outer one
+                                //"namespace tyK1 { struct Lug {}; } namespace tyK2 { struct Lug {}; } using tyK1::Lug;"
+                                //"inline void useHidden() { using tyK2::Lug; Lug l; }\n"
+
+                                //// same entity reached by a using-declaration and a using-directive
+                                //"namespace tyM { struct Hub {}; } using tyM::Hub; using namespace tyM; inline void useBoth() { Hub h; }\n"
+                                    ;
+            OdrCop3::AllMaps maps;
+            bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
+            Assert::IsTrue(ok);
+
+            Assert::AreEqual(1, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(2, maps.functionMap.size(),"wrong number of functions in map");
+
+            {
+                auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct Gadget {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.varMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.enumMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.guideMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.conceptMap.begin();
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+            }
+            {
+                auto it = maps.functionMap.begin();
+                Assert::AreEqual("template <typename T> inline void takeType() {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useLocal() {\n"
+                                 "    Gadget g;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyA::Gadget\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }

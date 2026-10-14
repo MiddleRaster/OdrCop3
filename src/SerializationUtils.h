@@ -26,8 +26,8 @@ namespace OdrCop3
         bool isAnonymous            = false;
         bool hasNamespaceAlias      = false;
         bool hasInternalLinkageRef  = false;
-        bool hasUnqualifiedCalls    = false;
-        bool AreAllFalse() const { return !(isAnonymous || hasNamespaceAlias || hasInternalLinkageRef || hasUnqualifiedCalls); }
+        bool hasUnqualifiedNames    = false;
+        bool AreAllFalse() const { return !(isAnonymous || hasNamespaceAlias || hasInternalLinkageRef || hasUnqualifiedNames); }
     };
     struct ContextItems
     {
@@ -637,7 +637,7 @@ namespace OdrCop3
             return collector.Print<SerializeDecl>();
         }
     };
-    class UnqualifiedCallCollector : public RecursiveASTVisitor<UnqualifiedCallCollector>
+    class UnqualifiedNameCollector : public RecursiveASTVisitor<UnqualifiedNameCollector>
     {
         const ContextItems& contextItems;
         const DeclContext* callerContext;
@@ -647,10 +647,11 @@ namespace OdrCop3
             const FunctionDecl* callee;
         };
         std::vector<Reference> references;
+        std::vector<QualType>  types;
 
-        UnqualifiedCallCollector(const ContextItems& contextItems, const DeclContext* callerContext) : contextItems(contextItems), callerContext(callerContext) {}
+        UnqualifiedNameCollector(const ContextItems& contextItems, const DeclContext* callerContext) : contextItems(contextItems), callerContext(callerContext) {}
 
-        friend RecursiveASTVisitor<UnqualifiedCallCollector>;
+        friend RecursiveASTVisitor<UnqualifiedNameCollector>;
         bool VisitCallExpr(const CallExpr* call)
         {
             const FunctionDecl* callee = call->getDirectCallee();
@@ -673,18 +674,35 @@ namespace OdrCop3
             references.push_back({call, callee});
             return true;
         }
+
+        bool VisitTypeLoc(TypeLoc typeLoc)
+        {
+            auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>();
+            if (!usingTypeLoc)
+                return true;
+
+            if (usingTypeLoc.getQualifierLoc())     // written with a qualifier (tyA::Gadget): not an unqualified lookup
+                return true;
+
+            const UsingShadowDecl* shadow = usingTypeLoc.getTypePtr()->getDecl();
+            if (shadow->getTargetDecl()->getDeclContext()->getRedeclContext()->isRecord()) // member types found through a class or base
+                return true;
+
+            types.push_back(usingTypeLoc.getType().getCanonicalType());
+            return true;
+        }
+
     public:
-        static std::string PrintUnqualifiedCalls(const DeclContext* callerContext, const Stmt* stmt, const ContextItems& contextItems)
+        static std::string PrintUnqualifiedNames(const DeclContext* callerContext, const Stmt* stmt, const ContextItems& contextItems)
         {
             if (contextItems.noComment)
                 return {};
 
-            UnqualifiedCallCollector collector(contextItems, callerContext);
+            UnqualifiedNameCollector collector(contextItems, callerContext);
             collector.TraverseStmt(const_cast<Stmt*>(stmt));
 
-            std::string out;
-            if (collector.references.empty())
-                return out;
+            if (collector.references.empty() && collector.types.empty())
+                return {};
 
             PrintingPolicy policy(contextItems.printPolicy);
             policy.FullyQualifiedName   = true;     // qualified name even if declared inside its namespace
@@ -692,21 +710,35 @@ namespace OdrCop3
          // policy.SuppressInitializers = true;     // drop default arguments
             policy.TerseOutput          = true;     // never print the body
 
-            out += "/* Unqualified calls:\n";
-            for (const Reference& reference : collector.references)
+            std::string out;
+            out += "/* Unqualified names:\n";
+            if (!collector.references.empty())
             {
-                out += "   ";
-                llvm::raw_string_ostream stream(out);
-                reference.callee->print(stream, policy);
-                out += "\n";
+                for (const Reference& reference : collector.references)
+                {
+                    out += "   ";
+                    llvm::raw_string_ostream stream(out);
+                    reference.callee->print(stream, policy);
+                    out += "\n";
+                }
+            }
+            if (!collector.types.empty())
+            {
+                for (const QualType& type : collector.types)
+                {
+                    out += "   ";
+                    llvm::raw_string_ostream stream(out);
+                    type.print(stream, policy);
+                    out += "\n";
+                }
             }
             out += "*/\n";
             return out;
         }
-        static bool HasUnqualifiedCalls(const Decl* decl, const ContextItems& contextItems)
+        static bool HasUnqualifiedNames(const Decl* decl, const ContextItems& contextItems)
         {
-            if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedCalls(        functionDecl,                             functionDecl->getBody(), contextItems);
-            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedCalls(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getBody(), contextItems);
+            if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedNames(        functionDecl,                             functionDecl->getBody(), contextItems);
+            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getBody(), contextItems);
             return false;
         }
     };
