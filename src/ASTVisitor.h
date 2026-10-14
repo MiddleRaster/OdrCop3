@@ -286,14 +286,6 @@ namespace OdrCop3
             return true;
         }
 
-        bool VisitUsingDecl(const UsingDecl* usingDecl)
-        { // to handle unqualified name lookups + using declarations/statements
-            for (const UsingShadowDecl* shadow : usingDecl->shadows())
-                if (const NamedDecl* namedDecl = clang::dyn_cast<NamedDecl>(shadow->getTargetDecl()->getCanonicalDecl()))
-                    contextItems.shadowUsingDeclTargets.insert(namedDecl);
-            return true;
-        }
-
     private:
         std::string CreateKeyForFunctionMap(const clang::FunctionDecl* funcDecl)
         {

@@ -6560,6 +6560,10 @@ Test ExploratoryTestsOfClangAST[] =
             std::string code =
                                 "namespace lib1 { void process(int) {} } using lib1::process; inline void run() { process(42); }\n"
 
+                                "namespace ns1 { void func(double) {} } using ns1::func;"
+                                "namespace ns2 { void func(float ) {}   using ns2::func; }"
+                                "inline void Foo() { func(4); }\n"
+
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
@@ -6570,7 +6574,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(2, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(5, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6594,15 +6598,24 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("inline void Foo() {\n"
+                                 "    func(4);\n"
+                                 "}\n"
+                                 "/* Unqualified calls:\n"
+                                 "   void ns1::func(double)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void process(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void func(double) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void func(float) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void run() {\n"
                                  "    process(42);\n"
                                  "}\n"
                                  "/* Unqualified calls:\n"
-                                 "   lib1::process\n"
+                                 "   void lib1::process(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }

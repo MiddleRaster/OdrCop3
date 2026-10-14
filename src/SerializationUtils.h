@@ -37,7 +37,6 @@ namespace OdrCop3
         std::unordered_set<const Decl*>& recursingDecls;
         std::string aux;
         SerializationNeeds serializationNeeds;
-        llvm::SmallPtrSet<const NamedDecl*, 8> shadowUsingDeclTargets;
         bool wantFunctionBody       = true;
         bool needsFriend            = false;
         bool suppressTemplatePrefix = false;
@@ -657,12 +656,11 @@ namespace OdrCop3
             if (!callee)
                 return true;
 
-            const Expr* calleeExpr = call->getCallee()->IgnoreParenImpCasts();
-            const auto* declRef = dyn_cast<DeclRefExpr>(calleeExpr);
+            const auto* declRef = dyn_cast<DeclRefExpr>(call->getCallee()->IgnoreParenImpCasts());
             if (!declRef || declRef->hasQualifier())
                 return true;
 
-            if (!contextItems.shadowUsingDeclTargets.contains(callee->getCanonicalDecl()))
+            if (!isa<UsingShadowDecl>(declRef->getFoundDecl()))
                 return true;
 
             if (callee->getQualifiedNameAsString() == callee->getNameAsString())
@@ -676,8 +674,6 @@ namespace OdrCop3
         {
             if (contextItems.noComment)
                 return {};
-            if (contextItems.shadowUsingDeclTargets.size() == 0)
-                return {};
 
             UnqualifiedCallCollector collector(contextItems);
             collector.TraverseStmt(const_cast<Stmt*>(stmt));
@@ -686,11 +682,18 @@ namespace OdrCop3
             if (collector.references.empty())
                 return out;
 
+            PrintingPolicy policy(contextItems.printPolicy);
+            policy.FullyQualifiedName   = true;     // qualified name even if declared inside its namespace
+         // policy.SuppressSpecifiers   = true;     // drop inline / static / extern / constexpr
+         // policy.SuppressInitializers = true;     // drop default arguments
+            policy.TerseOutput          = true;     // never print the body
+
             out += "/* Unqualified calls:\n";
             for (const Reference& reference : collector.references)
             {
                 out += "   ";
-                out += reference.callee->getQualifiedNameAsString();
+                llvm::raw_string_ostream stream(out);
+                reference.callee->print(stream, policy);
                 out += "\n";
             }
             out += "*/\n";
@@ -698,8 +701,6 @@ namespace OdrCop3
         }
         static bool HasUnqualifiedCalls(const Decl* decl, const ContextItems& contextItems)
         {
-            if (contextItems.shadowUsingDeclTargets.size() == 0)
-                return false;
             if (const FunctionDecl        *         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedCalls(        functionDecl->getBody(), contextItems);
             if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedCalls(functionTemplateDecl->getBody(), contextItems);
             return false;
