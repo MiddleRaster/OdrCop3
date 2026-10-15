@@ -709,17 +709,13 @@ namespace OdrCop3
         }         
 
     public:
-        static std::string PrintUnqualifiedNames(const DeclContext* callerContext, const Stmt* stmt, const ContextItems& contextItems)
+        static std::string PrintUnqualifiedNames(const DeclContext* callerContext, const ContextItems& contextItems)
         {
             if (contextItems.noComment)
                 return {};
 
             UnqualifiedNameCollector collector(contextItems, callerContext);
-
-            if (const auto* function = dyn_cast<FunctionDecl>(Decl::castFromDeclContext(callerContext)))
-                for (const ParmVarDecl* parameter : function->parameters())
-                    collector.TraverseDecl(const_cast<ParmVarDecl*>(parameter)); // traverse each param
-            collector.TraverseStmt(const_cast<Stmt*>(stmt));                     // traverse body
+            collector.TraverseDecl(const_cast<FunctionDecl*>(cast<FunctionDecl>(Decl::castFromDeclContext(callerContext)))); // functions
             if (collector.references.empty() && collector.types.empty())
                 return {};
 
@@ -756,8 +752,8 @@ namespace OdrCop3
         }
         static bool HasUnqualifiedNames(const Decl* decl, const ContextItems& contextItems)
         {
-            if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedNames(        functionDecl,                             functionDecl->getBody(), contextItems);
-            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getBody(), contextItems);
+            if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedNames(        functionDecl,                     contextItems);
+            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), contextItems);
             return false;
         }
     };

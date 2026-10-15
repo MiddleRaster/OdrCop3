@@ -206,7 +206,7 @@ namespace OdrCop3
             if (!contextItems.serializationNeeds.AreAllFalse())
             {
                 body += InternalLinkageReferenceCollector::PrintReferences<SerializeDecl>(funcDecl->getBody(), contextItems);
-                body +=          UnqualifiedNameCollector::PrintUnqualifiedNames(funcDecl,funcDecl->getBody(), contextItems);
+                body +=          UnqualifiedNameCollector::PrintUnqualifiedNames         (funcDecl,            contextItems);
             }
             return body;
         }

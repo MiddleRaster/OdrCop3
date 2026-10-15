@@ -6714,10 +6714,10 @@ Test ExploratoryTestsOfClangAST[] =
                                 // using-directive, parameter
                                 "namespace tyB { struct Sprocket {}; } using namespace tyB; inline void useParam(Sprocket s) {}\n"
 
-                                //// transitive using-directive, return type
-                                //"namespace tyC1 { struct Bolt {}; }"
-                                //"namespace tyC2 { using namespace tyC1; }"
-                                //"using namespace tyC2; inline Bolt useReturn() { return {}; }\n"
+                                // transitive using-directive, return type
+                                "namespace tyC1 { struct Bolt {}; }"
+                                "namespace tyC2 { using namespace tyC1; }"
+                                "using namespace tyC2; inline Bolt useReturn() { return {}; }\n"
 
                                 //// using-declaration, data member
                                 //"namespace tyD { struct Washer {}; } using tyD::Washer; struct HasMember { Washer w; };\n"
@@ -6753,18 +6753,20 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(2, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(3, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(3, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(4, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
                 Assert::AreEqual("struct Gadget {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Bolt {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -6798,6 +6800,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   tyB::Sprocket\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline Bolt useReturn() {\n"
+                                 "    return {};\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyC1::Bolt\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
