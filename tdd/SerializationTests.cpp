@@ -6746,19 +6746,172 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyK1 { struct Lug {}; } namespace tyK2 { struct Lug {}; } using tyK1::Lug;"
                                 "inline void useHidden() { using tyK2::Lug; Lug l; }\n"
 
-                                //// same entity reached by a using-declaration and a using-directive
-                                //"namespace tyM { struct Hub {}; } using tyM::Hub; using namespace tyM; inline void useBoth() { Hub h; }\n"
+                                // same entity reached by a using-declaration and a using-directive
+                                "namespace tyM { struct Hub {}; } using tyM::Hub; using namespace tyM; inline void useBoth() { Hub h; }\n"
+
+                                // qualified type use while a using-declaration is also visible: no annotation
+                                "namespace tyN { struct Qual {}; } using tyN::Qual; inline void useQualType() { tyN::Qual q; }\n"
+
+                                // qualified call while a using-declaration is also visible: no annotation
+                                "namespace tyO { void qcall(int) {} } using tyO::qcall; inline void useQualCall() { tyO::qcall(1); }\n"
+
+                                // same-namespace call beats a global using-directive: no annotation
+                                "namespace tyP1 { void pstep(int) {} } using namespace tyP1;"
+                                "namespace tyP2 { void pstep(int) {} inline void useNearCall() { pstep(1); } }\n"
+
+                                // record members found through a base: no annotation
+                                "struct RecBase { struct Inner {}; static void sfn() {} };"
+                                "struct RecDerived : RecBase { Inner i; void m() { sfn(); } };\n"
+
+                                // function-local type inside a method: no annotation
+                                "struct LocalHost { void f() { struct Local {}; Local l; } };\n"
+
+                                // anonymous namespace type and function: no annotation (handled elsewhere)
+                                "namespace { struct AnonT {}; void anonFn(int) {} } inline void useAnon() { AnonT a; anonFn(1); }\n"
+
+                                // pointer, reference and builtin layers: only the named type is recorded
+                                "namespace tyT { struct Ptr {}; } using tyT::Ptr; inline void usePtrRef(const Ptr * p, Ptr & r, int n) {}\n"
+
+                                // elaborated keyword, no qualifier: treated like plain Keyed
+                                "namespace tyU { struct Keyed {}; } using tyU::Keyed; inline void useKeyword() { struct Keyed k; }\n"
+
+                                // enum and union
+                                "namespace tyV { enum class Mode { On, Off }; union Bits { int i; float f; }; } using tyV::Mode; using tyV::Bits;"
+                                "inline void useEnumUnion() { Mode m; Bits b; }\n"
+
+                                // two hazardous types in one function: order and owner labels
+                                "namespace tyW { struct Wa {}; struct Wb {}; } using tyW::Wa; using tyW::Wb;"
+                                "inline void useTwo(Wa a, Wb b) { Wa a2; Wb b2; }\n"
+
+                                // default member initializer and constructor initializer
+                                "namespace tyX { struct Xm {}; struct Xn { Xn() {} }; } using tyX::Xm; using tyX::Xn;"
+                                "struct InitHost { Xm m = Xm{}; InitHost() : n(Xn()) {} Xn n; };\n"
+
+                                // lambda body
+                                "namespace tyY { struct Ya {}; void ycall(int) {} } using tyY::Ya; using tyY::ycall;"
+                                "inline void useLambda() { auto l = [] { Ya y; ycall(1); }; }\n"
+
+                                //// out-of-line member definition: the qualified declarator is skipped, and Zarg is found in tyZ first
+                                //"namespace tyZ { struct Zed { void f(); }; struct Zarg {}; } using tyZ::Zarg; void tyZ::Zed::f() { Zarg z; }\n"
+
+                                //// function template: non-dependent type and call in the body
+                                //"namespace tyAA { struct Aa {}; void aacall(int) {} } using tyAA::Aa; using tyAA::aacall;"
+                                //"template<typename T> void useTplBody(T) { Aa a; aacall(1); }\n"
+
+                                //// function template: type in the signature, including an unnamed parameter
+                                //"namespace tyAB { struct Ab {}; } using tyAB::Ab; template<typename T> Ab useTplSig(T, Ab) { return {}; }\n"
+
+                                //// function template: dependent call resolved by ADL at instantiation
+                                //"namespace tyAC { struct Ac {}; void adl(Ac) {} }"
+                                //"template<typename T> void useDependent(T t) { adl(t); }"
+                                //"inline void instantiateDependent() { useDependent(tyAC::Ac{}); }\n"
+
+                                //// explicit template argument: both the call and the Ad argument
+                                //"namespace tyAD { struct Ad {}; template<typename T> void adtake() {} } using tyAD::Ad; using tyAD::adtake;"
+                                //"inline void useExplicitArg() { adtake<Ad>(); }\n"
+
+                                //// namespace-scope variable, type found through a using-declaration
+                                //"namespace tyAE { struct Ae {}; } using tyAE::Ae; inline Ae gAe;\n"
+
+                                //// namespace-scope variable initialized by a call found through a using-declaration
+                                //"namespace tyAG { int agval(int) { return 0; } } using tyAG::agval; inline int gAg = agval(1);\n"
+
+                                //// static data member, in-class and out-of-line definition
+                                //"namespace tyAF { struct Af {}; } using tyAF::Af; struct StaticHost { static inline Af sAf; };\n"
+                                //"namespace tyBD { struct Bd {}; } using tyBD::Bd; struct StaticDef { static Bd sb; }; Bd StaticDef::sb;\n"
+
+                                //// nested class and its enclosing class both use the type
+                                //"namespace tyAH { struct Ah {}; } using tyAH::Ah; struct Outer { struct Nested { Ah a; }; Ah b; };\n"
+
+                                //// base class through a using-declaration
+                                //"namespace tyAI { struct Ai {}; } using tyAI::Ai; struct DerivedAi : Ai {};\n"
+
+                                //// inline member function body: type and call
+                                //"namespace tyAJ { struct Aj {}; void ajcall(int) {} } using tyAJ::Aj; using tyAJ::ajcall;"
+                                //"struct MethodHost { void m() { Aj a; ajcall(1); } };\n"
+
+                                //// member function template with a hazardous parameter type
+                                //"namespace tyBB { struct Bb {}; } using tyBB::Bb; struct MemberTpl { template<typename T> void m(T, Bb) {} };\n"
+
+                                //// friend function defined in the class
+                                //"namespace tyBA { struct Ba {}; } using tyBA::Ba; struct FriendDef { friend void fdef(Ba) {} };\n"
+
+                                //// enum whose underlying type is an alias found through a using-declaration
+                                //"namespace tyBC { using Under = unsigned char; } using tyBC::Under; enum Backed : Under { BackedA };\n"
+
+                                //// class template: hazardous non-dependent member beside a dependent one
+                                //"namespace tyAK { struct Ak {}; } using tyAK::Ak; template<typename T> struct TplHost { Ak a; T t; };\n"
+
+                                //// class template: member function body inside a class template
+                                //"namespace tyBE { struct Be {}; void becall(int) {} } using tyBE::Be; using tyBE::becall;"
+                                //"template<typename T> struct TplMethod { void m(T) { Be b; becall(1); } };\n"
+
+                                //// class template: hazardous type in a default template argument
+                                //"namespace tyBF { struct Bf {}; } using tyBF::Bf; template<typename T = Bf> struct TplDefault {};\n"
+
+                                //// class template named through a using-declaration
+                                //"namespace tyAL { template<typename T> struct Al {}; } using tyAL::Al; struct UsesAl { Al<int> a; };\n"
+
+                                //// class template named through a using-directive
+                                //"namespace tyAM { template<typename T> struct Am {}; } using namespace tyAM; struct UsesAm { Am<int> a; };\n"
+
+                                //// explicit specialization declared after the using-declaration
+                                //"namespace tyAN { template<typename T> struct An { int v; }; } using tyAN::An;"
+                                //"namespace tyAN { template<> struct An<int> { long v; }; }"
+                                //"struct UsesAn { An<int> a; };\n"
+
+                                //// partial specialization applies through the using-declaration
+                                //"namespace tyAO { template<typename T> struct Ao {}; template<typename T> struct Ao<T *> { int p; }; } using tyAO::Ao;"
+                                //"struct UsesAo { Ao<int *> a; };\n"
+
+                                //// alias template through a using-declaration
+                                //"namespace tyAW { struct Aw {}; template<typename T> using AwAlias = Aw; } using tyAW::AwAlias;"
+                                //"inline void useAliasTpl() { AwAlias<int> a; }\n"
+
+                                //// class template argument deduction with an explicit guide
+                                //"namespace tyAY { template<typename T> struct Ay { Ay(T) {} }; template<typename T> Ay(T) -> Ay<T>; } using tyAY::Ay;"
+                                //"inline void useCtad() { Ay a(1); }\n"
+
+                                //// concept through a using-declaration
+                                //"namespace tyAX { template<typename T> concept Cx = true; } using tyAX::Cx; template<Cx T> void useConcept(T) {}\n"
+
+                                //// function template: default template argument, found through a using-directive
+                                //"namespace tyAP { template<typename T = int> void apdef() {} } using namespace tyAP; inline void useDefaultArg() { apdef(); }\n"
+
+                                //// function template: non-type template argument
+                                //"namespace tyAQ { template<int N> void aqn() {} } using tyAQ::aqn; inline void useNonType() { aqn<3>(); }\n"
+
+                                //// function template: hazardous temporary in the argument list plus a call through a using-declaration
+                                //"namespace tyAR { struct Ar {}; template<typename T> void arpick(T, Ar) {} } using tyAR::Ar; using tyAR::arpick;"
+                                //"inline void useMixed() { arpick(1, Ar{}); }\n"
+
+                                //// function template: call resolves to an explicit specialization
+                                //"namespace tyBG { template<typename T> void bgspec(T) {} template<> void bgspec<int>(int) {} } using tyBG::bgspec;"
+                                //"inline void useSpecCall() { bgspec(1); }\n"
+
+                                //// function template found through a using-declaration, plain overload preferred in the global scope
+                                //"namespace tyBH { template<typename T> void bhmix(T) {} } using tyBH::bhmix; void bhmix(int) {}"
+                                //"inline void useTplVsPlain() { bhmix(1); }\n"
+
+                                //// variable and variable template referenced through using-declarations
+                                //"namespace tyAT { inline int atv = 1; } using tyAT::atv; inline int useVarRef() { return atv; }\n"
+                                //"namespace tyAS { template<typename T> inline constexpr int asv = 1; } using tyAS::asv; inline int useVarTpl() { return asv<int>; }\n"
+
+                                //// unscoped enumerator through a using-directive, scoped enumerator through a block-scope using enum
+                                //"namespace tyAU { enum Plain { PlainA, PlainB }; } using namespace tyAU; inline int useEnumerator() { return PlainA; }\n"
+                                //"namespace tyAV { enum class Color { Red, Green }; } inline int useUsingEnum() { using enum tyAV::Color; return static_cast<int>(Red); }\n"
+
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(15, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(29, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(10, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(24, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6768,6 +6921,40 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   w: tyD::Washer\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct InitHost {\n"
+                                 "    Xm m = Xm{};\n"
+                                 "    InitHost() : n(Xn()) {\n"
+                                 "    }\n"
+                                 "    /* Unqualified names:\n"
+                                 "       tyX::Xn\n"
+                                 "    */\n"
+                                 "    Xn n;\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   m: tyX::Xm\n"
+                                 "   m: tyX::Xm\n"
+                                 "   tyX::Xn\n"
+                                 "   n: tyX::Xn\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct LocalHost {\n"
+                                 "    void f() {\n"
+                                 "        struct Local {\n"
+                                 "        };\n"
+                                 "        Local l;\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct RecBase {\n"
+                                 "    struct Inner {\n"
+                                 "    };\n"
+                                 "    static void sfn() {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct RecDerived : RecBase {\n"
+                                 "    Inner i;\n"
+                                 "    void m() {\n"
+                                 "        sfn();\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Truck : Chassis {\n"
                                  "};\n"
                                  "/* Unqualified names:\n"
@@ -6800,6 +6987,35 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Lug {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Hub {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Qual {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ptr {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Keyed {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("union Bits {\n"
+                                 "    int i;\n"
+                                 "    float f;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Wa {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Wb {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Xm {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Xn {\n"
+                                 "    Xn() {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ya {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -6809,6 +7025,10 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum class Mode {\n"
+                                 "    On,\n"
+                                 "    Off\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -6826,6 +7046,17 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline void useNearer() {\n"
                                  "    Pin p;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void qcall(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void pstep(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void pstep(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useNearCall() {\n"
+                                 "    pstep(1);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void ycall(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useAlias() {\n"
                                  "    PulleyAlias a;\n"
                                  "    PulleyTypedef t;\n"
@@ -6834,16 +7065,54 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a: tyI::Pulley\n"
                                  "   t: tyI::Pulley\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useAnon() {\n"
+                                 "    AnonT a;\n"
+                                 "    anonFn(1);\n"
+                                 "}\n"
+                                 "/* Internal linkage references:\n"
+                                 "   void anonFn(int) {\n"
+                                 "   }\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useBoth() {\n"
+                                 "    Hub h;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   h: tyM::Hub\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void *useCast(void *p) {\n"
                                  "    return static_cast<Gear *>(p);\n"
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   tyG::Gear\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useEnumUnion() {\n"
+                                 "    Mode m;\n"
+                                 "    Bits b;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   m: tyV::Mode\n"
+                                 "   b: tyV::Bits\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useHidden() {\n"
                                  "    using tyK2::Lug;\n"
                                  "    Lug l;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useKeyword() {\n"
+                                 "    struct Keyed k;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   k: tyU::Keyed\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useLambda() {\n"
+                                 "    auto l = [] {\n"
+                                 "        Ya y;\n"
+                                 "        ycall(1);\n"
+                                 "    };\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   y: tyY::Ya\n"
+                                 "   void tyY::ycall(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useLocal() {\n"
                                  "    Gadget g;\n"
                                  "}\n"
@@ -6855,6 +7124,18 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   s: tyB::Sprocket\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void usePtrRef(const Ptr *p, Ptr &r, int n) {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   p: tyT::Ptr\n"
+                                 "   r: tyT::Ptr\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useQualCall() {\n"
+                                 "    tyO::qcall(1);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useQualType() {\n"
+                                 "    tyN::Qual q;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline Bolt useReturn() {\n"
                                  "    return {};\n"
                                  "}\n"
@@ -6874,6 +7155,17 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyH::Cog\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useTwo(Wa a, Wb b) {\n"
+                                 "    Wa a2;\n"
+                                 "    Wb b2;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   a: tyW::Wa\n"
+                                 "   b: tyW::Wb\n"
+                                 "   a2: tyW::Wa\n"
+                                 "   b2: tyW::Wb\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

@@ -641,14 +641,14 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         const DeclContext* callerContext;
-        struct Reference
+        struct Name
         {
-            const CallExpr* call;
-            const FunctionDecl* callee;
+            const FunctionDecl* callee;     // set for a call, null for a type
+            QualType            type;       // set for a type
+            std::string         owner;      // declarator the type appeared in; empty for calls and nameless uses
         };
-        std::vector<Reference> references;
-        std::vector<std::pair<std::string,QualType>> types; // adds owner info in addition to QualType
-        std::vector<std::string>  owners;                   // names of the declarators being traversed, innermost last (a stack, essentially)
+        std::vector<Name>         names;    // replaces both references and types, in traversal order
+        std::vector<std::string>  owners;   // names of the declarators being traversed, innermost last (a stack, essentially)
 
         UnqualifiedNameCollector(const ContextItems& contextItems, const DeclContext* callerContext) : contextItems(contextItems), callerContext(callerContext) {}
 
@@ -664,7 +664,9 @@ namespace OdrCop3
                 return true;
 
             const DeclContext* calleeContext = callee->getDeclContext()->getRedeclContext();
-            if (calleeContext->isRecord()) // static members found through the class or a base: not a namespace-lookup hazard
+            if (calleeContext->isRecord())        // static members found through the class or a base: not a namespace-lookup hazard
+                return true;
+            if (callee->isInAnonymousNamespace()) // implicit using-directive; handled elsewhere
                 return true;
 
             const bool viaUsingDeclaration = isa<UsingShadowDecl>(declRef->getFoundDecl());
@@ -672,7 +674,7 @@ namespace OdrCop3
             if (!viaUsingDeclaration && !viaOtherScope)
                 return true;
 
-            references.push_back({call, callee});
+            names.push_back({callee,  QualType(), std::string()});
             return true;
         }
         bool VisitTypeLoc(TypeLoc typeLoc)
@@ -710,7 +712,7 @@ namespace OdrCop3
             if (!viaUsingDecl && targetContext->Encloses(callerContext)) // found in an enclosing scope: ordinary lookup
                 return true;
 
-            types.push_back({owners.empty() ? std::string() : owners.back(), typeLoc.getType().getCanonicalType()});
+            names.push_back({nullptr, typeLoc.getType().getCanonicalType(), owners.empty() ? std::string() : owners.back() });
             return true;
         }         
         bool TraverseFieldDecl  (  FieldDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseFieldDecl  (decl); owners.pop_back(); return ok; }
@@ -728,8 +730,7 @@ namespace OdrCop3
             const Decl* callerDecl = Decl::castFromDeclContext(callerContext);
             if      (const auto* function = dyn_cast< FunctionDecl>(callerDecl))    collector.TraverseDecl(const_cast< FunctionDecl*>(function)); // return type, parameters, initializers, body
             else if (const auto* record   = dyn_cast<CXXRecordDecl>(callerDecl))    collector.TraverseDecl(const_cast<CXXRecordDecl*>(record));
-            
-            if (collector.references.empty() && collector.types.empty())
+            if (collector.names.empty())
                 return {};
                 
             PrintingPolicy policy(contextItems.printPolicy);
@@ -738,27 +739,15 @@ namespace OdrCop3
 
             std::string out;
             out += "/* Unqualified names:\n";
-            if (!collector.references.empty())
+            for (const Name& name : collector.names)
             {
-                for (const Reference& reference : collector.references)
-                {
-                    out += "   ";
-                    llvm::raw_string_ostream stream(out);
-                    reference.callee->print(stream, policy);
-                    out += "\n";
-                }
-            }
-            if (!collector.types.empty())
-            {
-                for (const auto& [owner, type] : collector.types)
-                {
-                    out += "   ";
-                    if (!owner.empty())
-                        out += owner + ": ";
-                    llvm::raw_string_ostream stream(out);
-                    type.print(stream, policy);
-                    out += "\n";
-                }
+                out += "   ";
+                if (!name.owner.empty())
+                    out += name.owner + ": ";
+                llvm::raw_string_ostream stream(out);
+                if (name.callee) name.callee->print(stream, policy);
+                else             name.type.print(stream, policy);
+                out += "\n";
             }
             out += "*/\n";
             return out;
