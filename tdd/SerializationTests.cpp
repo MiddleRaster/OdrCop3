@@ -6791,20 +6791,20 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyY { struct Ya {}; void ycall(int) {} } using tyY::Ya; using tyY::ycall;"
                                 "inline void useLambda() { auto l = [] { Ya y; ycall(1); }; }\n"
 
-                                //// out-of-line member definition: the qualified declarator is skipped, and Zarg is found in tyZ first
-                                //"namespace tyZ { struct Zed { void f(); }; struct Zarg {}; } using tyZ::Zarg; void tyZ::Zed::f() { Zarg z; }\n"
+                                // out-of-line member definition: the qualified declarator is skipped, and Zarg is found in tyZ first
+                                "namespace tyZ { struct Zed { void f(); }; struct Zarg {}; } using tyZ::Zarg; void tyZ::Zed::f() { Zarg z; }\n"
 
-                                //// function template: non-dependent type and call in the body
-                                //"namespace tyAA { struct Aa {}; void aacall(int) {} } using tyAA::Aa; using tyAA::aacall;"
-                                //"template<typename T> void useTplBody(T) { Aa a; aacall(1); }\n"
+                                // function template: non-dependent type and call in the body
+                                "namespace tyAA { struct Aa {}; void aacall(int) {} } using tyAA::Aa; using tyAA::aacall;"
+                                "template<typename T> void useTplBody(T) { Aa a; aacall(1); }\n"
 
-                                //// function template: type in the signature, including an unnamed parameter
-                                //"namespace tyAB { struct Ab {}; } using tyAB::Ab; template<typename T> Ab useTplSig(T, Ab) { return {}; }\n"
+                                // function template: type in the signature, including an unnamed parameter
+                                "namespace tyAB { struct Ab {}; } using tyAB::Ab; template<typename T> Ab useTplSig(T, Ab) { return {}; }\n"
 
-                                //// function template: dependent call resolved by ADL at instantiation
-                                //"namespace tyAC { struct Ac {}; void adl(Ac) {} }"
-                                //"template<typename T> void useDependent(T t) { adl(t); }"
-                                //"inline void instantiateDependent() { useDependent(tyAC::Ac{}); }\n"
+                                // function template: dependent call resolved by ADL at instantiation
+                                "namespace tyAC { struct Ac {}; void adl(Ac) {} }"
+                                "template<typename T> void useDependent(T t) { adl(t); }"
+                                "inline void instantiateDependent() { useDependent(tyAC::Ac{}); }\n"
 
                                 //// explicit template argument: both the call and the Ad argument
                                 //"namespace tyAD { struct Ad {}; template<typename T> void adtake() {} } using tyAD::Ad; using tyAD::adtake;"
@@ -6906,12 +6906,12 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(29, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(34, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(24, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(31, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6962,6 +6962,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Gadget {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Aa {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ab {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ac {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Bolt {\n"
@@ -7011,10 +7017,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ya {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Zarg {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Zed {\n"
+                                 "    void f();\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -7041,7 +7048,14 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("inline void instantiateDependent() {\n"
+                                 "    useDependent(tyAC::Ac{});\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> inline void takeType() {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void aacall(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void adl(Ac) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useNearer() {\n"
                                  "    Pin p;\n"
@@ -7056,6 +7070,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    pstep(1);\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void ycall(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void tyZ::Zed::f() {\n"
+                                 "    Zarg z;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useAlias() {\n"
                                  "    PulleyAlias a;\n"
@@ -7085,6 +7102,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyG::Gear\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void useDependent(T t) {\n"
+                                 "    adl(t);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useEnumUnion() {\n"
                                  "    Mode m;\n"
                                  "    Bits b;\n"
@@ -7155,6 +7175,21 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyH::Cog\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void useTplBody(T) {\n"
+                                 "    Aa a;\n"
+                                 "    aacall(1);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   a: tyAA::Aa\n"
+                                 "   void tyAA::aacall(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> Ab useTplSig(T, Ab) {\n"
+                                 "    return {};\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAB::Ab\n"
+                                 "   tyAB::Ab\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useTwo(Wa a, Wb b) {\n"
                                  "    Wa a2;\n"
                                  "    Wb b2;\n"
@@ -7165,6 +7200,23 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -7192,5 +7244,5 @@ Test ExploratoryTestsOfClangAST[] =
 
 
 
-    TODO:  test unqualified types, similar to above
+    TODO:  specializations?
 */
