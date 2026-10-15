@@ -647,7 +647,8 @@ namespace OdrCop3
             const FunctionDecl* callee;
         };
         std::vector<Reference> references;
-        std::vector<QualType>  types;
+        std::vector<std::pair<std::string,QualType>> types; // adds owner info in addition to QualType
+        std::vector<std::string>  owners;                   // names of the declarators being traversed, innermost last (a stack, essentially)
 
         UnqualifiedNameCollector(const ContextItems& contextItems, const DeclContext* callerContext) : contextItems(contextItems), callerContext(callerContext) {}
 
@@ -674,7 +675,6 @@ namespace OdrCop3
             references.push_back({call, callee});
             return true;
         }
-
         bool VisitTypeLoc(TypeLoc typeLoc)
         {
             NestedNameSpecifierLoc qualifier;
@@ -693,20 +693,25 @@ namespace OdrCop3
                 target       = tagTypeLoc.getTypePtr()->getDecl();
             } else
                 return true;
-            if (qualifier) // written with a qualifier (tyB::Sprocket): not an unqualified lookup
+            if (qualifier) // written with a qualifier:  not an unqualified lookup
                 return true;
 
             const DeclContext* targetContext = target->getDeclContext()->getRedeclContext();
             if (targetContext->isRecord())                               // member types found through a class or base
+                return true;
+            if (targetContext->isFunctionOrMethod())                     // local type declared in a function body: ordinary lookup (I DON'T GET IT)
                 return true;
             if (target->isInAnonymousNamespace())                        // implicit using-directive; handled elsewhere
                 return true;
             if (!viaUsingDecl && targetContext->Encloses(callerContext)) // found in an enclosing scope: ordinary lookup
                 return true;
 
-            types.push_back(typeLoc.getType().getCanonicalType());
+            types.push_back({owners.empty() ? std::string() : owners.back(), typeLoc.getType().getCanonicalType()});
             return true;
         }         
+        bool TraverseFieldDecl  (  FieldDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseFieldDecl  (decl); owners.pop_back(); return ok; }
+        bool TraverseVarDecl    (    VarDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseVarDecl    (decl); owners.pop_back(); return ok; }
+        bool TraverseParmVarDecl(ParmVarDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseParmVarDecl(decl); owners.pop_back(); return ok; }
 
     public:
         static std::string PrintUnqualifiedNames(const DeclContext* callerContext, const ContextItems& contextItems)
@@ -715,15 +720,17 @@ namespace OdrCop3
                 return {};
 
             UnqualifiedNameCollector collector(contextItems, callerContext);
-            collector.TraverseDecl(const_cast<FunctionDecl*>(cast<FunctionDecl>(Decl::castFromDeclContext(callerContext)))); // functions
+
+            const Decl* callerDecl = Decl::castFromDeclContext(callerContext);
+            if      (const auto* function = dyn_cast< FunctionDecl>(callerDecl))    collector.TraverseDecl(const_cast< FunctionDecl*>(function)); // return type, parameters, initializers, body
+            else if (const auto* record   = dyn_cast<CXXRecordDecl>(callerDecl))    collector.TraverseDecl(const_cast<CXXRecordDecl*>(record));
+            
             if (collector.references.empty() && collector.types.empty())
                 return {};
-
+                
             PrintingPolicy policy(contextItems.printPolicy);
-            policy.FullyQualifiedName   = true;     // qualified name even if declared inside its namespace
-         // policy.SuppressSpecifiers   = true;     // drop inline / static / extern / constexpr
-         // policy.SuppressInitializers = true;     // drop default arguments
-            policy.TerseOutput          = true;     // never print the body
+            policy.FullyQualifiedName = true; // qualified name even if declared inside its namespace
+            policy.TerseOutput        = true; // never print the body
 
             std::string out;
             out += "/* Unqualified names:\n";
@@ -739,9 +746,11 @@ namespace OdrCop3
             }
             if (!collector.types.empty())
             {
-                for (const QualType& type : collector.types)
+                for (const auto& [owner, type] : collector.types)
                 {
                     out += "   ";
+                    if (!owner.empty())
+                        out += owner + ": ";
                     llvm::raw_string_ostream stream(out);
                     type.print(stream, policy);
                     out += "\n";
@@ -754,6 +763,7 @@ namespace OdrCop3
         {
             if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedNames(        functionDecl,                     contextItems);
             if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), contextItems);
+            if (const        CXXRecordDecl*        cxxRecordDecl = clang::dyn_cast<       CXXRecordDecl>(decl)) return "" != PrintUnqualifiedNames(       cxxRecordDecl,                     contextItems);
             return false;
         }
     };

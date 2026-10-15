@@ -6719,8 +6719,8 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyC2 { using namespace tyC1; }"
                                 "using namespace tyC2; inline Bolt useReturn() { return {}; }\n"
 
-                                //// using-declaration, data member
-                                //"namespace tyD { struct Washer {}; } using tyD::Washer; struct HasMember { Washer w; };\n"
+                                // using-declaration, data member
+                                "namespace tyD { struct Washer {}; } using tyD::Washer; struct HasMember { Washer w; };\n"
 
                                 //// using-directive, base class
                                 //"namespace tyE { struct Chassis {}; } using namespace tyE; struct Truck : Chassis {};\n"
@@ -6753,7 +6753,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(3, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(5, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
@@ -6762,11 +6762,19 @@ Test ExploratoryTestsOfClangAST[] =
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct HasMember {\n"
+                                 "    Washer w;\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   w: tyD::Washer\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Gadget {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Bolt {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Washer {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -6794,12 +6802,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    Gadget g;\n"
                                  "}\n"
                                  "/* Unqualified names:\n"
-                                 "   tyA::Gadget\n"
+                                 "   g: tyA::Gadget\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useParam(Sprocket s) {\n"
                                  "}\n"
                                  "/* Unqualified names:\n"
-                                 "   tyB::Sprocket\n"
+                                 "   s: tyB::Sprocket\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline Bolt useReturn() {\n"
                                  "    return {};\n"

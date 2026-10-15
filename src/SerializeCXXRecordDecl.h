@@ -203,6 +203,8 @@ namespace OdrCop3
                     out += IndentBlock(SerializeDecl(contextItems.withAux(""), decl), 4, "    ") + "\n";
             }
             out += "};\n";
+            if (contextItems.serializationNeeds.hasUnqualifiedNames)
+                out += UnqualifiedNameCollector::PrintUnqualifiedNames(cxxRecordDecl, contextItems);
             return out;
         }
     };
