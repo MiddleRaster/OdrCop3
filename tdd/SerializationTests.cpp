@@ -6911,7 +6911,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(31, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(32, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -7102,6 +7102,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyG::Gear\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void useDependent<tyAC::Ac>(tyAC::Ac t) {\n"
+                                 "    adl(t);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyAC::adl(tyAC::Ac)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> void useDependent(T t) {\n"
                                  "    adl(t);\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -7200,7 +7206,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

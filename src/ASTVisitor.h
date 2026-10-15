@@ -77,8 +77,11 @@ namespace OdrCop3
             switch (functionDecl->getTemplateSpecializationKind()) { // same deal as with class templates
             case TemplateSpecializationKind::TSK_ExplicitInstantiationDeclaration:
             case TemplateSpecializationKind::TSK_ExplicitInstantiationDefinition:
-            case TemplateSpecializationKind::TSK_ImplicitInstantiation:     
                 return true; // no bodies; skip
+            case TemplateSpecializationKind::TSK_ImplicitInstantiation:
+                if (!UnqualifiedNameCollector::HasUnqualifiedNames(functionDecl, contextItems))
+                    return true; // identical to the primary template apart from the arguments; only worth an entry if lookup could differ between TUs
+                break;
             default:
                 break;
             }
