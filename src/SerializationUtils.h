@@ -683,6 +683,10 @@ namespace OdrCop3
 
             if (auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>())
             {
+                const UsingShadowDecl* shadow = usingTypeLoc.getTypePtr()->getDecl();
+                if (shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration is written in the body; no need for further serialization
+                    return true;
+
                 qualifier    = usingTypeLoc.getQualifierLoc();
                 target       = usingTypeLoc.getTypePtr()->getDecl()->getTargetDecl();
                 viaUsingDecl = true;

@@ -6722,29 +6722,29 @@ Test ExploratoryTestsOfClangAST[] =
                                 // using-declaration, data member
                                 "namespace tyD { struct Washer {}; } using tyD::Washer; struct HasMember { Washer w; };\n"
 
-                                //// using-directive, base class
-                                //"namespace tyE { struct Chassis {}; } using namespace tyE; struct Truck : Chassis {};\n"
+                                // using-directive, base class
+                                "namespace tyE { struct Chassis {}; } using namespace tyE; struct Truck : Chassis {};\n"
 
-                                //// function-local using-directive, sizeof
-                                //"namespace tyF { struct Rivet { int x; }; } inline int useSizeof() { using namespace tyF; return sizeof(Rivet); }\n"
+                                // function-local using-directive, sizeof
+                                "namespace tyF { struct Rivet { int x; }; } inline int useSizeof() { using namespace tyF; return sizeof(Rivet); }\n"
 
-                                //// using-declaration, cast
-                                //"namespace tyG { struct Gear {}; } using tyG::Gear; inline void * useCast(void * p) { return static_cast<Gear *>(p); }\n"
+                                // using-declaration, cast
+                                "namespace tyG { struct Gear {}; } using tyG::Gear; inline void * useCast(void * p) { return static_cast<Gear *>(p); }\n"
 
-                                //// using-directive, template argument
-                                //"namespace tyH { struct Cog {}; } using namespace tyH; inline void useTemplateArg() { takeType<Cog>(); }\n"
+                                // using-directive, template argument
+                                "namespace tyH { struct Cog {}; } using namespace tyH; inline void useTemplateArg() { takeType<Cog>(); }\n"
 
-                                //// alias and typedef, reported as the underlying type
-                                //"namespace tyI { struct Pulley {}; using PulleyAlias = Pulley; typedef Pulley PulleyTypedef; }"
-                                //"using tyI::PulleyAlias; using tyI::PulleyTypedef; inline void useAlias() { PulleyAlias a; PulleyTypedef t; }\n"
+                                // alias and typedef, reported as the underlying type
+                                "namespace tyI { struct Pulley {}; using PulleyAlias = Pulley; typedef Pulley PulleyTypedef; }"
+                                "using tyI::PulleyAlias; using tyI::PulleyTypedef; inline void useAlias() { PulleyAlias a; PulleyTypedef t; }\n"
 
-                                //// nearer scope wins over a using-directive
-                                //"namespace tyJ1 { struct Pin {}; } using namespace tyJ1;"
-                                //"namespace tyJ2 { struct Pin {}; inline void useNearer() { Pin p; } }\n"
+                                // nearer scope wins over a using-directive
+                                "namespace tyJ1 { struct Pin {}; } using namespace tyJ1;"
+                                "namespace tyJ2 { struct Pin {}; inline void useNearer() { Pin p; } }\n"
 
-                                //// block-scope using-declaration hides the outer one
-                                //"namespace tyK1 { struct Lug {}; } namespace tyK2 { struct Lug {}; } using tyK1::Lug;"
-                                //"inline void useHidden() { using tyK2::Lug; Lug l; }\n"
+                                // block-scope using-declaration hides the outer one
+                                "namespace tyK1 { struct Lug {}; } namespace tyK2 { struct Lug {}; } using tyK1::Lug;"
+                                "inline void useHidden() { using tyK2::Lug; Lug l; }\n"
 
                                 //// same entity reached by a using-declaration and a using-directive
                                 //"namespace tyM { struct Hub {}; } using tyM::Hub; using namespace tyM; inline void useBoth() { Hub h; }\n"
@@ -6753,12 +6753,12 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(5, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual(0, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(0, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual(0, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual(0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(4, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(15, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 0, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(10, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6768,6 +6768,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   w: tyD::Washer\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Truck : Chassis {\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyE::Chassis\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Gadget {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
@@ -6776,6 +6781,26 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Washer {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Chassis {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Rivet {\n"
+                                 "    int x;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Gear {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Cog {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Pulley {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Pin {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Pin {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Lug {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Lug {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -6798,6 +6823,27 @@ Test ExploratoryTestsOfClangAST[] =
                 auto it = maps.functionMap.begin();
                 Assert::AreEqual("template <typename T> inline void takeType() {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useNearer() {\n"
+                                 "    Pin p;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useAlias() {\n"
+                                 "    PulleyAlias a;\n"
+                                 "    PulleyTypedef t;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   a: tyI::Pulley\n"
+                                 "   t: tyI::Pulley\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void *useCast(void *p) {\n"
+                                 "    return static_cast<Gear *>(p);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyG::Gear\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useHidden() {\n"
+                                 "    using tyK2::Lug;\n"
+                                 "    Lug l;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useLocal() {\n"
                                  "    Gadget g;\n"
                                  "}\n"
@@ -6815,6 +6861,22 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyC1::Bolt\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int useSizeof() {\n"
+                                 "    using namespace tyF;\n"
+                                 "    return sizeof(Rivet);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyF::Rivet\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useTemplateArg() {\n"
+                                 "    takeType<Cog>();\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyH::Cog\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
