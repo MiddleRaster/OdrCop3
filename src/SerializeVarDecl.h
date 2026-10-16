@@ -195,6 +195,10 @@ namespace OdrCop3
             }
             out += IndentBlock(get_Init(), LengthOfLastLine(out));
             out += ";\n";
+
+            if (contextItems.serializationNeeds.hasUnqualifiedNames)
+                out += UnqualifiedNameCollector::PrintUnqualifiedNames(varDecl, varDecl->getDeclContext(), contextItems);
+
             return out;
         }
     };

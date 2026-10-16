@@ -204,7 +204,7 @@ namespace OdrCop3
             }
             out += "};\n";
             if (contextItems.serializationNeeds.hasUnqualifiedNames)
-                out += UnqualifiedNameCollector::PrintUnqualifiedNames(cxxRecordDecl, contextItems);
+                out += UnqualifiedNameCollector::PrintUnqualifiedNames(cxxRecordDecl, cxxRecordDecl, contextItems);
             return out;
         }
     };

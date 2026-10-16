@@ -4110,7 +4110,10 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("InlineMemberType inlineMemberObject;\n"                                , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InlineMemberType inlineMemberObject;\n"
+                                 "/* Unqualified names:\n"
+                                 "   inlineMemberObject: InlineNamespaceClassMember::InlineMemberType\n"
+                                 "*/\n"                                                                  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int explicitValue = 0;\n"                                       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int explicitValueAlias = InlineNamespaceExplicit::v1::explicitValue;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int multipleV1Value = 0;\n"                                     , (*it++).second[0].fullyQualified);
@@ -4120,10 +4123,16 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline int nonInlineSiblingValue = 0;\n"                               , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int inlineSiblingValue = 0;\n"                                  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("InlineNamespaceTest::object"                                           , (*it  ).first);
-                Assert::AreEqual("Type object;\n"                                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Type object;\n"
+                                 "/* Unqualified names:\n"
+                                 "   object: InlineNamespaceTest::Type\n"
+                                 "*/\n"                                                                  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("InlineNamespaceTest::value"                                            , (*it  ).first);
                 Assert::AreEqual("inline int value = 0;\n"                                               , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("InlineType inlineTypeObject;\n"                                        , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("InlineType inlineTypeObject;\n"
+                                 "/* Unqualified names:\n"
+                                 "   inlineTypeObject: InlineNamespaceTypeUse::InlineType\n"
+                                 "*/\n"                                                                  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("InlineNamespaceTypeUse::InlineType qualifiedInlineTypeObject;\n"       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inlineNamespaceValue1"                                                 , (*it  ).first);
                 Assert::AreEqual("int inlineNamespaceValue1 = InlineNamespaceTest::value;\n"             , (*it++).second[0].fullyQualified);
@@ -4296,17 +4305,19 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace OriginalNamespace { template<typename T> concept HasValueType = requires { typename T::value_type; }; } namespace Alias = OriginalNamespace; template<typename T> concept RequiresExprReturnTypeSubstitutionFailureAliasTest = requires(T t) { { t.value() } -> Alias::HasValueType; }; struct RequiresExprReturnTypeSubstitutionFailureAliasTestType { int value(); }; static_assert(!RequiresExprReturnTypeSubstitutionFailureAliasTest<RequiresExprReturnTypeSubstitutionFailureAliasTestType>);\n"
 
                                 "namespace CallInitOriginal { struct NamespaceAliasTest { NamespaceAliasTest(int); }; } namespace CallInitAlias = CallInitOriginal; CallInitAlias::NamespaceAliasTest namespaceAliasCallInitTest(42);\n"
+
+                                "namespace OriginalNamespace { constexpr int namespaceAliasVariableTemplateFunction() { return 3; } } template<typename T> Alias::NamespaceAliasTest namespaceAliasVariableTemplateInitTest = Alias::NamespaceAliasTest{}; template<typename T> constexpr int namespaceAliasVariableTemplateCallTest = Alias::namespaceAliasVariableTemplateFunction();\n"
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
             Assert::AreEqual(75, maps.udtMap.size(), "wrong number of UDTs in map");
-            Assert::AreEqual(37, maps.varMap.size(),  "wrong number of vars in map");
+            Assert::AreEqual(39, maps.varMap.size(),  "wrong number of vars in map");
             Assert::AreEqual( 3, maps.enumMap.size(),  "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(),  "wrong number of deduction guides in map");
             Assert::AreEqual(23, maps.conceptMap.size(), "wrong number of concepts in map");
-            Assert::AreEqual(25, maps.functionMap.size(), "wrong number of functions in map");
+            Assert::AreEqual(26, maps.functionMap.size(), "wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -4617,6 +4628,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasUsingVariable;\n"                                                                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasVariable;\n"                                                                                 , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> OriginalNamespace::NamespaceAliasTest namespaceAliasVariableTemplate = {};\n"                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> constexpr int namespaceAliasVariableTemplateCallTest = OriginalNamespace::namespaceAliasVariableTemplateFunction();\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> OriginalNamespace::NamespaceAliasTest namespaceAliasVariableTemplateInitTest = OriginalNamespace::NamespaceAliasTest{};\n" , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> OriginalNamespace::NamespaceAliasTest namespaceAliasVariableTemplateSpecializationTest = {};\n"                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template<> OriginalNamespace::NamespaceAliasTest namespaceAliasVariableTemplateSpecializationTest<OriginalNamespace::NamespaceAliasTest> = {};\n", (*it++).second[0].fullyQualified);
             }
@@ -4675,6 +4688,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("OriginalNamespace::NamespaceAliasTest namespaceAliasReturnFunction() {\n"
                                  "    return {};\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int namespaceAliasVariableTemplateFunction() {\n"
+                                 "    return 3;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int hit339(OriginalNamespace8::S &s) {\n"
                                  "    return s.OriginalNamespace8::S::x;\n"
@@ -6806,12 +6822,12 @@ Test ExploratoryTestsOfClangAST[] =
                                 "template<typename T> void useDependent(T t) { adl(t); }"
                                 "inline void instantiateDependent() { useDependent(tyAC::Ac{}); }\n"
 
-                                //// explicit template argument: both the call and the Ad argument
-                                //"namespace tyAD { struct Ad {}; template<typename T> void adtake() {} } using tyAD::Ad; using tyAD::adtake;"
-                                //"inline void useExplicitArg() { adtake<Ad>(); }\n"
+                                // explicit template argument: both the call and the Ad argument
+                                "namespace tyAD { struct Ad {}; template<typename T> void adtake() {} } using tyAD::Ad; using tyAD::adtake;"
+                                "inline void useExplicitArg() { adtake<Ad>(); }\n"
 
-                                //// namespace-scope variable, type found through a using-declaration
-                                //"namespace tyAE { struct Ae {}; } using tyAE::Ae; inline Ae gAe;\n"
+                                // namespace-scope variable, type found through a using-declaration
+                                "namespace tyAE { struct Ae {}; } using tyAE::Ae; inline Ae gAe;\n"
 
                                 //// namespace-scope variable initialized by a call found through a using-declaration
                                 //"namespace tyAG { int agval(int) { return 0; } } using tyAG::agval; inline int gAg = agval(1);\n"
@@ -6906,12 +6922,12 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(34, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual( 0, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(36, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 1, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(32, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(34, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6967,6 +6983,10 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Ab {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ac {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ad {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ae {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -7025,9 +7045,51 @@ Test ExploratoryTestsOfClangAST[] =
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
+                Assert::AreEqual("inline Ae gAe;\n"
+                                 "/* Unqualified names:\n"
+                                 "   gAe: tyAE::Ae\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -7056,6 +7118,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("void aacall(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void adl(Ac) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void adtake() {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useNearer() {\n"
                                  "    Pin p;\n"
@@ -7118,6 +7182,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   m: tyV::Mode\n"
                                  "   b: tyV::Bits\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useExplicitArg() {\n"
+                                 "    adtake<Ad>();\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   template<> void tyAD::adtake<tyAD::Ad>()\n"
+                                 "   tyAD::Ad\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useHidden() {\n"
                                  "    using tyK2::Lug;\n"
@@ -7206,8 +7277,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

@@ -720,16 +720,16 @@ namespace OdrCop3
         bool TraverseParmVarDecl(ParmVarDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseParmVarDecl(decl); owners.pop_back(); return ok; }
 
     public:
-        static std::string PrintUnqualifiedNames(const DeclContext* callerContext, const ContextItems& contextItems)
+        static std::string PrintUnqualifiedNames(const Decl* decl, const DeclContext* callerContext, const ContextItems& contextItems)
         {
             if (contextItems.noComment)
                 return {};
 
             UnqualifiedNameCollector collector(contextItems, callerContext);
-
-            const Decl* callerDecl = Decl::castFromDeclContext(callerContext);
-            if      (const auto* function = dyn_cast< FunctionDecl>(callerDecl))    collector.TraverseDecl(const_cast< FunctionDecl*>(function)); // return type, parameters, initializers, body
-            else if (const auto* record   = dyn_cast<CXXRecordDecl>(callerDecl))    collector.TraverseDecl(const_cast<CXXRecordDecl*>(record));
+            if (const VarDecl* varDecl = dyn_cast<VarDecl>(decl); varDecl && contextItems.serializationNeeds.hasNamespaceAlias)
+                collector.TraverseStmt(const_cast<Expr*>(varDecl->getInit())); // the type is printed canonically, so the text already names the resolved entity, but not for the initializer
+            else
+                collector.TraverseDecl(const_cast<Decl*>(decl)); // sheesh
             if (collector.names.empty())
                 return {};
                 
@@ -754,9 +754,10 @@ namespace OdrCop3
         }
         static bool HasUnqualifiedNames(const Decl* decl, const ContextItems& contextItems)
         {
-            if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedNames(        functionDecl,                     contextItems);
-            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), contextItems);
-            if (const        CXXRecordDecl*        cxxRecordDecl = clang::dyn_cast<       CXXRecordDecl>(decl)) return "" != PrintUnqualifiedNames(       cxxRecordDecl,                     contextItems);
+            if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedNames(        functionDecl,                             functionDecl,                     contextItems);
+            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getTemplatedDecl(), contextItems);
+            if (const        CXXRecordDecl*        cxxRecordDecl = clang::dyn_cast<       CXXRecordDecl>(decl)) return "" != PrintUnqualifiedNames(       cxxRecordDecl,                            cxxRecordDecl,                     contextItems);
+            if (const              VarDecl*              varDecl = clang::dyn_cast<VarDecl             >(decl)) return "" != PrintUnqualifiedNames(             varDecl,                                  varDecl->getDeclContext(),   contextItems);
             return false;
         }
     };
