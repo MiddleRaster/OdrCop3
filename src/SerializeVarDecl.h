@@ -196,8 +196,17 @@ namespace OdrCop3
             out += IndentBlock(get_Init(), LengthOfLastLine(out));
             out += ";\n";
 
-            if (contextItems.serializationNeeds.hasUnqualifiedNames)
-                out += UnqualifiedNameCollector::PrintUnqualifiedNames(varDecl, varDecl->getDeclContext(), contextItems);
+            if (contextItems.serializationNeeds.hasUnqualifiedNames) {
+                std::string annotation = UnqualifiedNameCollector::PrintUnqualifiedNames(varDecl, varDecl->getDeclContext(), contextItems);
+                if (std::ranges::count(annotation, '\n') == 3)
+                { // can use single-line comment
+                    std::ranges::replace(annotation, '\n', ' ');
+                    annotation.erase(std::unique(annotation.begin(), annotation.end(), [](char a, char b) { return a == ' ' && b == ' '; }), annotation.end());
+                    out = TrimRightIf(out, "\n");
+                    out += " " + TrimRightIf(annotation, " ") + "\n";
+                } else
+                    out += annotation;
+            }
 
             return out;
         }
