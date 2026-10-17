@@ -761,6 +761,7 @@ namespace OdrCop3
             if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getTemplatedDecl(), contextItems);
             if (const        CXXRecordDecl*        cxxRecordDecl = clang::dyn_cast<       CXXRecordDecl>(decl)) return "" != PrintUnqualifiedNames(       cxxRecordDecl,                            cxxRecordDecl,                     contextItems);
             if (const              VarDecl*              varDecl = clang::dyn_cast<VarDecl             >(decl)) return "" != PrintUnqualifiedNames(             varDecl,                                  varDecl->getDeclContext(),   contextItems);
+            if (const    ClassTemplateDecl*    classTemplateDecl = clang::dyn_cast<   ClassTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(   classTemplateDecl,                        classTemplateDecl->getDeclContext(),   contextItems);
             return false;
         }
     };

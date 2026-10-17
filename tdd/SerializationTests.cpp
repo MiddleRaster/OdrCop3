@@ -6833,7 +6833,14 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyBD { struct Bd {}; } using tyBD::Bd; struct StaticDef { static Bd sb; }; Bd StaticDef::sb;\n"
 
                                 // nested class and its enclosing class both use the type
-                                "namespace tyAH { struct Ah {}; } using tyAH::Ah; struct Outer { struct Nested { Ah a; }; Ah b; };\n"
+                                "namespace tyAH  { struct Ah {}; } using  tyAH::Ah;  struct    Outer {                      struct    Nested { Ah  a; }; Ah b; };\n"
+                                "namespace tyAH2 { struct Ah2{}; } using tyAH2::Ah2; struct TplOuter { template<typename T> struct TplNested { Ah2 a; T t; }; };\n"
+
+                                // class template decl
+                                "namespace tyCA { struct Ca {}; struct Cb {}; void cacall(int) {} } using tyCA::Ca; using tyCA::Cb; using tyCA::cacall;"
+                                "template<typename T> struct CtplHost : Ca { Cb b; T t; void m() { cacall(1); } };\n"
+                                //"namespace tyCB { struct Cc {}; } using tyCB::Cc; template<typename T = Cc> struct CtplDefault { T t; };\n"
+
 
                                 //// base class through a using-declaration
                                 //"namespace tyAI { struct Ai {}; } using tyAI::Ai; struct DerivedAi : Ai {};\n"
@@ -6918,15 +6925,27 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(43, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(48, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 6, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(38, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(39, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("template <typename T> struct CtplHost : Ca {\n"
+                                 "    Cb b;\n"
+                                 "    T t;\n"
+                                 "    void m() {\n"
+                                 "        cacall(1);\n"
+                                 "    }\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyCA::Ca\n"
+                                 "   b: tyCA::Cb\n"
+                                 "   void tyCA::cacall(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct HasMember {\n"
                                  "    Washer w;\n"
                                  "};\n"
@@ -6937,9 +6956,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    Xm m = Xm{};\n"
                                  "    InitHost() : n(Xn()) {\n"
                                  "    }\n"
-                                 "    /* Unqualified names:\n"
-                                 "       tyX::Xn\n"
-                                 "    */\n"
                                  "    Xn n;\n"
                                  "};\n"
                                  "/* Unqualified names:\n"
@@ -6989,6 +7005,15 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   sAf: tyAF::Af\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct TplOuter {\n"
+                                 "    template <typename T> struct TplNested {\n"
+                                 "        Ah2 a;\n"
+                                 "        T t;\n"
+                                 "    };\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   a: tyAH2::Ah2\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Truck : Chassis {\n"
                                  "};\n"
                                  "/* Unqualified names:\n"
@@ -7010,6 +7035,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ag2 {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ah2 {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ah {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
@@ -7017,6 +7044,10 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Bd {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Bolt {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ca {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Cb {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Washer {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -7068,11 +7099,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Zed {\n"
                                  "    void f();\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -7156,6 +7182,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("int agval(int) {\n"
                                  "    return 0;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void cacall(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useNearer() {\n"
                                  "    Pin p;\n"
@@ -7313,7 +7341,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

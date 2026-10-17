@@ -159,6 +159,30 @@ namespace OdrCop3
                     return !fieldDecl->attrs().empty();
                 return false;
             }
+            bool IsConstructorWithMisprintedInitializer(const clang::Decl* decl) const
+            {
+                if (const auto* constructorDecl = llvm::dyn_cast<clang::CXXConstructorDecl>(decl))
+                    for (const clang::CXXCtorInitializer* initializer : constructorDecl->inits())
+                    {
+                        if (initializer->isInClassMemberInitializer())
+                            continue;   // DeclPrinter skips these; they print on the field
+
+                        if (!initializer->isWritten())
+                            continue;   // DeclPrinter skips implicit initializers
+
+                        const clang::Expr* init = initializer->getInit();
+                        if (nullptr == init)
+                            continue;
+
+                        if (const auto* withCleanups = llvm::dyn_cast<clang::ExprWithCleanups>(init))
+                            init = withCleanups->getSubExpr();
+
+                        init = init->IgnoreParens();
+                        if (llvm::isa<clang::CXXTemporaryObjectExpr>(init))
+                            return true; // DeclPrinter::print() prints only the argument list, losing the spelled type: n(Xn()) becomes n()
+                    }
+                return false;
+            }
 
             template <typename Type> bool PrintType(clang::QualType qualType) const
             {
@@ -274,6 +298,8 @@ namespace OdrCop3
                 if (true == IsVarOutOfLine(decl))
                     return false;
                 if (true == IsFieldAttributed(decl))
+                    return false;
+                if (true == IsConstructorWithMisprintedInitializer(decl))
                     return false;
 
                 return true;

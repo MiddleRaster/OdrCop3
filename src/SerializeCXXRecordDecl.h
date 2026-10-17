@@ -199,8 +199,8 @@ namespace OdrCop3
 
                 if (decl->getKind() == clang::Decl::Kind::AccessSpec)
                     out +=             SerializeDecl(contextItems.withAux(""), decl); // "public:", for instance, does not get indented
-                else                                                                  // prevent static fields and nested UDTs from being annotated twice
-                    out += IndentBlock(SerializeDecl(contextItems.withAux("").withNoUnqualifiedNames(isa<VarDecl>(decl) || isa<CXXRecordDecl>(decl)), decl), 4, "    ") + "\n";
+                else
+                    out += IndentBlock(SerializeDecl(contextItems.withAux("").withNoUnqualifiedNames(true), decl), 4, "    ") + "\n"; // prevent anything from being annotated twice
             }
             out += "};\n";
             if (contextItems.serializationNeeds.hasUnqualifiedNames)
