@@ -36,7 +36,7 @@ namespace OdrCop3
             if (const NamedDecl* namedDecl = InternalLinkageRefFinder::FindReference(declRefExpr))
             {
                 out += " /* ";
-                out += IndentBlock(SerializeDecl(contextItems.withNoComment(), namedDecl), LengthOfLastLine(out));
+                out += IndentBlock(SerializeDecl(contextItems.withNoInternalLinkage(), namedDecl), LengthOfLastLine(out));
                 out += " */";
                 return out;
             }

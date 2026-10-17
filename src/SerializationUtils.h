@@ -40,7 +40,9 @@ namespace OdrCop3
         bool wantFunctionBody       = true;
         bool needsFriend            = false;
         bool suppressTemplatePrefix = false;
-        bool noComment              = false;
+        bool noUnqualifiedNames     = false;
+        bool noInternalLinkage      = false;
+
         ContextItems(ASTContext* context, const PrintingPolicy& policy, const std::string& TU, std::unordered_set<const Decl*>& recursingDecls, const std::string& aux="")
             : context       (*context)
             , printPolicy   (policy)
@@ -50,11 +52,12 @@ namespace OdrCop3
         {}
         ContextItems(const ContextItems&) = default;
 
-        ContextItems withSuppressTemplatePrefix (         bool       value = true) const { auto result = *this; result.suppressTemplatePrefix = value;                         return result; }
-        ContextItems withWantFunctionBody      (          bool       value       ) const { auto result = *this; result.wantFunctionBody       = value;                         return result; }
-        ContextItems withNeedsFriend          (           bool       value = true) const { auto result = *this; result.needsFriend            = value;                         return result; }
-        ContextItems withAux                 (     std::string       value       ) const { auto result = *this; result.aux                    = std::move(value);              return result; }
-        ContextItems withNoComment          (             bool       value = true) const { auto result = *this; result.noComment              = value;                         return result; }
+        ContextItems withSuppressTemplatePrefix  (        bool       value = true) const { auto result = *this; result.suppressTemplatePrefix = value;                         return result; }
+        ContextItems withWantFunctionBody       (         bool       value       ) const { auto result = *this; result.wantFunctionBody       = value;                         return result; }
+        ContextItems withNeedsFriend           (          bool       value = true) const { auto result = *this; result.needsFriend            = value;                         return result; }
+        ContextItems withAux                  (    std::string       value       ) const { auto result = *this; result.aux                    = std::move(value);              return result; }
+        ContextItems withNoUnqualifiedNames  (            bool       value = true) const { auto result = *this; result.noUnqualifiedNames     = value;                         return result; }
+        ContextItems withNoInternalLinkage  (             bool       value = true) const { auto result = *this; result.noInternalLinkage      = value;                         return result; }
         ContextItems withSerializationNeeds(SerializationNeeds serializationNeeds) const { auto result = *this; result.serializationNeeds     = std::move(serializationNeeds); return result; }
     };
 
@@ -598,7 +601,7 @@ namespace OdrCop3
             for (const NamedDecl* named : references)
             {
                 out += "   ";
-                out += IndentBlock(SerializeDecl(contextItems.withNoComment(), named), LengthOfLastLine(out));
+                out += IndentBlock(SerializeDecl(contextItems.withNoInternalLinkage(), named), LengthOfLastLine(out));
                 out += "\n";
             }
             out += "*/\n";
@@ -629,7 +632,7 @@ namespace OdrCop3
     public:
         template<auto SerializeDecl> static std::string PrintReferences(const Stmt* stmt, const ContextItems& contextItems)
         {
-            if (contextItems.noComment)
+            if (contextItems.noInternalLinkage)
                 return {};
 
             InternalLinkageReferenceCollector collector(contextItems);
@@ -722,7 +725,7 @@ namespace OdrCop3
     public:
         static std::string PrintUnqualifiedNames(const Decl* decl, const DeclContext* callerContext, const ContextItems& contextItems)
         {
-            if (contextItems.noComment)
+            if (contextItems.noUnqualifiedNames)
                 return {};
 
             UnqualifiedNameCollector collector(contextItems, callerContext);

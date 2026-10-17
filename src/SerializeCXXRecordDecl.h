@@ -200,7 +200,7 @@ namespace OdrCop3
                 if (decl->getKind() == clang::Decl::Kind::AccessSpec)
                     out +=             SerializeDecl(contextItems.withAux(""), decl); // "public:", for instance, does not get indented
                 else
-                    out += IndentBlock(SerializeDecl(contextItems.withAux(""), decl), 4, "    ") + "\n";
+                    out += IndentBlock(SerializeDecl(contextItems.withAux("").withNoUnqualifiedNames(isa<VarDecl>(decl)), decl), 4, "    ") + "\n"; // prevent VarDecl*s from being annotated twice
             }
             out += "};\n";
             if (contextItems.serializationNeeds.hasUnqualifiedNames)

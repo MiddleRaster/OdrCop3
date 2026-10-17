@@ -6828,8 +6828,8 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyAG2 { int agval2(int) { return 0; } struct Ag2 {}; } using tyAG2::agval2; using tyAG2::Ag2; inline int gAg2 = agval2(1); inline auto gAg2Temp = Ag2{};\n"
                                 "namespace tyAG3 { int agA   (int) { return 0; } int agB(int) { return 0; } } using tyAG3::agA; using tyAG3::agB; inline int gAg3 = agA(1) + agB(2);\n"
 
-                                //// static data member, in-class and out-of-line definition
-                                //"namespace tyAF { struct Af {}; } using tyAF::Af; struct StaticHost { static inline Af sAf; };\n"
+                                // static data member, in-class and out-of-line definition
+                                "namespace tyAF { struct Af {}; } using tyAF::Af; struct StaticHost { static inline Af sAf; };\n"
                                 //"namespace tyBD { struct Bd {}; } using tyBD::Bd; struct StaticDef { static Bd sb; }; Bd StaticDef::sb;\n"
 
                                 //// nested class and its enclosing class both use the type
@@ -6918,7 +6918,7 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(37, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(39, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 5, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
@@ -6967,6 +6967,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        sfn();\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct StaticHost {\n"
+                                 "    static inline Af sAf;\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   sAf: tyAF::Af\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Truck : Chassis {\n"
                                  "};\n"
                                  "/* Unqualified names:\n"
@@ -6983,6 +6989,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Ad {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ae {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Af {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ag2 {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -7040,8 +7048,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Zed {\n"
                                  "    void f();\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
