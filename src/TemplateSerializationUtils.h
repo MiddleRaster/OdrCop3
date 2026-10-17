@@ -38,14 +38,21 @@ namespace OdrCop3
                                                             if (tp->hasDefaultArgument())
                                                             {
                                                                 out += " = ";
+                                                                const clang::TemplateArgument& argument = tp->getDefaultArgument().getArgument();
                                                                 if (contextItems.serializationNeeds.AreAllFalse())
-                                                                {
+                                                                {   JustPrintIt:
                                                                     std::string defaultStr;
                                                                     llvm::raw_string_ostream defaultStream(defaultStr);
-                                                                    tp->getDefaultArgument().getArgument().getAsExpr()->printPretty(defaultStream, nullptr, contextItems.printPolicy);
+                                                                    argument.print(contextItems.printPolicy, defaultStream, false);
                                                                     out += defaultStr;
-                                                                } else
-                                                                    out += IndentBlock(SerializeExpr(contextItems, tp->getDefaultArgument().getArgument().getAsExpr()), LengthOfLastLine(out));
+                                                                } else {
+                                                                    switch (argument.getKind())
+                                                                    {
+                                                                    case clang::TemplateArgument::Expression: out += IndentBlock(SerializeExpr(contextItems, argument.getAsExpr()), LengthOfLastLine(out)); break;
+                                                                    case clang::TemplateArgument::Type      : out += IndentBlock(SerializeType(contextItems, argument.getAsType()), LengthOfLastLine(out)); break;
+                                                                    default: goto JustPrintIt;
+                                                                    }
+                                                                }
                                                             }
                                                             return TrimRightIf(out, " ");
                                                          };

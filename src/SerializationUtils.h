@@ -728,6 +728,10 @@ namespace OdrCop3
             if (contextItems.noUnqualifiedNames)
                 return {};
 
+            if (const CXXRecordDecl* cxxRecordDecl = clang::dyn_cast<CXXRecordDecl>(decl))
+                if (const ClassTemplateDecl* classTemplateDecl = cxxRecordDecl->getDescribedClassTemplate()) // if it's actually a ClassTemplateDecl...
+                    return PrintUnqualifiedNames(classTemplateDecl, classTemplateDecl->getDeclContext(), contextItems);
+
             UnqualifiedNameCollector collector(contextItems, callerContext);
             if (const VarDecl* varDecl = dyn_cast<VarDecl>(decl); varDecl && contextItems.serializationNeeds.hasNamespaceAlias)
                 collector.TraverseStmt(const_cast<Expr*>(varDecl->getInit())); // the type is printed canonically, so the text already names the resolved entity, but not for the initializer
