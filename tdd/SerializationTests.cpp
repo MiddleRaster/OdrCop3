@@ -6830,10 +6830,10 @@ Test ExploratoryTestsOfClangAST[] =
 
                                 // static data member, in-class and out-of-line definition
                                 "namespace tyAF { struct Af {}; } using tyAF::Af; struct StaticHost { static inline Af sAf; };\n"
-                                //"namespace tyBD { struct Bd {}; } using tyBD::Bd; struct StaticDef { static Bd sb; }; Bd StaticDef::sb;\n"
+                                "namespace tyBD { struct Bd {}; } using tyBD::Bd; struct StaticDef { static Bd sb; }; Bd StaticDef::sb;\n"
 
-                                //// nested class and its enclosing class both use the type
-                                //"namespace tyAH { struct Ah {}; } using tyAH::Ah; struct Outer { struct Nested { Ah a; }; Ah b; };\n"
+                                // nested class and its enclosing class both use the type
+                                "namespace tyAH { struct Ah {}; } using tyAH::Ah; struct Outer { struct Nested { Ah a; }; Ah b; };\n"
 
                                 //// base class through a using-declaration
                                 //"namespace tyAI { struct Ai {}; } using tyAI::Ai; struct DerivedAi : Ai {};\n"
@@ -6918,8 +6918,8 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(39, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual( 5, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(43, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 6, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
@@ -6955,6 +6955,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        Local l;\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Outer {\n"
+                                 "    struct Nested {\n"
+                                 "        Ah a;\n"
+                                 "    };\n"
+                                 "    Ah b;\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   a: tyAH::Ah\n"
+                                 "   b: tyAH::Ah\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct RecBase {\n"
                                  "    struct Inner {\n"
                                  "    };\n"
@@ -6967,6 +6977,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        sfn();\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct StaticDef {\n"
+                                 "    static Bd sb;\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   sb: tyBD::Bd\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct StaticHost {\n"
                                  "    static inline Af sAf;\n"
                                  "};\n"
@@ -6994,7 +7010,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ag2 {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ah {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Bd {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Bolt {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -7080,23 +7100,19 @@ Test ExploratoryTestsOfClangAST[] =
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("inline Ae gAe; /* Unqualified names: gAe: tyAE::Ae */\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline int gAg = agval(1); /* Unqualified names: int tyAG::agval(int) */\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Bd StaticDef::sb; /* Unqualified names: sb: tyBD::Bd */\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline Ae gAe; /* Unqualified names: gAe: tyAE::Ae */\n"                       , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int gAg = agval(1); /* Unqualified names: int tyAG::agval(int) */\n"    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int gAg2 = agval2(1); /* Unqualified names: int tyAG2::agval2(int) */\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline Ag2 gAg2Temp = Ag2{}; /* Unqualified names: gAg2Temp: tyAG2::Ag2 */\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline Ag2 gAg2Temp = Ag2{}; /* Unqualified names: gAg2Temp: tyAG2::Ag2 */\n"  , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int gAg3 = agA(1) + agB(2);\n"
                                  "/* Unqualified names:\n"
                                  "   int tyAG3::agA(int)\n"
                                  "   int tyAG3::agB(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
