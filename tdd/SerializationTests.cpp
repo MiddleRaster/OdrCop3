@@ -6842,21 +6842,21 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyCB { struct Cc {}; } using tyCB::Cc; template<typename T = Cc> struct CtplDefault { T t; };\n"
                                 "namespace tyDA { struct Da {}; } using tyDA::Da; template<typename T = Da> void dafn(T) {}\n"
                                 "namespace tyDB { struct Db {}; } using tyDB::Db; template<typename T = Db> inline constexpr int dbvar = 1;\n"
-                                //"namespace tyDC { struct Dc {}; } using tyDC::Dc; template<typename T, typename U> struct Dpart2 {}; template<typename T> struct Dpart2<T, Dc> {};\n"
-                                //"namespace tyDD { constexpr int ddv(int) { return 1; } } using tyDD::ddv; template<int N = ddv(1)> struct Dnt {};\n"
+                                "namespace tyDC { struct Dc {}; } using tyDC::Dc; template<typename T, typename U> struct Dpart2 {}; template<typename T> struct Dpart2<T, Dc> {};\n"
+                                "namespace tyDD { constexpr int ddv(int) { return 1; } } using tyDD::ddv; template<int N = ddv(1)> struct Dnt {};\n"
 
-                                //// base class through a using-declaration
-                                //"namespace tyAI { struct Ai {}; } using tyAI::Ai; struct DerivedAi : Ai {};\n"
+                                // base class through a using-declaration
+                                "namespace tyAI { struct Ai {}; } using tyAI::Ai; struct DerivedAi : Ai {};\n"
 
-                                //// inline member function body: type and call
-                                //"namespace tyAJ { struct Aj {}; void ajcall(int) {} } using tyAJ::Aj; using tyAJ::ajcall;"
-                                //"struct MethodHost { void m() { Aj a; ajcall(1); } };\n"
+                                // inline member function body: type and call
+                                "namespace tyAJ { struct Aj {}; void ajcall(int) {} } using tyAJ::Aj; using tyAJ::ajcall;"
+                                "struct MethodHost { void m() { Aj a; ajcall(1); } };\n"
 
-                                //// member function template with a hazardous parameter type
-                                //"namespace tyBB { struct Bb {}; } using tyBB::Bb; struct MemberTpl { template<typename T> void m(T, Bb) {} };\n"
+                                // member function template with a hazardous parameter type
+                                "namespace tyBB { struct Bb {}; } using tyBB::Bb; struct MemberTpl { template<typename T> void m(T, Bb) {} };\n"
 
-                                //// friend function defined in the class
-                                //"namespace tyBA { struct Ba {}; } using tyBA::Ba; struct FriendDef { friend void fdef(Ba) {} };\n"
+                                // friend function defined in the class
+                                "namespace tyBA { struct Ba {}; } using tyBA::Ba; struct FriendDef { friend void fdef(Ba) {} };\n"
 
                                 //// enum whose underlying type is an alias found through a using-declaration
                                 //"namespace tyBC { using Under = unsigned char; } using tyBC::Under; enum Backed : Under { BackedA };\n"
@@ -6928,12 +6928,12 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(52, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(64, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 7, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(40, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(43, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6954,6 +6954,30 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   tyCA::Ca\n"
                                  "   b: tyCA::Cb\n"
                                  "   void tyCA::cacall(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct DerivedAi : Ai {\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAI::Ai\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N = ddv(1)> struct Dnt {\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   constexpr int tyDD::ddv(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> struct Dpart2 {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct Dpart2<T, Dc> {\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyDC::Dc\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct FriendDef {\n"
+                                 "    friend void fdef(Ba) {\n"
+                                 "    }\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyBA::Ba\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct HasMember {\n"
                                  "    Washer w;\n"
@@ -6980,6 +7004,23 @@ Test ExploratoryTestsOfClangAST[] =
                                  "        Local l;\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MemberTpl {\n"
+                                 "    template <typename T> void m(T, Bb) {\n"
+                                 "    }\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyBB::Bb\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct MethodHost {\n"
+                                 "    void m() {\n"
+                                 "        Aj a;\n"
+                                 "        ajcall(1);\n"
+                                 "    }\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   a: tyAJ::Aj\n"
+                                 "   void tyAJ::ajcall(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Outer {\n"
                                  "    struct Nested {\n"
                                  "        Ah a;\n"
@@ -7048,7 +7089,15 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ah {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ai {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Aj {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ba {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Bb {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Bd {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -7065,6 +7114,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Da {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Db {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Dc {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Chassis {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
@@ -7125,18 +7176,6 @@ Test ExploratoryTestsOfClangAST[] =
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -7176,6 +7215,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyDA::Da\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void fdef(Ba) {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyBA::Ba\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void instantiateDependent() {\n"
                                  "    useDependent(tyAC::Ac{});\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -7199,7 +7243,12 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("int agval(int) {\n"
                                  "    return 0;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void ajcall(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void cacall(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int ddv(int) {\n"
+                                 "    return 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useNearer() {\n"
                                  "    Pin p;\n"
@@ -7357,9 +7406,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
