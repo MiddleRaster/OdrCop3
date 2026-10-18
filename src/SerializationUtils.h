@@ -729,11 +729,14 @@ namespace OdrCop3
                 return {};
 
             if (const CXXRecordDecl* cxxRecordDecl = clang::dyn_cast<CXXRecordDecl>(decl))
-                if (const ClassTemplateDecl* classTemplateDecl = cxxRecordDecl->getDescribedClassTemplate()) // if it's actually a ClassTemplateDecl...
+                if (const ClassTemplateDecl* classTemplateDecl = cxxRecordDecl->getDescribedClassTemplate())         // if it's actually a ClassTemplateDecl...
                     return PrintUnqualifiedNames(classTemplateDecl, classTemplateDecl->getDeclContext(), contextItems);
             if (const FunctionDecl* functionDecl = clang::dyn_cast<FunctionDecl>(decl))
                 if (const FunctionTemplateDecl* functionTemplateDecl = functionDecl->getDescribedFunctionTemplate()) // if it's actually a FunctionTemplateDecl...
                     return PrintUnqualifiedNames(functionTemplateDecl, functionTemplateDecl->getDeclContext(), contextItems);
+            if (const VarDecl* varDecl = clang::dyn_cast<VarDecl>(decl))
+                if (const VarTemplateDecl* varTemplateDecl = varDecl->getDescribedVarTemplate())                     // if it's actually a VarTemplateDecl...
+                    return PrintUnqualifiedNames(varTemplateDecl, varTemplateDecl->getDeclContext(), contextItems);
 
             UnqualifiedNameCollector collector(contextItems, callerContext);
             if (const VarDecl* varDecl = dyn_cast<VarDecl>(decl); varDecl && contextItems.serializationNeeds.hasNamespaceAlias)
@@ -764,11 +767,12 @@ namespace OdrCop3
         }
         static bool HasUnqualifiedNames(const Decl* decl, const ContextItems& contextItems)
         {
+            if (const              VarDecl*              varDecl = clang::dyn_cast<             VarDecl>(decl)) return "" != PrintUnqualifiedNames(             varDecl,                                  varDecl->getDeclContext(),   contextItems);
             if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedNames(        functionDecl,                             functionDecl,                     contextItems);
-            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getTemplatedDecl(), contextItems);
             if (const        CXXRecordDecl*        cxxRecordDecl = clang::dyn_cast<       CXXRecordDecl>(decl)) return "" != PrintUnqualifiedNames(       cxxRecordDecl,                            cxxRecordDecl,                     contextItems);
-            if (const              VarDecl*              varDecl = clang::dyn_cast<VarDecl             >(decl)) return "" != PrintUnqualifiedNames(             varDecl,                                  varDecl->getDeclContext(),   contextItems);
+            if (const      VarTemplateDecl*      varTemplateDecl = clang::dyn_cast<     VarTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(     varTemplateDecl,                          varTemplateDecl->getDeclContext(),   contextItems);
             if (const    ClassTemplateDecl*    classTemplateDecl = clang::dyn_cast<   ClassTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(   classTemplateDecl,                        classTemplateDecl->getDeclContext(),   contextItems);
+            if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getTemplatedDecl(), contextItems);
             return false;
         }
     };
