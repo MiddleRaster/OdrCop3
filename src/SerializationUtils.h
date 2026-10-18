@@ -731,6 +731,9 @@ namespace OdrCop3
             if (const CXXRecordDecl* cxxRecordDecl = clang::dyn_cast<CXXRecordDecl>(decl))
                 if (const ClassTemplateDecl* classTemplateDecl = cxxRecordDecl->getDescribedClassTemplate()) // if it's actually a ClassTemplateDecl...
                     return PrintUnqualifiedNames(classTemplateDecl, classTemplateDecl->getDeclContext(), contextItems);
+            if (const FunctionDecl* functionDecl = clang::dyn_cast<FunctionDecl>(decl))
+                if (const FunctionTemplateDecl* functionTemplateDecl = functionDecl->getDescribedFunctionTemplate()) // if it's actually a FunctionTemplateDecl...
+                    return PrintUnqualifiedNames(functionTemplateDecl, functionTemplateDecl->getDeclContext(), contextItems);
 
             UnqualifiedNameCollector collector(contextItems, callerContext);
             if (const VarDecl* varDecl = dyn_cast<VarDecl>(decl); varDecl && contextItems.serializationNeeds.hasNamespaceAlias)

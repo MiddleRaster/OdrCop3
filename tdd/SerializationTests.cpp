@@ -6840,6 +6840,10 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyCA { struct Ca {}; struct Cb {}; void cacall(int) {} } using tyCA::Ca; using tyCA::Cb; using tyCA::cacall;"
                                 "template<typename T> struct CtplHost : Ca { Cb b; T t; void m() { cacall(1); } };\n"
                                 "namespace tyCB { struct Cc {}; } using tyCB::Cc; template<typename T = Cc> struct CtplDefault { T t; };\n"
+                                "namespace tyDA { struct Da {}; } using tyDA::Da; template<typename T = Da> void dafn(T) {}\n"
+                                //"namespace tyDB { struct Db {}; } using tyDB::Db; template<typename T = Db> inline constexpr int dbvar = 1;\n"
+                                //"namespace tyDC { struct Dc {}; } using tyDC::Dc; template<typename T, typename U> struct Dpart2 {}; template<typename T> struct Dpart2<T, Dc> {};\n"
+                                //"namespace tyDD { constexpr int ddv(int) { return 1; } } using tyDD::ddv; template<int N = ddv(1)> struct Dnt {};\n"
 
                                 //// base class through a using-declaration
                                 //"namespace tyAI { struct Ai {}; } using tyAI::Ai; struct DerivedAi : Ai {};\n"
@@ -6924,12 +6928,12 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(50, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(51, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 6, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(39, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(40, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -7058,6 +7062,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Washer {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Da {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Chassis {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Rivet {\n"
@@ -7130,7 +7136,6 @@ Test ExploratoryTestsOfClangAST[] =
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -7165,6 +7170,11 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("template <typename T = Da> void dafn(T) {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyDA::Da\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void instantiateDependent() {\n"
                                  "    useDependent(tyAC::Ac{});\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -7346,7 +7356,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
