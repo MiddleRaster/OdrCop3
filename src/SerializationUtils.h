@@ -705,6 +705,19 @@ namespace OdrCop3
             {
                 qualifier    = typedefTypeLoc.getQualifierLoc();
                 target       = typedefTypeLoc.getTypePtr()->getDecl();
+            }
+            else if (auto specializationTypeLoc = typeLoc.getAs<TemplateSpecializationTypeLoc>())
+            {
+                qualifier = specializationTypeLoc.getQualifierLoc();
+                TemplateName templateName = specializationTypeLoc.getTypePtr()->getTemplateName();
+                if (const UsingShadowDecl* shadow = templateName.getAsUsingShadowDecl())
+                {
+                    if (shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration is written in the body; the text pins it
+                        return true;
+                    target       = shadow->getTargetDecl();
+                    viaUsingDecl = true;
+                } else
+                    target       = templateName.getAsTemplateDecl();    // null for dependent names like T::template X<int>
             } else
                 return true;
             if (qualifier) // written with a qualifier:  not an unqualified lookup
