@@ -6858,8 +6858,9 @@ Test ExploratoryTestsOfClangAST[] =
                                 // friend function defined in the class
                                 "namespace tyBA { struct Ba {}; } using tyBA::Ba; struct FriendDef { friend void fdef(Ba) {} };\n"
 
-                                //// enum whose underlying type is an alias found through a using-declaration
-                                //"namespace tyBC { using Under = unsigned char; } using tyBC::Under; enum Backed : Under { BackedA };\n"
+                                // enum whose underlying type is an alias found through a using-declaration
+                                "namespace tyBC  { using Under  = unsigned char; } using tyBC::Under; enum Backed : Under { BackedA };\n"
+                                "namespace tyBC2 { using Under2 = unsigned char; typedef unsigned short Under3; } using namespace tyBC2; enum Backed2 : Under2 { Backed2A }; enum Backed3 : Under3 { Backed3A };\n"
 
                                 //// class template: hazardous non-dependent member beside a dependent one
                                 //"namespace tyAK { struct Ak {}; } using tyAK::Ak; template<typename T> struct TplHost { Ak a; T t; };\n"
@@ -6930,7 +6931,7 @@ Test ExploratoryTestsOfClangAST[] =
 
             Assert::AreEqual(64, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 7, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual( 1, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 4, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 0, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
             Assert::AreEqual(43, maps.functionMap.size(),"wrong number of functions in map");
@@ -7194,10 +7195,22 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.enumMap.begin();
+                Assert::AreEqual("enum Backed : unsigned char {\n"
+                                 "    BackedA\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum Backed2 : unsigned char {\n"
+                                 "    Backed2A\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum Backed3 : unsigned short {\n"
+                                 "    Backed3A\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum class Mode {\n"
                                  "    On,\n"
                                  "    Off\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {

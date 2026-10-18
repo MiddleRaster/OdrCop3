@@ -686,7 +686,12 @@ namespace OdrCop3
             const Decl* target       = nullptr;
             bool        viaUsingDecl = false;
 
-            if (auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>())
+            if (auto tagTypeLoc = typeLoc.getAs<TagTypeLoc>())
+            {
+                qualifier    = tagTypeLoc.getQualifierLoc();
+                target       = tagTypeLoc.getTypePtr()->getDecl();
+            }
+            else if (auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>())
             {
                 const UsingShadowDecl* shadow = usingTypeLoc.getTypePtr()->getDecl();
                 if (shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration is written in the body; no need for further serialization
@@ -696,10 +701,10 @@ namespace OdrCop3
                 target       = usingTypeLoc.getTypePtr()->getDecl()->getTargetDecl();
                 viaUsingDecl = true;
             }
-            else if (auto tagTypeLoc = typeLoc.getAs<TagTypeLoc>())
+            else if (auto typedefTypeLoc = typeLoc.getAs<TypedefTypeLoc>())
             {
-                qualifier    = tagTypeLoc.getQualifierLoc();
-                target       = tagTypeLoc.getTypePtr()->getDecl();
+                qualifier    = typedefTypeLoc.getQualifierLoc();
+                target       = typedefTypeLoc.getTypePtr()->getDecl();
             } else
                 return true;
             if (qualifier) // written with a qualifier:  not an unqualified lookup
@@ -708,7 +713,7 @@ namespace OdrCop3
             const DeclContext* targetContext = target->getDeclContext()->getRedeclContext();
             if (targetContext->isRecord())                               // member types found through a class or base
                 return true;
-            if (targetContext->isFunctionOrMethod())                     // local type declared in a function body: ordinary lookup (I DON'T GET IT)
+            if (targetContext->isFunctionOrMethod())                     // local type declared in a function body: ordinary lookup
                 return true;
             if (target->isInAnonymousNamespace())                        // implicit using-directive; handled elsewhere
                 return true;
@@ -768,6 +773,7 @@ namespace OdrCop3
         static bool HasUnqualifiedNames(const Decl* decl, const ContextItems& contextItems)
         {
             if (const              VarDecl*              varDecl = clang::dyn_cast<             VarDecl>(decl)) return "" != PrintUnqualifiedNames(             varDecl,                                  varDecl->getDeclContext(),   contextItems);
+            if (const             EnumDecl*             enumDecl = clang::dyn_cast<            EnumDecl>(decl)) return "" != PrintUnqualifiedNames(            enumDecl,                                 enumDecl,                     contextItems);
             if (const         FunctionDecl*         functionDecl = clang::dyn_cast<        FunctionDecl>(decl)) return "" != PrintUnqualifiedNames(        functionDecl,                             functionDecl,                     contextItems);
             if (const        CXXRecordDecl*        cxxRecordDecl = clang::dyn_cast<       CXXRecordDecl>(decl)) return "" != PrintUnqualifiedNames(       cxxRecordDecl,                            cxxRecordDecl,                     contextItems);
             if (const      VarTemplateDecl*      varTemplateDecl = clang::dyn_cast<     VarTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(     varTemplateDecl,                          varTemplateDecl->getDeclContext(),   contextItems);
