@@ -57,6 +57,9 @@ namespace OdrCop3
                                                             return TrimRightIf(out, " ");
                                                          };
 
+        if (false == std::any_of(params->begin(), params->end(), [](const clang::NamedDecl* param) { return !param->isImplicit(); }))
+            return {}; // all implicit parameters (e.g., an abbreviated function)
+        
         std::string out = "template <";
 
         bool first = true;

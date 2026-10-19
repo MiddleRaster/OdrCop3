@@ -6897,16 +6897,16 @@ Test ExploratoryTestsOfClangAST[] =
 
                                 // concept through a using-declaration
                                 "namespace tyAX { template<typename T> concept Cx = true; } using tyAX::Cx; template<Cx T> void useConcept(T) {}\n"
-                                //"namespace tyEA { template<typename T> concept Ea = true; } using tyEA::Ea;"
-                                //"template<Ea auto V> void eaNontype() {}\n"
-                                //"template<Ea T> struct EaType {};\n"
-                                //"template<Ea... Ts> struct EaPack {};\n"
-                                //"namespace tyEB { template<typename T, typename U> concept Eb = true; } using tyEB::Eb;"
-                                //"template<Eb<int> T> struct EbArgs {};\n"
-                                //"template<typename T> requires Ea<T> void eaRequires(T) {}\n"
-                                //"template<typename T> void eaTrailing(T) requires Ea<T> {}\n"
-                                //"inline void eaAbbreviated(Ea auto x) {}\n"
-                                //"inline Ea auto eaVariable = 1;\n"
+                                "namespace tyEA { template<typename T> concept Ea = true; } using tyEA::Ea;"
+                                "template<Ea auto V> void eaNontype() {}\n"
+                                "template<Ea T> struct EaType {};\n"
+                                "template<Ea... Ts> struct EaPack {};\n"
+                                "namespace tyEB { template<typename T, typename U> concept Eb = true; } using tyEB::Eb;"
+                                "template<Eb<int> T> struct EbArgs {};\n"
+                                "template<typename T> requires Ea<T> void eaRequires(T) {}\n"
+                                "template<typename T> void eaTrailing(T) requires Ea<T> {}\n"
+                                "inline void eaAbbreviated(Ea auto x) {}\n"
+                                "inline Ea auto eaVariable = 1;\n"
                                 //"namespace tyEC { template<typename T> concept Ec = true; } using namespace tyEC;"
                                 //"template<Ec T> struct EcDirective {};\n"
                                 //"template<tyEA::Ea T> struct EaQualified {};\n"
@@ -6945,12 +6945,12 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(82, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual( 7, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(85, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 8, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 4, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 1, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual( 1, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(47, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual( 3, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(51, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -6988,6 +6988,21 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                                  "/* Unqualified names:\n"
                                  "   tyDC::Dc\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <Ea ...Ts> struct EaPack {\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyEA::Ea\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <Ea T> struct EaType {\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyEA::Ea\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <Eb<int> T> struct EbArgs {\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyEB::Eb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendDef {\n"
                                  "    friend void fdef(Ba) {\n"
@@ -7260,14 +7275,12 @@ Test ExploratoryTestsOfClangAST[] =
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
                 Assert::AreEqual("Bd StaticDef::sb; /* Unqualified names: sb: tyBD::Bd */\n"                                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T = Db> inline constexpr int dbvar = 1; /* Unqualified names: tyDB::Db */\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline Ea auto eaVariable = 1; /* Unqualified names: tyEA::Ea */\n"                            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline Ae gAe; /* Unqualified names: gAe: tyAE::Ae */\n"                                       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int gAg = agval(1); /* Unqualified names: int tyAG::agval(int) */\n"                    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int gAg2 = agval2(1); /* Unqualified names: int tyAG2::agval2(int) */\n"                , (*it++).second[0].fullyQualified);
@@ -7306,7 +7319,17 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.conceptMap.begin();
-                Assert::AreEqual("template <typename T> concept Cx = true;\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept Cx = true;\n"            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept Ea = true;\n"            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T, typename U> concept Eb = true;\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -7315,6 +7338,26 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   tyDA::Da\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void eaAbbreviated(Ea auto x) {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyEA::Ea\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <Ea auto V> void eaNontype() {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyEA::Ea\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> requires Ea<T> void eaRequires(T) {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyEA::Ea\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void eaTrailing(T) requires Ea<T> {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyEA::Ea\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void fdef(Ba) {\n"
                                  "}\n"
@@ -7526,10 +7569,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }

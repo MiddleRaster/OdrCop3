@@ -176,8 +176,14 @@ namespace OdrCop3
         VarDeclSerializer(const ContextItems& contextItems, const VarDecl* varDecl) : contextItems(contextItems), varDecl(varDecl) {}
         std::string Serialize() const
         {
-            std::string  name = varDecl->isOutOfLine()                            ? varDecl->getQualifiedNameAsString()   : varDecl->getNameAsString();
-            QualType qualType = contextItems.serializationNeeds.hasNamespaceAlias ? varDecl->getType().getCanonicalType() : varDecl->getType();
+            std::string           name = varDecl->isOutOfLine()       ? varDecl->getQualifiedNameAsString()    : varDecl->getNameAsString();
+
+            QualType       writtenType = varDecl->getTypeSourceInfo() ? varDecl->getTypeSourceInfo()->getType() : varDecl->getType();
+            const AutoType *  autoType = writtenType->getContainedAutoType();
+            const bool constrainedAuto = autoType && autoType->isConstrained();    // Ea auto: the concept would be lost by the deduced type
+            QualType          qualType = contextItems.serializationNeeds.hasNamespaceAlias ? varDecl->getType().getCanonicalType()
+                                                                         : constrainedAuto ? writtenType
+                                                                                           : varDecl->getType();
             if (varDecl->isConstexpr())
                 qualType = qualType.withoutLocalFastQualifiers(); // constexpr vars are implicitly const. So strip off const. Just like DeclPrinter does.
 
