@@ -686,52 +686,48 @@ namespace OdrCop3
             const Decl* target       = nullptr;
             bool        viaUsingDecl = false;
 
+            bool bail = false;
+            auto resolveTarget = [&](NestedNameSpecifierLoc nameQualifier, const UsingShadowDecl* shadow, const NamedDecl* directTarget, bool* bail)
+                                        {
+                                            qualifier = nameQualifier;
+                                            if (shadow) {
+                                                if (shadow->getDeclContext()->isFunctionOrMethod()) { // using-declaration is written in the body; the text pins it
+                                                    *bail = true;
+                                                    return;
+                                                }
+                                                viaUsingDecl = true;
+                                                target       = shadow->getTargetDecl();
+                                            } else
+                                                target       = directTarget;
+                                        };
+
             if (auto tagTypeLoc = typeLoc.getAs<TagTypeLoc>())
             {
-                qualifier    = tagTypeLoc.getQualifierLoc();
-                target       = tagTypeLoc.getTypePtr()->getDecl();
-            }
-            else if (auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>())
-            {
-                const UsingShadowDecl* shadow = usingTypeLoc.getTypePtr()->getDecl();
-                if (shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration is written in the body; no need for further serialization
-                    return true;
-
-                qualifier    = usingTypeLoc.getQualifierLoc();
-                target       = usingTypeLoc.getTypePtr()->getDecl()->getTargetDecl();
-                viaUsingDecl = true;
+                qualifier = tagTypeLoc.getQualifierLoc();
+                target    = tagTypeLoc.getTypePtr()->getDecl();
             }
             else if (auto typedefTypeLoc = typeLoc.getAs<TypedefTypeLoc>())
             {
-                qualifier    = typedefTypeLoc.getQualifierLoc();
-                target       = typedefTypeLoc.getTypePtr()->getDecl();
+                qualifier = typedefTypeLoc.getQualifierLoc();
+                target    = typedefTypeLoc.getTypePtr()->getDecl();
+            }
+            else if (auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>())
+            {
+                resolveTarget(usingTypeLoc.getQualifierLoc(), usingTypeLoc.getTypePtr()->getDecl(), nullptr, &bail);
+                if (bail) return true;
             }
             else if (auto deducedTypeLoc = typeLoc.getAs<DeducedTemplateSpecializationTypeLoc>())
             {
-                qualifier = deducedTypeLoc.getQualifierLoc();
                 TemplateName templateName = deducedTypeLoc.getTypePtr()->getTemplateName();
-                if (const UsingShadowDecl* shadow = templateName.getAsUsingShadowDecl())
-                {
-                    if (shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration is written in the body; the text pins it
-                        return true;
-                    target       = shadow->getTargetDecl();
-                    viaUsingDecl = true;
-                }
-                else
-                    target = templateName.getAsTemplateDecl();
+                resolveTarget(deducedTypeLoc.getQualifierLoc(), templateName.getAsUsingShadowDecl(), templateName.getAsTemplateDecl(), &bail);
+                if (bail) return true;
             }
             else if (auto specializationTypeLoc = typeLoc.getAs<TemplateSpecializationTypeLoc>())
             {
-                qualifier = specializationTypeLoc.getQualifierLoc();
                 TemplateName templateName = specializationTypeLoc.getTypePtr()->getTemplateName();
-                if (const UsingShadowDecl* shadow = templateName.getAsUsingShadowDecl())
-                {
-                    if (shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration is written in the body; the text pins it
-                        return true;
-                    target       = shadow->getTargetDecl();
-                    viaUsingDecl = true;
-                } else
-                    target       = templateName.getAsTemplateDecl();    // null for dependent names like T::template X<int>
+                resolveTarget(specializationTypeLoc.getQualifierLoc(), templateName.getAsUsingShadowDecl(), templateName.getAsTemplateDecl(), &bail);
+                if (bail) return true;
+
             } else
                 return true;
             if (qualifier) // written with a qualifier:  not an unqualified lookup
