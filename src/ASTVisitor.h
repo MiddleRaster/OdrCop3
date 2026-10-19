@@ -197,6 +197,9 @@ namespace OdrCop3
             if (cxxDeductionGuideDecl->isImplicit())
                 return true;
 
+            if (cxxDeductionGuideDecl->getTemplateSpecializationKind() == TemplateSpecializationKind::TSK_ImplicitInstantiation)
+                return true;
+
             if (cxxDeductionGuideDecl->isInAnonymousNamespace())
                 return true; // TU-local, not an ODR candidate
 

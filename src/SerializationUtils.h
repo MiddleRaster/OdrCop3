@@ -706,6 +706,20 @@ namespace OdrCop3
                 qualifier    = typedefTypeLoc.getQualifierLoc();
                 target       = typedefTypeLoc.getTypePtr()->getDecl();
             }
+            else if (auto deducedTypeLoc = typeLoc.getAs<DeducedTemplateSpecializationTypeLoc>())
+            {
+                qualifier = deducedTypeLoc.getQualifierLoc();
+                TemplateName templateName = deducedTypeLoc.getTypePtr()->getTemplateName();
+                if (const UsingShadowDecl* shadow = templateName.getAsUsingShadowDecl())
+                {
+                    if (shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration is written in the body; the text pins it
+                        return true;
+                    target       = shadow->getTargetDecl();
+                    viaUsingDecl = true;
+                }
+                else
+                    target = templateName.getAsTemplateDecl();
+            }
             else if (auto specializationTypeLoc = typeLoc.getAs<TemplateSpecializationTypeLoc>())
             {
                 qualifier = specializationTypeLoc.getQualifierLoc();
