@@ -69,7 +69,13 @@ namespace OdrCop3
 
             if (const auto* ttp = clang::dyn_cast<clang::TemplateTypeParmDecl>(param))
             {
-                out += ttp->wasDeclaredWithTypename() ? "typename " : "class ";
+                if (const clang::TypeConstraint* typeConstraint = ttp->getTypeConstraint())
+                {
+                    llvm::raw_string_ostream stream(out);
+                    typeConstraint->print(stream, contextItems.printPolicy);    // as written: Cx, ns::Cx, or Same<int>
+                    out += " ";
+                } else
+                    out += ttp->wasDeclaredWithTypename() ? "typename " : "class ";
                 out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp);
                 out  = TrimRightIf(out, " ");
                 continue;

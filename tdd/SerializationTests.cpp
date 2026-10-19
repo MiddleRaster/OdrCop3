@@ -6895,8 +6895,24 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyAY { template<typename T> struct Ay { Ay(T) {} }; template<typename T> Ay(T) -> Ay<T>; } using tyAY::Ay;"
                                 "inline void useCtad() { Ay a(1); }\n"
 
-                                //// concept through a using-declaration
-                                //"namespace tyAX { template<typename T> concept Cx = true; } using tyAX::Cx; template<Cx T> void useConcept(T) {}\n"
+                                // concept through a using-declaration
+                                "namespace tyAX { template<typename T> concept Cx = true; } using tyAX::Cx; template<Cx T> void useConcept(T) {}\n"
+                                //"namespace tyEA { template<typename T> concept Ea = true; } using tyEA::Ea;"
+                                //"template<Ea auto V> void eaNontype() {}\n"
+                                //"template<Ea T> struct EaType {};\n"
+                                //"template<Ea... Ts> struct EaPack {};\n"
+                                //"namespace tyEB { template<typename T, typename U> concept Eb = true; } using tyEB::Eb;"
+                                //"template<Eb<int> T> struct EbArgs {};\n"
+                                //"template<typename T> requires Ea<T> void eaRequires(T) {}\n"
+                                //"template<typename T> void eaTrailing(T) requires Ea<T> {}\n"
+                                //"inline void eaAbbreviated(Ea auto x) {}\n"
+                                //"inline Ea auto eaVariable = 1;\n"
+                                //"namespace tyEC { template<typename T> concept Ec = true; } using namespace tyEC;"
+                                //"template<Ec T> struct EcDirective {};\n"
+                                //"template<tyEA::Ea T> struct EaQualified {};\n"
+                                //"namespace { template<typename T> concept AnonConcept = true; }"
+                                //"template<AnonConcept T> struct AnonConceptType {};"
+                                //"template<AnonConcept auto V> struct AnonConceptNontype {};\n"
 
                                 //// function template: default template argument, found through a using-directive
                                 //"namespace tyAP { template<typename T = int> void apdef() {} } using namespace tyAP; inline void useDefaultArg() { apdef(); }\n"
@@ -6933,8 +6949,8 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 7, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 4, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 1, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual( 0, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(46, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual( 1, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual(47, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -7290,6 +7306,7 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.conceptMap.begin();
+                Assert::AreEqual("template <typename T> concept Cx = true;\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -7386,6 +7403,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   tyG::Gear\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <Cx T> void useConcept(T) {\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAX::Cx\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useCtad() {\n"
                                  "    Ay a(1);\n"
@@ -7504,7 +7526,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

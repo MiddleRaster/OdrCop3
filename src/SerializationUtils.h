@@ -646,12 +646,13 @@ namespace OdrCop3
         const DeclContext* callerContext;
         struct Name
         {
-            const FunctionDecl* callee;     // set for a call, null for a type
-            QualType            type;       // set for a type
-            std::string         owner;      // declarator the type appeared in; empty for calls and nameless uses
+            const FunctionDecl* callee;      // set for a call, null for a type
+            QualType            type;        // set for a type
+            std::string         owner;       // declarator the type appeared in; empty for calls and nameless uses
+            std::string         conceptName; // set for a concept; it's qualified name
         };
-        std::vector<Name>         names;    // replaces both references and types, in traversal order
-        std::vector<std::string>  owners;   // names of the declarators being traversed, innermost last (a stack, essentially)
+        std::vector<Name>         names;     // replaces both references and types, in traversal order
+        std::vector<std::string>  owners;    // names of the declarators being traversed, innermost last (a stack, essentially)
 
         UnqualifiedNameCollector(const ContextItems& contextItems, const DeclContext* callerContext) : contextItems(contextItems), callerContext(callerContext) {}
 
@@ -745,7 +746,28 @@ namespace OdrCop3
 
             names.push_back({nullptr, typeLoc.getType().getCanonicalType(), owners.empty() ? std::string() : owners.back() });
             return true;
-        }         
+        }
+        bool VisitConceptReference(ConceptReference* reference)
+        {
+            if (reference->getNestedNameSpecifierLoc())                   // written with a qualifier: not an unqualified lookup
+                return true;
+
+            const NamedDecl      * target = reference->getNamedConcept();
+            const UsingShadowDecl* shadow = dyn_cast<UsingShadowDecl>(reference->getFoundDecl());
+            const bool       viaUsingDecl = shadow != nullptr;
+
+            if (shadow && shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration written in the body: the text pins it
+                return true;
+            if (target->isInAnonymousNamespace())                         // implicit using-directive; handled elsewhere
+                return true;
+
+            const DeclContext* targetContext = target->getDeclContext()->getRedeclContext();
+            if (!viaUsingDecl && targetContext->Encloses(callerContext)) // found in an enclosing scope: ordinary lookup
+                return true;
+
+            names.push_back({nullptr, QualType(), std::string(), target->getQualifiedNameAsString()});
+            return true;
+        }
         bool TraverseFieldDecl  (  FieldDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseFieldDecl  (decl); owners.pop_back(); return ok; }
         bool TraverseVarDecl    (    VarDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseVarDecl    (decl); owners.pop_back(); return ok; }
         bool TraverseParmVarDecl(ParmVarDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseParmVarDecl(decl); owners.pop_back(); return ok; }
@@ -786,8 +808,9 @@ namespace OdrCop3
                 if (!name.owner.empty())
                     out += name.owner + ": ";
                 llvm::raw_string_ostream stream(out);
-                if (name.callee) name.callee->print(stream, policy);
-                else             name.type.print(stream, policy);
+                if (name.callee)                    name.callee->print(stream, policy);
+                else if (!name.conceptName.empty()) stream << name.conceptName;
+                else                                name.type.print(stream, policy);
                 out += "\n";
             }
             out += "*/\n";
