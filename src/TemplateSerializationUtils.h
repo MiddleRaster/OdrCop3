@@ -74,9 +74,19 @@ namespace OdrCop3
             {
                 if (const clang::TypeConstraint* typeConstraint = ttp->getTypeConstraint())
                 {
+                    if (contextItems.serializationNeeds.isAnonymous)
+                        out += "(anonymous namespace)::";
+
                     llvm::raw_string_ostream stream(out);
                     typeConstraint->print(stream, contextItems.printPolicy);    // as written: Cx, ns::Cx, or Same<int>
                     out += " ";
+
+                    if (contextItems.serializationNeeds.isAnonymous)
+                    {
+                        out += "/* ";
+                        out += TrimRightIf(SerializeDecl(contextItems, typeConstraint->getFoundDecl()), "\n");
+                        out += " */ ";
+                    }
                 } else
                     out += ttp->wasDeclaredWithTypename() ? "typename " : "class ";
                 out += AddParameterPackAndNameAndDefaultArgument(contextItems, ttp);

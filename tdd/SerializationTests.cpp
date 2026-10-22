@@ -6907,11 +6907,11 @@ Test ExploratoryTestsOfClangAST[] =
                                 "template<typename T> void eaTrailing(T) requires Ea<T> {}\n"
                                 "inline void eaAbbreviated(Ea auto x) {}\n"
                                 "inline Ea auto eaVariable = 1;\n"
-                                //"namespace tyEC { template<typename T> concept Ec = true; } using namespace tyEC;"
-                                //"template<Ec T> struct EcDirective {};\n"
-                                //"template<tyEA::Ea T> struct EaQualified {};\n"
-                                //"namespace { template<typename T> concept AnonConcept = true; }"
-                                //"template<AnonConcept T> struct AnonConceptType {};"
+                                "namespace tyEC { template<typename T> concept Ec = true; } using namespace tyEC;"
+                                "template<Ec T> struct EcDirective {};\n"
+                                "template<tyEA::Ea T> struct EaQualified {};\n"
+                                "namespace { template<typename T> concept AnonConcept = true; }"
+                                "template<AnonConcept T> struct AnonConceptType {};"
                                 //"template<AnonConcept auto V> struct AnonConceptNontype {};\n"
 
                                 //// function template: default template argument, found through a using-directive
@@ -6945,15 +6945,17 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(85, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(88, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 8, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 4, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 1, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual( 3, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual( 4, maps.conceptMap.size(),"wrong number of concepts in map");
             Assert::AreEqual(51, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("template <(anonymous namespace)::AnonConcept /* template <typename T> concept AnonConcept = true; */ T> struct AnonConceptType {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T = Cc> struct CtplDefault {\n"
                                  "    T t;\n"
                                  "};\n"
@@ -6994,6 +6996,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyEA::Ea\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <tyEA::Ea T> struct EaQualified {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <Ea T> struct EaType {\n"
                                  "};\n"
                                  "/* Unqualified names:\n"
@@ -7003,6 +7007,11 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n"
                                  "/* Unqualified names:\n"
                                  "   tyEB::Eb\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <Ec T> struct EcDirective {\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyEC::Ec\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendDef {\n"
                                  "    friend void fdef(Ba) {\n"
@@ -7272,9 +7281,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -7322,7 +7328,7 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> concept Cx = true;\n"            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept Ea = true;\n"            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T, typename U> concept Eb = true;\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> concept Ec = true;\n"            , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

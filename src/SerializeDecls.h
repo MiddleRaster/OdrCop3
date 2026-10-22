@@ -183,6 +183,43 @@ namespace OdrCop3
                     }
                 return false;
             }
+            bool HasAnonymousNamespaceConceptConstraint(const clang::Decl* decl) const
+            {
+                const clang::TemplateParameterList* params = nullptr;
+
+                if      (const auto* ctd = llvm::dyn_cast<clang::ClassTemplateDecl   >(decl))                                                             params = ctd->getTemplateParameters();
+                else if (const auto* ftd = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))                                                             params = ftd->getTemplateParameters();
+                else if (const auto*  rd = llvm::dyn_cast<clang::CXXRecordDecl       >(decl)) { if (const auto* ctd = rd->getDescribedClassTemplate   ()) params = ctd->getTemplateParameters(); }
+                else if (const auto*  fd = llvm::dyn_cast<clang::FunctionDecl        >(decl)) { if (const auto* ftd = fd->getDescribedFunctionTemplate()) params = ftd->getTemplateParameters(); }
+                if (!params)
+                    return false;
+
+                for (const auto* param : *params)
+                {
+                    const auto* ttpd = llvm::dyn_cast<clang::TemplateTypeParmDecl>(param);
+                    if (!ttpd || !ttpd->hasTypeConstraint())
+                        continue;
+
+                    llvm::SmallVector<clang::AssociatedConstraint, 1> constraints;
+                    ttpd->getAssociatedConstraints(constraints);
+                    for (const auto& constraint : constraints)
+                    {
+                        const auto* expr = constraint.ConstraintExpr;
+                        const auto* cse = llvm::dyn_cast<clang::ConceptSpecializationExpr>(expr);
+                        if (!cse)
+                            continue;
+
+                        const auto* concept1 = cse->getNamedConcept();
+                        for (const auto* dc = concept1->getDeclContext(); dc; dc = dc->getParent())
+                        {
+                            const auto* ns = llvm::dyn_cast<clang::NamespaceDecl>(dc);
+                            if (ns && ns->isAnonymousNamespace())
+                                return true;
+                        }
+                    }
+                }
+                return false;
+            }
 
             template <typename Type> bool PrintType(clang::QualType qualType) const
             {
@@ -300,6 +337,8 @@ namespace OdrCop3
                 if (true == IsFieldAttributed(decl))
                     return false;
                 if (true == IsConstructorWithMisprintedInitializer(decl))
+                    return false;
+                if (true == HasAnonymousNamespaceConceptConstraint(decl))
                     return false;
 
                 return true;
