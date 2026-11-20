@@ -458,10 +458,11 @@ namespace OdrCop3
             std::unordered_set<const clang::Decl*> decls;
             SerializationNeeds serializationNeeds
             {
-                .isAnonymous           = !Can(contextItems, decls).Print(decl),
-                .hasNamespaceAlias     = NamespaceAliasDetector::ContainsNamespaceAlias(decl),
-                .hasInternalLinkageRef = nullptr != InternalLinkageRefFinder::FindReference(decl),
-                .hasUnqualifiedNames   = UnqualifiedNameCollector::HasUnqualifiedNames(decl, contextItems),
+                .isAnonymous            = !Can(contextItems, decls).Print(decl),
+                .hasNamespaceAlias      =   NamespaceAliasDetector::ContainsNamespaceAlias(decl),
+                .hasInternalLinkageRef  = InternalLinkageRefFinder::FindReference(decl) != nullptr,
+                .hasUnqualifiedNames    = UnqualifiedNameCollector::HasUnqualifiedNames(decl, contextItems),
+                .hasUsingEnumStatements =          UsingEnumFinder::HasUsingEnumStatements(decl),
             };
             if (serializationNeeds.AreAllFalse() == true)
                 return Print::Decl(contextItems, decl);

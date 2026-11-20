@@ -6935,7 +6935,7 @@ Test ExploratoryTestsOfClangAST[] =
 
                                 // unscoped enumerator through a using-directive, scoped enumerator through a block-scope using enum
                                 "namespace tyAU { enum Plain { PlainA, PlainB }; } using namespace tyAU; inline int useEnumerator() { return PlainA; }\n"
-                                //"namespace tyAV { enum class Color { Red, Green }; } inline int useUsingEnum() { using enum tyAV::Color; return static_cast<int>(Red); }\n"
+                                "namespace tyAV { enum class Color { Red, Green }; } inline int useUsingEnum() { using enum tyAV::Color; return static_cast<int>(Red); }\n"
 
                                     ;
             OdrCop3::AllMaps maps;
@@ -6944,10 +6944,10 @@ Test ExploratoryTestsOfClangAST[] =
 
             Assert::AreEqual(90, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual(10, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual( 5, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual( 6, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 1, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 4, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(66, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(67, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -7280,14 +7280,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Zed {\n"
                                  "    void f();\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -7305,7 +7297,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> inline constexpr int asv = 1;\n"                                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int atv = 1;\n"                                                                         , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -7322,18 +7313,18 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    PlainA,\n"
                                  "    PlainB\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class Color {\n"
+                                 "    Red,\n"
+                                 "    Green\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum class Mode {\n"
                                  "    On,\n"
                                  "    Off\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.guideMap.begin();
                 Assert::AreEqual("template <typename T> Ay(T) -> Ay<T>;\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.conceptMap.begin();
@@ -7341,14 +7332,6 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> concept Ea = true;\n"            , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T, typename U> concept Eb = true;\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> concept Ec = true;\n"            , (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.functionMap.begin();
@@ -7635,6 +7618,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int useUsingEnum() {\n"
+                                 "    using enum tyAV::Color;\n"
+                                 "    return static_cast<int>(Red);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int useVarRef() {\n"
                                  "    return atv;\n"
                                  "}\n"
@@ -7647,9 +7634,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyAS::asv\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },

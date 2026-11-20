@@ -27,7 +27,8 @@ namespace OdrCop3
         bool hasNamespaceAlias      = false;
         bool hasInternalLinkageRef  = false;
         bool hasUnqualifiedNames    = false;
-        bool AreAllFalse() const { return !(isAnonymous || hasNamespaceAlias || hasInternalLinkageRef || hasUnqualifiedNames); }
+        bool hasUsingEnumStatements = false;
+        bool AreAllFalse() const { return !(isAnonymous || hasNamespaceAlias || hasInternalLinkageRef || hasUnqualifiedNames || hasUsingEnumStatements); }
     };
     struct ContextItems
     {
@@ -857,6 +858,43 @@ namespace OdrCop3
             if (const    ClassTemplateDecl*    classTemplateDecl = clang::dyn_cast<   ClassTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(   classTemplateDecl,                        classTemplateDecl->getDeclContext(),   contextItems);
             if (const FunctionTemplateDecl* functionTemplateDecl = clang::dyn_cast<FunctionTemplateDecl>(decl)) return "" != PrintUnqualifiedNames(functionTemplateDecl->getTemplatedDecl(), functionTemplateDecl->getTemplatedDecl(), contextItems);
             return false;
+        }
+    };
+
+    class UsingEnumFinder : public RecursiveASTVisitor<UsingEnumFinder>
+    {
+        std::map<const Stmt*, unsigned>& depths; // filled here: each using-enum statement, with the number of compound statements enclosing it
+        unsigned depth = 0;
+    public:
+        UsingEnumFinder(std::map<const Stmt*, unsigned>& depths) : depths(depths) {}
+        bool TraverseCompoundStmt(CompoundStmt* stmt)
+        {
+            ++depth;
+            const bool ok = RecursiveASTVisitor::TraverseCompoundStmt(stmt);
+            --depth;
+            return ok;
+        }
+        bool VisitDeclStmt(DeclStmt* declStmt)
+        {
+            if (declStmt->isSingleDecl() && isa<UsingEnumDecl>(declStmt->getSingleDecl()))
+                depths[declStmt] = depth;
+            return true;
+        }
+
+        static bool HasUsingEnumStatements(const clang::Decl* decl)
+        {
+            if (const auto* functionTemplateDecl = dyn_cast<FunctionTemplateDecl>(decl))
+                decl = functionTemplateDecl->getTemplatedDecl();
+            const auto* functionDecl = dyn_cast_or_null<FunctionDecl>(decl);
+            if (functionDecl == nullptr)
+                return false;
+            if (false == functionDecl->doesThisDeclarationHaveABody())
+                return false;
+            
+            std::map<const Stmt*, unsigned> depths; // owned here; the finder writes it and the helper reads it
+            UsingEnumFinder finder(depths);
+            finder.TraverseStmt(functionDecl->getBody());
+            return !depths.empty();
         }
     };
 }

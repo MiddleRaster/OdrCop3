@@ -195,18 +195,54 @@ namespace OdrCop3
         }
         std::string get_Body() const
         {
+            // The stock printer has a bug where it streams a UsingEnumDecl as a raw pointer ("using enum 0xbc90c78;").
+            // So such statements are identified and printed with a custom PrinterHelper instead
+
+            class UsingEnumPrinterHelper : public PrinterHelper
+            {
+                const std::map<const Stmt*, unsigned>& depths;
+                const ASTContext& context;
+                const unsigned spacesPerDepth;
+            public:
+                UsingEnumPrinterHelper(const std::map<const Stmt*, unsigned>& depths, const ASTContext& context, unsigned spacesPerDepth) : depths(depths), context(context), spacesPerDepth(spacesPerDepth) {}
+                bool handledStmt(Stmt* stmt, llvm::raw_ostream& out) override
+                {
+                    const auto found = depths.find(stmt);
+                    if (found == depths.end())
+                        return false;
+
+                    const auto *  usingEnum = cast<UsingEnumDecl>(cast<DeclStmt>(stmt)->getSingleDecl());
+                    std::string    spelling = usingEnum->getEnumDecl()->getQualifiedNameAsString(); // fallback, when the text is not available as written
+                    const SourceRange range = usingEnum->getEnumType()->getTypeLoc().getSourceRange();
+                    if (range.getBegin().isFileID() && range.getEnd().isFileID()) // not from a macro expansion
+                    {
+                        const llvm::StringRef text = Lexer::getSourceText(CharSourceRange::getTokenRange(range), context.getSourceManager(), context.getLangOpts());
+                        if (!text.empty())
+                            spelling = text.str();
+                    }
+                    out << std::string(spacesPerDepth*found->second, ' ') << "using enum " << spelling << ";\n";
+                    return true;
+                }
+            };
+
             std::string body;
             llvm::raw_string_ostream os(body);
 
             PrintingPolicy policy{contextItems.printPolicy};
             policy.FullyQualifiedName = contextItems.serializationNeeds.hasNamespaceAlias;
-            funcDecl->getBody()->printPretty(os, nullptr, policy);
+
+            std::map<const Stmt*, unsigned> depths; // owned here; the finder writes it and the helper reads it
+            UsingEnumFinder finder(depths);
+            finder.TraverseStmt(funcDecl->getBody());
+            UsingEnumPrinterHelper helper(depths, funcDecl->getASTContext(), 2*policy.Indentation);
+
+            funcDecl->getBody()->printPretty(os, depths.empty() ? nullptr : &helper, policy);
             os.flush();
 
             if (!contextItems.serializationNeeds.AreAllFalse())
             {
                 body += InternalLinkageReferenceCollector::PrintReferences<SerializeDecl>(funcDecl->getBody(), contextItems);
-                body +=          UnqualifiedNameCollector::PrintUnqualifiedNames         (funcDecl, funcDecl,  contextItems);
+                body +=          UnqualifiedNameCollector::PrintUnqualifiedNames(funcDecl, funcDecl, contextItems);
             }
             return body;
         }
