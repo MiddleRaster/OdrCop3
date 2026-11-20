@@ -6911,29 +6911,26 @@ Test ExploratoryTestsOfClangAST[] =
                                 "template<Ec T> struct EcDirective {};\n"
                                 "template<tyEA::Ea T> struct EaQualified {};\n"
                                 "namespace { template<typename T> concept AnonConcept = true; }"
-                                "template<AnonConcept T> struct AnonConceptType {};"
-                                //"template<AnonConcept auto V> struct AnonConceptNontype {};\n"
+                                "template<AnonConcept      T> struct AnonConceptType {};"
+                                "template<AnonConcept auto V> struct AnonConceptNontype {};\n"
 
-                                //// function template: default template argument, found through a using-directive
-                                //"namespace tyAP { template<typename T = int> void apdef() {} } using namespace tyAP; inline void useDefaultArg() { apdef(); }\n"
+                                // function template: default template argument, found through a using-directive
+                                "namespace tyAP { template<typename T=int> void apdef() {} } using namespace tyAP; inline void useDefaultArg() { apdef(); }\n"
 
-                                //// function template: non-type template argument
-                                //"namespace tyAQ { template<int N> void aqn() {} } using tyAQ::aqn; inline void useNonType() { aqn<3>(); }\n"
+                                // function template: non-type template argument
+                                "namespace tyAQ { template<int N> void aqn() {} } using tyAQ::aqn; inline void useNonType() { aqn<3>(); }\n"
 
-                                //// function template: hazardous temporary in the argument list plus a call through a using-declaration
-                                //"namespace tyAR { struct Ar {}; template<typename T> void arpick(T, Ar) {} } using tyAR::Ar; using tyAR::arpick;"
-                                //"inline void useMixed() { arpick(1, Ar{}); }\n"
+                                // function template: hazardous temporary in the argument list plus a call through a using-declaration
+                                "namespace tyAR { struct Ar {}; template<typename T> void arpick(T, Ar) {} } using tyAR::Ar; using tyAR::arpick; inline void useMixed() { arpick(1, Ar{}); }\n"
 
-                                //// function template: call resolves to an explicit specialization
-                                //"namespace tyBG { template<typename T> void bgspec(T) {} template<> void bgspec<int>(int) {} } using tyBG::bgspec;"
-                                //"inline void useSpecCall() { bgspec(1); }\n"
+                                // function template: call resolves to an explicit specialization
+                                "namespace tyBG { template<typename T> void bgspec(T) {} template<> void bgspec<int>(int) {} } using tyBG::bgspec; inline void useSpecCall() { bgspec(1); }\n"
 
-                                //// function template found through a using-declaration, plain overload preferred in the global scope
-                                //"namespace tyBH { template<typename T> void bhmix(T) {} } using tyBH::bhmix; void bhmix(int) {}"
-                                //"inline void useTplVsPlain() { bhmix(1); }\n"
+                                // function template found through a using-declaration, plain overload preferred in the global scope
+                                "namespace tyBH { template<typename T> void bhmix(T) {} } using tyBH::bhmix; void bhmix(int) {} inline void useTplVsPlain() { bhmix(1); }\n"
 
-                                //// variable and variable template referenced through using-declarations
-                                //"namespace tyAT { inline int atv = 1; } using tyAT::atv; inline int useVarRef() { return atv; }\n"
+                                // variable and variable template referenced through using-declarations
+                                "namespace tyAT { inline int atv = 1; } using tyAT::atv; inline int useVarRef() { return atv; }\n"
                                 //"namespace tyAS { template<typename T> inline constexpr int asv = 1; } using tyAS::asv; inline int useVarTpl() { return asv<int>; }\n"
 
                                 //// unscoped enumerator through a using-directive, scoped enumerator through a block-scope using enum
@@ -6945,15 +6942,17 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(88, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual( 8, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(90, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 9, maps.varMap.size(), "wrong number of vars in map");
             Assert::AreEqual( 4, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 1, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 4, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(51, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(64, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("template <AnonConcept auto V> struct AnonConceptNontype {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <(anonymous namespace)::AnonConcept /* template <typename T> concept AnonConcept = true; */ T> struct AnonConceptType {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T = Cc> struct CtplDefault {\n"
@@ -7197,6 +7196,8 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> struct Ao<T *> {\n"
                                  "    int p;\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Ar {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Aw {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> struct Ay {\n"
@@ -7281,6 +7282,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -7296,6 +7303,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   int tyAG3::agA(int)\n"
                                  "   int tyAG3::agB(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual( "inline int atv = 1;\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -7340,6 +7349,8 @@ Test ExploratoryTestsOfClangAST[] =
             }
             {
                 auto it = maps.functionMap.begin();
+                Assert::AreEqual("void bhmix(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T = Da> void dafn(T) {\n"
                                  "}\n"
                                  "/* Unqualified names:\n"
@@ -7395,7 +7406,19 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void ajcall(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T = int> void apdef() {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N> void aqn() {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void arpick(T, Ar) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void becall(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template<> void bgspec<int>(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void bgspec(T) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void bhmix(T) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void cacall(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -7464,6 +7487,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   a: tyAY::Ay\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useDefaultArg() {\n"
+                                 "    apdef();\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   template<> void tyAP::apdef<int>()\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void useDependent<tyAC::Ac>(tyAC::Ac t) {\n"
                                  "    adl(t);\n"
                                  "}\n"
@@ -7514,6 +7543,19 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   g: tyA::Gadget\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useMixed() {\n"
+                                 "    arpick(1, Ar{});\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   template<> void tyAR::arpick<int>(int, tyAR::Ar)\n"
+                                 "   tyAR::Ar\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useNonType() {\n"
+                                 "    aqn<3>();\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   template<> void tyAQ::aqn<3>()\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useParam(Sprocket s) {\n"
                                  "}\n"
                                  "/* Unqualified names:\n"
@@ -7544,6 +7586,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyF::Rivet\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useSpecCall() {\n"
+                                 "    bgspec(1);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   template<> void tyBG::bgspec<int>(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useTemplateArg() {\n"
                                  "    takeType<Cog>();\n"
                                  "}\n"
@@ -7565,6 +7613,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   tyAB::Ab\n"
                                  "   tyAB::Ab\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useTplVsPlain() {\n"
+                                 "    bhmix(1);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useTwo(Wa a, Wb b) {\n"
                                  "    Wa a2;\n"
                                  "    Wb b2;\n"
@@ -7575,6 +7626,15 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   a2: tyW::Wa\n"
                                  "   b2: tyW::Wb\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int useVarRef() {\n"
+                                 "    return atv;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAT::atv\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
