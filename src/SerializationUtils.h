@@ -649,8 +649,8 @@ namespace OdrCop3
             const FunctionDecl* callee;      // set for a call, null for a type
             QualType            type;        // set for a type
             std::string         owner;       // declarator the type appeared in; empty for calls and nameless uses
-            std::string         conceptName; // set for a concept; its qualified name
-            std::string         varName;     // set for a variable
+            std::string         conceptName; // set for a concept;  its qualified name
+            std::string         valueName;   // set for a variable; its qualified name
         };
         std::vector<Name>         names;     // replaces both references and types, in traversal order
         std::vector<std::string>  owners;    // names of the declarators being traversed, innermost last (a stack, essentially)
@@ -684,24 +684,30 @@ namespace OdrCop3
         }
         bool VisitDeclRefExpr(const DeclRefExpr* declRef)
         {
-            const auto* variable = dyn_cast<VarDecl>(declRef->getDecl());
-            if (!variable || declRef->hasQualifier())
+            const NamedDecl* named = declRef->getDecl();
+            if (!isa<VarDecl>(named) && !isa<EnumConstantDecl>(named))
+                return true;
+            if (declRef->hasQualifier())
                 return true;
 
-            const DeclContext* variableContext = variable->getDeclContext()->getRedeclContext();
-            if (variableContext->isRecord())           // static data members: not a namespace-lookup hazard
-                return true;
-            if (variableContext->isFunctionOrMethod()) // locals and parameters: ordinary lookup
-                return true;
-            if (variable->isInAnonymousNamespace())    // implicit using-directive; handled elsewhere
+            const auto* shadow = dyn_cast<UsingShadowDecl>(declRef->getFoundDecl());
+            if (shadow && shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration written in the body: the text pins it
                 return true;
 
-            const bool viaUsingDeclaration = isa<UsingShadowDecl>(declRef->getFoundDecl());
-            const bool viaOtherScope = !variableContext->Encloses(callerContext);
+            const DeclContext* namedContext = named->getDeclContext()->getRedeclContext();
+            if (namedContext->isRecord())           // static data members and member enumerators: not a namespace-lookup hazard
+                return true;
+            if (namedContext->isFunctionOrMethod()) // locals, parameters, and local enumerators: ordinary lookup
+                return true;
+            if (named->isInAnonymousNamespace())    // implicit using-directive; handled elsewhere
+                return true;
+
+            const bool viaUsingDeclaration = shadow != nullptr;
+            const bool viaOtherScope       = !namedContext->Encloses(callerContext); // using-directive or ADL
             if (!viaUsingDeclaration && !viaOtherScope)
                 return true;
 
-            names.push_back({nullptr, QualType(), std::string(), std::string(), variable->getQualifiedNameAsString()});
+            names.push_back({nullptr, QualType(), std::string(), std::string(), named->getQualifiedNameAsString()});
             return true;
         }
         bool VisitTypeLoc(TypeLoc typeLoc)
@@ -834,7 +840,7 @@ namespace OdrCop3
 
                      if (name.callee              ) name.callee->print(stream, policy);
                 else if (!name.conceptName.empty()) stream << name.conceptName;
-                else if (!name.    varName.empty()) stream << name.varName;
+                else if (!name.  valueName.empty()) stream << name.valueName;
                 else                                name.type.print(stream, policy);
                 out += "\n";
             }

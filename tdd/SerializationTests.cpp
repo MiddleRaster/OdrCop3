@@ -6931,10 +6931,10 @@ Test ExploratoryTestsOfClangAST[] =
 
                                 // variable and variable template referenced through using-declarations
                                 "namespace tyAT { inline int atv = 1; } using tyAT::atv; inline int useVarRef() { return atv; }\n"
-                                //"namespace tyAS { template<typename T> inline constexpr int asv = 1; } using tyAS::asv; inline int useVarTpl() { return asv<int>; }\n"
+                                "namespace tyAS { template<typename T> inline constexpr int asv = 1; } using tyAS::asv; inline int useVarTpl() { return asv<int>; }\n"
 
-                                //// unscoped enumerator through a using-directive, scoped enumerator through a block-scope using enum
-                                //"namespace tyAU { enum Plain { PlainA, PlainB }; } using namespace tyAU; inline int useEnumerator() { return PlainA; }\n"
+                                // unscoped enumerator through a using-directive, scoped enumerator through a block-scope using enum
+                                "namespace tyAU { enum Plain { PlainA, PlainB }; } using namespace tyAU; inline int useEnumerator() { return PlainA; }\n"
                                 //"namespace tyAV { enum class Color { Red, Green }; } inline int useUsingEnum() { using enum tyAV::Color; return static_cast<int>(Red); }\n"
 
                                     ;
@@ -6943,11 +6943,11 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::IsTrue(ok);
 
             Assert::AreEqual(90, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual( 9, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual( 4, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(10, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual( 5, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 1, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 4, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(64, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(66, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -7303,8 +7303,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   int tyAG3::agA(int)\n"
                                  "   int tyAG3::agB(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual( "inline int atv = 1;\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> inline constexpr int asv = 1;\n"                                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int atv = 1;\n"                                                                         , (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
@@ -7318,11 +7318,14 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("enum Backed3 : unsigned short {\n"
                                  "    Backed3A\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum Plain {\n"
+                                 "    PlainA,\n"
+                                 "    PlainB\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum class Mode {\n"
                                  "    On,\n"
                                  "    Off\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
@@ -7510,6 +7513,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   m: tyV::Mode\n"
                                  "   b: tyV::Bits\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int useEnumerator() {\n"
+                                 "    return PlainA;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAU::PlainA\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useExplicitArg() {\n"
                                  "    adtake<Ad>();\n"
                                  "}\n"
@@ -7632,8 +7641,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyAT::atv\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int useVarTpl() {\n"
+                                 "    return asv<int>;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAS::asv\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
