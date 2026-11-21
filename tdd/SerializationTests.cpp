@@ -6937,6 +6937,177 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyAU { enum Plain { PlainA, PlainB }; } using namespace tyAU; inline int useEnumerator() { return PlainA; }\n"
                                 "namespace tyAV { enum class Color { Red, Green }; } inline int useUsingEnum() { using enum tyAV::Color; return static_cast<int>(Red); }\n"
 
+                                //// overload set through a using-declaration: the annotation must identify the overload chosen, not just the name
+                                //"namespace tyOv1 { void pick(int) {} void pick(long) {} } using tyOv1::pick;"
+                                //"inline void useOverloadInt() { pick(1); } inline void useOverloadLong() { pick(1L); }\n"
+
+                                //// overload added after the using-declaration is invisible through it (selects late(long))
+                                //"namespace tyOv2 { void late(long) {} } using tyOv2::late; namespace tyOv2 { void late(int) {} } inline void useLate() { late(1); }\n"
+
+                                //// overload added after the using-directive is visible through it (selects dir(int))
+                                //"namespace tyOv3 { void dir(long) {} } using namespace tyOv3; namespace tyOv3 { void dir(int) {} } inline void useDirLate() { dir(1); }\n"
+
+                                //// overload chosen by the target type of an address-of, not by a call
+                                //"inline void useAddrOverload() { void (*p)(long) = pick; }\n"
+
+                                //// dependent call: each instantiation selects a different overload
+                                //"template<typename T> void useDepPick(T t) { pick(t); } inline void instDepPick() { useDepPick(1); useDepPick(1L); }\n"
+
+                                //// namespace alias as the qualifier
+                                //"namespace tyNa1 { struct NaT {}; } namespace nsAlias = tyNa1; inline void useNsAlias() { nsAlias::NaT t; }\n"
+
+                                //// an enclosing namespace shadows the qualifier: tyQs::QsT is tyQo::tyQs::QsT here, ::tyQs::QsT in a TU without the inner namespace
+                                //"namespace tyQs { struct QsT {}; } namespace tyQo { namespace tyQs { struct QsT {}; } inline void useShadowedQualifier() { tyQs::QsT t; } }\n"
+
+                                //// class qualifier found through a using-declaration
+                                //"namespace tyQc { struct Holder { struct Inner {}; static void sfn() {} }; } using tyQc::Holder; inline void useClassQualifier() { Holder::Inner i; Holder::sfn(); }\n"
+
+                                //// scoped-enum qualifier found through a using-declaration
+                                //"namespace tyQe { enum class Hue { Red }; } using tyQe::Hue; inline int useScopedEnumerator() { return static_cast<int>(Hue::Red); }\n"
+
+                                //// function address
+                                //"namespace tyFr { void frfn(int) {} } using tyFr::frfn; inline auto useFnAddress() { return &frfn; }\n"
+
+                                //// function as a non-type template argument
+                                //"namespace tyFr2 { void frfn2(int) {} } using tyFr2::frfn2; template<void (*F)(int)> struct FnArg {}; inline FnArg<frfn2> gFnArg;\n"
+
+                                //// constant folded into an array bound, bit-field width and template argument (the entity vanishes if only the value is kept)
+                                //"namespace tyAb { constexpr int abv = 3; } using tyAb::abv; struct ArrayBound { int a[abv]; int b : abv; }; template<int N> struct IntArg {}; inline IntArg<abv> gIntArg;\n"
+
+                                //// static_assert at namespace scope
+                                //"namespace tySa { struct Sa { int x; }; constexpr int sav(int) { return 1; } } using tySa::Sa; using tySa::sav; static_assert(sizeof(Sa) == sizeof(int) && sav(1) == 1);\n"
+
+                                //// the alias declaration itself names the type unqualified: namespace scope, class scope, block scope
+                                //"namespace tyAl { struct Alt {}; } using tyAl::Alt; using AltAlias = Alt; struct AliasHost { using Member = Alt; Member m; }; inline void useLocalAlias() { using Local = Alt; Local l; }\n"
+
+                                //// enumerator initializer
+                                //"namespace tyEi { constexpr int eiv(int) { return 1; } } using tyEi::eiv; enum EnumInit { EnumInitA = eiv(1) };\n"
+
+                                //// default arguments: evaluated at the call site, part of the function's identity
+                                //"namespace tyDf { struct Df {}; int dfv(int) { return 0; } } using tyDf::Df; using tyDf::dfv; inline void useDefaultArgs(Df d = Df{}, int n = dfv(1)) {}\n"
+
+                                //// conversion function: the type is part of the declaration name
+                                //"namespace tyMc { struct Mc {}; } using tyMc::Mc; struct ConvHost { operator Mc() const { return {}; } };\n"
+
+                                //// The name survives in the AST but not in the resulting type, so desugaring cannot rescue you.
+                                //"namespace tyDt { int dtfn(int) { return 0; } } using tyDt::dtfn;"
+                                //"inline auto useDecltype() -> decltype(dtfn(1)) { return 0; }"
+                                //"inline void useNoexcept() noexcept(noexcept(dtfn(1))) {}"
+                                //"inline unsigned long useSizeofExpr() { return sizeof(dtfn(1)); }\n"
+
+                                //// operator found through a using-declaration (ADL would look only in tyOp1)
+                                //"namespace tyOp1 { struct Op {}; } namespace tyOp2 { inline bool operator==(const tyOp1::Op &, const tyOp1::Op &) { return true; } }"
+                                //"using tyOp2::operator==; inline bool useOperator(tyOp1::Op a, tyOp1::Op b) { return a == b; }\n"
+
+                                //// user-defined literal found through a using-directive
+                                //"namespace tyLit { inline int operator\"\"_uu(unsigned long long) { return 0; } } using namespace tyLit; inline int useLiteral() { return 1_uu; }\n"
+
+                                //// range-for: begin and end are found by ADL, and they are never spelled
+                                //"namespace tyRf { struct Rng {}; int * begin(Rng &) { return nullptr; } int * end(Rng &) { return nullptr; } } inline void useRangeFor(tyRf::Rng & r) { for (int i : r) { (void)i; } }\n"
+
+                                //// non-template ADL
+                                //"namespace tyAd1 { struct Ax {}; void adlcall(Ax) {} } inline void useAdlDirect() { adlcall(tyAd1::Ax{}); }\n"
+
+                                //// hidden friend: reachable only through ADL
+                                //"namespace tyAd2 { struct Hf { friend void hfcall(Hf) {} }; } inline void useHiddenFriend() { hfcall(tyAd2::Hf{}); }\n"
+
+                                //// ADL beats a using-declared template: the callee is tyAd3::mixfn
+                                //"namespace tyAd3 { struct Ay {}; void mixfn(Ay) {} } namespace tyAd5 { template<typename T> void mixfn(const T &) {} } using tyAd5::mixfn;"
+                                //"inline void useAdlOverUsing() { mixfn(tyAd3::Ay{}); }\n"
+
+                                //// overload declared after the template definition but before instantiation
+                                //"template<typename T> void twoPhase(T t) { tpfn(t); }"
+                                //"namespace tyTp { struct Tp {}; void tpfn(Tp) {} }"
+                                //"inline void instTwoPhase() { twoPhase(tyTp::Tp{}); }\n"
+                                //    
+                                //// the same spelling resolves to two entities in one function
+                                //"namespace tyPs1 { struct Pos {}; } namespace tyPs2 { struct Pos {}; } using tyPs1::Pos; inline void usePositional() { Pos first; using tyPs2::Pos; Pos second; }\n"
+
+                                //// out-of-line definition sees a using-directive that appeared after the class
+                                //"struct OolHost { void f(); }; namespace tyOl { struct OolT {}; } using namespace tyOl; void OolHost::f() { OolT t; }\n"
+
+                                //// complete-class context: the method body sees the later member, not the using-declaration (no annotation)
+                                //"namespace tyCc { struct Cm {}; } using tyCc::Cm; struct LaterMember { void f() { Cm c; } struct Cm {}; };\n"
+
+                                //// out-of-line: the return type is looked up before the declarator-id (global scope, so the using-declaration wins),
+                                //// while the parameter and body are looked up after it (tyRt scope, so tyRt::RtQ wins)
+                                //"namespace tyRt2 { struct RtQ {}; }"
+                                //"namespace tyRt  { struct RtQ {}; struct RtHost { tyRt2::RtQ f(RtQ); }; }"
+                                //"using tyRt2::RtQ;"
+                                //"RtQ tyRt::RtHost::f(RtQ) { RtQ inBody; return {}; }\n"
+
+                                //"namespace tyAs { struct Asx {}; namespace tyAsIn { struct Asx {}; } } using namespace tyAs::tyAsIn;"
+                                //"namespace tyAs { inline void useAsIf() { Asx x; } }"   // finds tyAs::Asx, so no annotation
+                                //"inline void useAsIfGlobal() { Asx x; }\n"              // finds tyAs::tyAsIn::Asx through the directive
+
+                                //// directive at namespace scope, and a chain of using-declarations (report the ultimate entity)
+                                //"namespace tyNdB { struct Ndt {}; } namespace tyNdA { using namespace tyNdB; inline void useNsScopedDirective() { Ndt n; } }\n"
+                                //"namespace tyCh1 { struct Chn {}; } namespace tyCh2 { using tyCh1::Chn; } using tyCh2::Chn; inline void useChain() { Chn c; }\n"
+
+                                //// diamond of directives reaching one entity
+                                //"namespace tyDi { struct Dia {}; } namespace tyDi1 { using namespace tyDi; } namespace tyDi2 { using namespace tyDi; } using namespace tyDi1; using namespace tyDi2; inline void useDiamond() { Dia d; }\n"
+
+                                //// local variable and parameter hide the using-declared names; a template parameter hides one too
+                                //"namespace tySh { struct Shp {}; int shfn(int) { return 0; } } using tySh::Shp; using tySh::shfn; inline int useShadow(int shfn) { int Shp = shfn; return Shp; }\n"
+                                //"namespace tySh2 { struct Shq {}; } using tySh2::Shq; template<typename Shq> void useTplShadow(Shq) {}\n"
+
+                                //// the class's own members hide the using-declared names
+                                //"namespace tyMh { struct Mhp {}; void mhfn(int) {} } using tyMh::Mhp; using tyMh::mhfn; struct MemberHides { struct Mhp {}; void mhfn(int) {} void m() { Mhp p; mhfn(1); } };\n"
+
+                                //// dependent base is not searched, so the call binds to the global using-declaration (this one DOES annotate)
+                                //"namespace tyDb2 { void dbfn(int) {} } using tyDb2::dbfn; template<typename B> struct DepBase : B { void m() { dbfn(1); } };\n"
+
+                                //// block-scope using-directive reaching a local class and a lambda inside the same function
+                                //"namespace tyLc { struct Lc {}; } inline void useLocalClass() { using namespace tyLc; struct Local { Lc l; }; auto lam = [] { Lc x; }; }\n"
+
+                                //// lambda with no enclosing function: variable initializer, with a typed parameter and return type, then a generic one
+                                //"namespace tyLg { struct Lg {}; void lgcall(int) {} } using tyLg::Lg; using tyLg::lgcall;"
+                                //"inline auto gLambda  = [](Lg l) -> Lg { lgcall(1); return l; };"
+                                //"inline auto gGeneric = [](auto x) { lgcall(x); };\n"
+
+                                //// Hazardous types nested inside template arguments
+                                //"namespace tyNt { struct Nt {}; template<typename T> struct NtBox {}; } using tyNt::Nt; using tyNt::NtBox;"
+                                //"struct NestedArg { NtBox<Nt> a; NtBox<NtBox<Nt *>> b; NtBox<void (Nt)> c; };\n"
+
+                                //// the template name as a template template argument, and as a default
+                                //"namespace tyTt { template<typename T> struct Tt {}; } using tyTt::Tt; template<template<typename> class TT> struct TtHost {}; inline TtHost<Tt> gTtHost; template<template<typename> class TT = Tt> struct TtDefault {};\n"
+
+                                //// explicit specializations and variable-template partial specializations whose arguments are found through a using-declaration
+                                //"namespace tyEs { struct Es {}; template<typename T> struct EsTpl {}; } using tyEs::Es; template<> struct tyEs::EsTpl<Es> { int v; };\n"
+                                //"namespace tyVt { struct Vt {}; } using tyVt::Vt; template<typename T> inline constexpr int vtv = 0; template<typename T> inline constexpr int vtv<T *> = 1; template<> inline constexpr int vtv<Vt> = 2;\n"
+                                //"template<typename T> void fsp(T) {} template<> void fsp<Vt>(Vt) {} template void fsp<int>(int);\n"
+
+                                //// Concepts beyond the constraint position
+                                //"namespace tyRq { struct Rq {}; void rqcall(int) {} } using tyRq::Rq; using tyRq::rqcall;"
+                                //"template<typename T> concept RqConcept = sizeof(Rq) > 0 && requires(T t, Rq r) { rqcall(1); };\n"
+                                //"template<typename T> concept RqReturn  = requires(T t) { { t } -> Ea; };\n"      // type-constraint in a compound requirement
+                                //"inline auto lamConstrained = []<Ea T>(T) {};\n"                                    // constrained lambda template parameter
+
+                                //// inline namespace: decide whether the report says tyIn::v1::Ins or tyIn::Ins, then pin it
+                                //"namespace tyIn { inline namespace v1 { struct Ins {}; } } using tyIn::Ins; inline void useInline() { Ins i; }\n"
+
+                                //// anonymous namespace nested in a named one, reached by a using-declaration and by the implicit directive
+                                //"namespace tyAn  { namespace { struct AnS  {}; } } using tyAn::AnS; inline void useNestedAnon() { AnS a; }\n"
+                                //"namespace tyAn2 { namespace { struct AnS2 {}; } } using namespace tyAn2; inline void useAnonViaDirective() { AnS2 a; }\n"
+
+                                //// same owner name, different types, different blocks
+                                //"namespace tyLb { struct Lba {}; struct Lbb {}; } using tyLb::Lba; using tyLb::Lbb; inline void useSameName() { { Lba x; } { Lbb x; } }\n"
+
+                                //// same owner name in a nested class and its enclosing class
+                                //"struct LabelOuter { struct Inner { Lba a; }; Lbb a; };\n"
+
+                                //// same type under the same owner name twice: one line or two, deterministically
+                                //"inline void useSameTwice() { { Lba x; } { Lba x; } }\n"
+
+                                //// owners that have no declarator name: cast, new, catch parameter, pseudo-destructor
+                                //"inline void useUnnamedOwners(void * p, Lba * q) { (void)(Lba *)p; (void)reinterpret_cast<Lba *>(p); (void)new Lba; try {} catch (const Lba &) {} q->~Lba(); }\n"
+
+                                //// Dependent-using nodes (loud-failure check)
+                                //"template<typename B> struct DepUsing : B { using typename B::Inner; using B::member; Inner i; };\n"
+
+                                //// inheriting constructor through a using-declaration (ConstructorUsingShadowDecl)
+                                //"namespace tyIc { struct IcBase { IcBase(int) {} }; } using tyIc::IcBase; struct InheritCtor : IcBase { using IcBase::IcBase; };\n"
+
                                     ;
             OdrCop3::AllMaps maps;
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
