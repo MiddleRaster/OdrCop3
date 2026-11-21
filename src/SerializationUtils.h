@@ -645,72 +645,71 @@ namespace OdrCop3
     {
         const ContextItems& contextItems;
         const DeclContext* callerContext;
-        struct Name
+        struct NameInfo
         {
             const FunctionDecl* callee;      // set for a call, null for a type
             QualType            type;        // set for a type
             std::string         owner;       // declarator the type appeared in; empty for calls and nameless uses
-            std::string         conceptName; // set for a concept;  its qualified name
-            std::string         valueName;   // set for a variable; its qualified name
+            std::string         name;        // set for a concept, enum or variable; its qualified name
         };
-        std::vector<Name>         names;     // replaces both references and types, in traversal order
+        std::vector<NameInfo>     names;     // replaces both references and types, in traversal order
         std::vector<std::string>  owners;    // names of the declarators being traversed, innermost last (a stack, essentially)
 
         UnqualifiedNameCollector(const ContextItems& contextItems, const DeclContext* callerContext) : contextItems(contextItems), callerContext(callerContext) {}
-
         friend RecursiveASTVisitor<UnqualifiedNameCollector>;
-        bool VisitCallExpr(const CallExpr* call)
+
+        template<typename DeclT, typename F> bool HandleUnqualifiedLookup(const DeclT* target, bool viaUsingDeclaration, bool rejectFunctionScope, F record)
         {
-            const FunctionDecl* callee = call->getDirectCallee();
-            if (!callee)
+            if (target->isInAnonymousNamespace())                               // implicit using-directive; handled elsewhere
+                return true;
+            const DeclContext* targetContext = target->getDeclContext()->getRedeclContext();
+            if (targetContext->isRecord())                                      // static members found through the class or a base: not a namespace-lookup hazard
+                return true;
+            if (rejectFunctionScope && targetContext->isFunctionOrMethod())     // locals, parameters, and local enumerators: ordinary lookup
+                return true;
+            const bool viaOtherScope = !targetContext->Encloses(callerContext); // using-directive or ADL
+            if (!viaUsingDeclaration && !viaOtherScope)
                 return true;
 
-            const auto* declRef = dyn_cast<DeclRefExpr>(call->getCallee()->IgnoreParenImpCasts());
+            record();
+            return true;
+        }
+        bool VisitCallExpr(const CallExpr* callExpr)
+        {
+            const FunctionDecl* callee = callExpr->getDirectCallee();
+            if (!callee)
+                return true;
+            const auto* declRef = dyn_cast<DeclRefExpr>(callExpr->getCallee()->IgnoreParenImpCasts());
             if (!declRef || declRef->hasQualifier())
                 return true;
 
-            const DeclContext* calleeContext = callee->getDeclContext()->getRedeclContext();
-            if (calleeContext->isRecord())        // static members found through the class or a base: not a namespace-lookup hazard
-                return true;
-            if (callee->isInAnonymousNamespace()) // implicit using-directive; handled elsewhere
-                return true;
-
-            const bool viaUsingDeclaration = isa<UsingShadowDecl>(declRef->getFoundDecl());
-            const bool viaOtherScope       = !calleeContext->Encloses(callerContext); // using-directive or ADL
-            if (!viaUsingDeclaration && !viaOtherScope)
-                return true;
-
-            names.push_back({callee,  QualType(), std::string()});
-            return true;
-        }
-        bool VisitDeclRefExpr(const DeclRefExpr* declRef)
+            return HandleUnqualifiedLookup(callee, isa<UsingShadowDecl>(declRef->getFoundDecl()), false, [&](){ names.push_back({callee, QualType(), std::string()}); });
+        }        
+        bool VisitDeclRefExpr(const DeclRefExpr* declRefExpr)
         {
-            const NamedDecl* named = declRef->getDecl();
+            if (declRefExpr->hasQualifier())
+                return true;
+            const NamedDecl* named = declRefExpr->getDecl();
             if (!isa<VarDecl>(named) && !isa<EnumConstantDecl>(named))
                 return true;
-            if (declRef->hasQualifier())
+            const auto* shadow = dyn_cast<UsingShadowDecl>(declRefExpr->getFoundDecl());
+            if (shadow && shadow->getDeclContext()->isFunctionOrMethod())
                 return true;
 
-            const auto* shadow = dyn_cast<UsingShadowDecl>(declRef->getFoundDecl());
-            if (shadow && shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration written in the body: the text pins it
-                return true;
-
-            const DeclContext* namedContext = named->getDeclContext()->getRedeclContext();
-            if (namedContext->isRecord())           // static data members and member enumerators: not a namespace-lookup hazard
-                return true;
-            if (namedContext->isFunctionOrMethod()) // locals, parameters, and local enumerators: ordinary lookup
-                return true;
-            if (named->isInAnonymousNamespace())    // implicit using-directive; handled elsewhere
-                return true;
-
-            const bool viaUsingDeclaration = shadow != nullptr;
-            const bool viaOtherScope       = !namedContext->Encloses(callerContext); // using-directive or ADL
-            if (!viaUsingDeclaration && !viaOtherScope)
-                return true;
-
-            names.push_back({nullptr, QualType(), std::string(), std::string(), named->getQualifiedNameAsString()});
-            return true;
+            return HandleUnqualifiedLookup(named, shadow != nullptr, true, [&](){ names.push_back({nullptr, QualType(), std::string(), named->getQualifiedNameAsString()}); });
         }
+        bool VisitConceptReference(ConceptReference* conceptReference)
+        {
+            if (conceptReference->getNestedNameSpecifierLoc())
+                return true;
+            const NamedDecl* named = conceptReference->getNamedConcept();
+            const auto* shadow = dyn_cast<UsingShadowDecl>(conceptReference->getFoundDecl());
+            if (shadow && shadow->getDeclContext()->isFunctionOrMethod())
+                return true;
+
+            return HandleUnqualifiedLookup(named, shadow != nullptr, false, [&](){ names.push_back({nullptr, QualType(), std::string(), named->getQualifiedNameAsString()}); });
+        }
+
         bool VisitTypeLoc(TypeLoc typeLoc)
         {
             NestedNameSpecifierLoc qualifier;
@@ -732,71 +731,33 @@ namespace OdrCop3
                                                 target       = directTarget;
                                         };
 
-            if (auto tagTypeLoc = typeLoc.getAs<TagTypeLoc>())
-            {
+            if (auto tagTypeLoc = typeLoc.getAs<TagTypeLoc>()) {
                 qualifier = tagTypeLoc.getQualifierLoc();
                 target    = tagTypeLoc.getTypePtr()->getDecl();
             }
-            else if (auto typedefTypeLoc = typeLoc.getAs<TypedefTypeLoc>())
-            {
+            else if (auto typedefTypeLoc = typeLoc.getAs<TypedefTypeLoc>()) {
                 qualifier = typedefTypeLoc.getQualifierLoc();
                 target    = typedefTypeLoc.getTypePtr()->getDecl();
             }
-            else if (auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>())
-            {
+            else if (auto usingTypeLoc = typeLoc.getAs<UsingTypeLoc>()) {
                 resolveTarget(usingTypeLoc.getQualifierLoc(), usingTypeLoc.getTypePtr()->getDecl(), nullptr, &bail);
                 if (bail) return true;
             }
-            else if (auto deducedTypeLoc = typeLoc.getAs<DeducedTemplateSpecializationTypeLoc>())
-            {
+            else if (auto deducedTypeLoc = typeLoc.getAs<DeducedTemplateSpecializationTypeLoc>()) {
                 TemplateName templateName = deducedTypeLoc.getTypePtr()->getTemplateName();
                 resolveTarget(deducedTypeLoc.getQualifierLoc(), templateName.getAsUsingShadowDecl(), templateName.getAsTemplateDecl(), &bail);
                 if (bail) return true;
             }
-            else if (auto specializationTypeLoc = typeLoc.getAs<TemplateSpecializationTypeLoc>())
-            {
+            else if (auto specializationTypeLoc = typeLoc.getAs<TemplateSpecializationTypeLoc>()) {
                 TemplateName templateName = specializationTypeLoc.getTypePtr()->getTemplateName();
                 resolveTarget(specializationTypeLoc.getQualifierLoc(), templateName.getAsUsingShadowDecl(), templateName.getAsTemplateDecl(), &bail);
                 if (bail) return true;
-
             } else
                 return true;
             if (qualifier) // written with a qualifier:  not an unqualified lookup
                 return true;
-
-            const DeclContext* targetContext = target->getDeclContext()->getRedeclContext();
-            if (targetContext->isRecord())                               // member types found through a class or base
-                return true;
-            if (targetContext->isFunctionOrMethod())                     // local type declared in a function body: ordinary lookup
-                return true;
-            if (target->isInAnonymousNamespace())                        // implicit using-directive; handled elsewhere
-                return true;
-            if (!viaUsingDecl && targetContext->Encloses(callerContext)) // found in an enclosing scope: ordinary lookup
-                return true;
-
-            names.push_back({nullptr, typeLoc.getType().getCanonicalType(), owners.empty() ? std::string() : owners.back() });
-            return true;
-        }
-        bool VisitConceptReference(ConceptReference* reference)
-        {
-            if (reference->getNestedNameSpecifierLoc())                   // written with a qualifier: not an unqualified lookup
-                return true;
-
-            const NamedDecl      * target = reference->getNamedConcept();
-            const UsingShadowDecl* shadow = dyn_cast<UsingShadowDecl>(reference->getFoundDecl());
-            const bool       viaUsingDecl = shadow != nullptr;
-
-            if (shadow && shadow->getDeclContext()->isFunctionOrMethod()) // using-declaration written in the body: the text pins it
-                return true;
-            if (target->isInAnonymousNamespace())                         // implicit using-directive; handled elsewhere
-                return true;
-
-            const DeclContext* targetContext = target->getDeclContext()->getRedeclContext();
-            if (!viaUsingDecl && targetContext->Encloses(callerContext)) // found in an enclosing scope: ordinary lookup
-                return true;
-
-            names.push_back({nullptr, QualType(), std::string(), target->getQualifiedNameAsString()});
-            return true;
+            
+            return HandleUnqualifiedLookup(target, viaUsingDecl, true, [&](){ names.push_back({nullptr, typeLoc.getType().getCanonicalType(), owners.empty() ? std::string() : owners.back()}); });
         }
         bool TraverseFieldDecl  (  FieldDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseFieldDecl  (decl); owners.pop_back(); return ok; }
         bool TraverseVarDecl    (    VarDecl* decl) { owners.push_back(decl->getNameAsString()); const bool ok = RecursiveASTVisitor::TraverseVarDecl    (decl); owners.pop_back(); return ok; }
@@ -832,17 +793,16 @@ namespace OdrCop3
 
             std::string out;
             out += "/* Unqualified names:\n";
-            for (const Name& name : collector.names)
+            for (const NameInfo& nameInfo : collector.names)
             {
                 out += "   ";
-                if (!name.owner.empty())
-                    out += name.owner + ": ";
+                if (!nameInfo.owner.empty())
+                    out += nameInfo.owner + ": ";
                 llvm::raw_string_ostream stream(out);
 
-                     if (name.callee              ) name.callee->print(stream, policy);
-                else if (!name.conceptName.empty()) stream << name.conceptName;
-                else if (!name.  valueName.empty()) stream << name.valueName;
-                else                                name.type.print(stream, policy);
+                     if ( nameInfo.callee      ) nameInfo.callee->print(stream, policy);
+                else if (!nameInfo.name.empty()) stream << nameInfo.name;
+                else                             nameInfo.type.print(stream, policy);
                 out += "\n";
             }
             out += "*/\n";
