@@ -6937,18 +6937,17 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyAU { enum Plain { PlainA, PlainB }; } using namespace tyAU; inline int useEnumerator() { return PlainA; }\n"
                                 "namespace tyAV { enum class Color { Red, Green }; } inline int useUsingEnum() { using enum tyAV::Color; return static_cast<int>(Red); }\n"
 
-                                //// overload set through a using-declaration: the annotation must identify the overload chosen, not just the name
-                                //"namespace tyOv1 { void pick(int) {} void pick(long) {} } using tyOv1::pick;"
-                                //"inline void useOverloadInt() { pick(1); } inline void useOverloadLong() { pick(1L); }\n"
+                                // overload set through a using-declaration: the annotation must identify the overload chosen, not just the name
+                                "namespace tyOv1 { void pick(int) {} void pick(long) {} } using tyOv1::pick; inline void useOverloadInt() { pick(1); } inline void useOverloadLong() { pick(1L); }\n"
 
-                                //// overload added after the using-declaration is invisible through it (selects late(long))
-                                //"namespace tyOv2 { void late(long) {} } using tyOv2::late; namespace tyOv2 { void late(int) {} } inline void useLate() { late(1); }\n"
+                                // overload added after the using-declaration is invisible through it (selects late(long))
+                                "namespace tyOv2 { void late(long) {} } using tyOv2::late; namespace tyOv2 { void late(int) {} } inline void useLate() { late(1); }\n"
 
-                                //// overload added after the using-directive is visible through it (selects dir(int))
-                                //"namespace tyOv3 { void dir(long) {} } using namespace tyOv3; namespace tyOv3 { void dir(int) {} } inline void useDirLate() { dir(1); }\n"
+                                // overload added after the using-directive is visible through it (selects dir(int))
+                                "namespace tyOv3 { void dir(long) {} } using namespace tyOv3; namespace tyOv3 { void dir(int) {} } inline void useDirLate() { dir(1); }\n"
 
-                                //// overload chosen by the target type of an address-of, not by a call
-                                //"inline void useAddrOverload() { void (*p)(long) = pick; }\n"
+                                // overload chosen by the target type of an address-of, not by a call
+                                "inline void useAddrOverload() { void (*p)(long) = pick; }\n"
 
                                 //// dependent call: each instantiation selects a different overload
                                 //"template<typename T> void useDepPick(T t) { pick(t); } inline void instDepPick() { useDepPick(1); useDepPick(1L); }\n"
@@ -7118,7 +7117,7 @@ Test ExploratoryTestsOfClangAST[] =
             Assert::AreEqual( 6, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual( 1, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual( 4, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(67, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(78, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -7587,6 +7586,18 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void qcall(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void pick(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void pick(long) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void late(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void late(long) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void dir(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void dir(long) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void pstep(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void pstep(int) {\n"
@@ -7599,6 +7610,12 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("void tyZ::Zed::f() {\n"
                                  "    Zarg z;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useAddrOverload() {\n"
+                                 "    void (*p)(long) = pick;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyOv1::pick(long)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useAlias() {\n"
                                  "    PulleyAlias a;\n"
                                  "    PulleyTypedef t;\n"
@@ -7659,6 +7676,12 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("template <typename T> void useDependent(T t) {\n"
                                  "    adl(t);\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useDirLate() {\n"
+                                 "    dir(1);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyOv3::dir(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useEnumUnion() {\n"
                                  "    Mode m;\n"
                                  "    Bits b;\n"
@@ -7700,6 +7723,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   y: tyY::Ya\n"
                                  "   void tyY::ycall(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useLate() {\n"
+                                 "    late(1);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyOv2::late(long)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useLocal() {\n"
                                  "    Gadget g;\n"
                                  "}\n"
@@ -7718,6 +7747,18 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   template<> void tyAQ::aqn<3>()\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useOverloadInt() {\n"
+                                 "    pick(1);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyOv1::pick(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useOverloadLong() {\n"
+                                 "    pick(1L);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyOv1::pick(long)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useParam(Sprocket s) {\n"
                                  "}\n"
@@ -7805,6 +7846,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyAS::asv\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
         }
     },

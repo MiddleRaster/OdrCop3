@@ -652,8 +652,9 @@ namespace OdrCop3
             std::string         owner;       // declarator the type appeared in; empty for calls and nameless uses
             std::string         name;        // set for a concept, enum or variable; its qualified name
         };
-        std::vector<NameInfo>     names;     // replaces both references and types, in traversal order
-        std::vector<std::string>  owners;    // names of the declarators being traversed, innermost last (a stack, essentially)
+        std::vector<NameInfo>        names;      // replaces both references and types, in traversal order
+        std::vector<std::string>     owners;     // names of the declarators being traversed, innermost last (a stack, essentially)
+        std::set<const DeclRefExpr*> calleeRefs; // callee references VisitCallExpr has handled, so VisitDeclRefExpr does not record them twice
 
         UnqualifiedNameCollector(const ContextItems& contextItems, const DeclContext* callerContext) : contextItems(contextItems), callerContext(callerContext) {}
         friend RecursiveASTVisitor<UnqualifiedNameCollector>;
@@ -683,6 +684,7 @@ namespace OdrCop3
             if (!declRef || declRef->hasQualifier())
                 return true;
 
+            calleeRefs.insert(declRef); // prevent double-counting:  recorded here as a call; keeps VisitDeclRefExpr from recording the same reference again
             return HandleUnqualifiedLookup(callee, isa<UsingShadowDecl>(declRef->getFoundDecl()), false, [&](){ names.push_back({callee, QualType(), std::string()}); });
         }        
         bool VisitDeclRefExpr(const DeclRefExpr* declRefExpr)
@@ -690,13 +692,16 @@ namespace OdrCop3
             if (declRefExpr->hasQualifier())
                 return true;
             const NamedDecl* named = declRefExpr->getDecl();
-            if (!isa<VarDecl>(named) && !isa<EnumConstantDecl>(named))
+            if (!isa<VarDecl>(named) && !isa<EnumConstantDecl>(named) && !isa<FunctionDecl>(named))
+                return true;
+            const auto* function = dyn_cast<FunctionDecl>(named); // a function named outside a call: address-of, assignment to a pointer, passed as an argument
+            if (function && calleeRefs.count(declRefExpr))        // the callee of a call: VisitCallExpr already recorded it
                 return true;
             const auto* shadow = dyn_cast<UsingShadowDecl>(declRefExpr->getFoundDecl());
             if (shadow && shadow->getDeclContext()->isFunctionOrMethod())
                 return true;
 
-            return HandleUnqualifiedLookup(named, shadow != nullptr, true, [&](){ names.push_back({nullptr, QualType(), std::string(), named->getQualifiedNameAsString()}); });
+            return HandleUnqualifiedLookup(named, shadow != nullptr, true, [&](){ names.push_back({function, QualType(), std::string(), function ? std::string() : named->getQualifiedNameAsString()}); });
         }
         bool VisitConceptReference(ConceptReference* conceptReference)
         {
