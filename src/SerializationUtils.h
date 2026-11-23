@@ -703,6 +703,45 @@ namespace OdrCop3
 
             return HandleUnqualifiedLookup(named, shadow != nullptr, true, [&](){ names.push_back({function, QualType(), std::string(), function ? std::string() : named->getQualifiedNameAsString()}); });
         }
+        bool VisitUnresolvedLookupExpr(const UnresolvedLookupExpr* lookupExpr)
+        {
+            if (lookupExpr->getQualifierLoc())
+                return true;
+
+            std::vector<std::pair<const FunctionDecl*, bool>> candidates;       // each candidate and whether a using-declaration brought it in
+            for (const NamedDecl* found : lookupExpr->decls())                  // every candidate ordinary lookup found; ADL candidates are unknowable until instantiation
+            {
+                const auto* shadow = dyn_cast<UsingShadowDecl>(found);
+                if (shadow && shadow->getDeclContext()->isFunctionOrMethod())   // using-declaration is written in the body; the text pins it
+                    continue;
+                const NamedDecl* target = shadow ? shadow->getTargetDecl() : found;
+                if (const auto* functionTemplateDecl = dyn_cast<FunctionTemplateDecl>(target))
+                    target = functionTemplateDecl->getTemplatedDecl();          // NameInfo::callee holds a FunctionDecl
+                const auto* function = dyn_cast<FunctionDecl>(target);
+                if (!function)
+                    continue;
+
+                candidates.push_back({function, shadow != nullptr});
+            }
+            if (candidates.empty())
+                return true;
+
+            PrintingPolicy policy(contextItems.printPolicy);
+            policy.FullyQualifiedName = true; // the same policy PrintUnqualifiedNames prints with, so the order is the order the reader sees
+            policy.TerseOutput        = true;
+            auto printed              = [&](const FunctionDecl* function)
+                                            {
+                                                std::string text;
+                                                llvm::raw_string_ostream stream(text);
+                                                function->print(stream, policy);
+                                                stream.flush();
+                                                return text;
+                                            };
+            std::sort(candidates.begin(), candidates.end(), [&](const auto& left, const auto& right) { return printed(left.first) < printed(right.first); }); // lookup order is an accident of declaration and header order; sort by printed name
+            for (const auto& [function, viaUsingDeclaration] : candidates)
+                HandleUnqualifiedLookup(function, viaUsingDeclaration, false, [&](){ names.push_back({function, QualType(), std::string()}); });
+            return true;
+        }
         bool VisitConceptReference(ConceptReference* conceptReference)
         {
             if (conceptReference->getNestedNameSpecifierLoc())

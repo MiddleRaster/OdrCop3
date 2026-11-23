@@ -6949,32 +6949,34 @@ Test ExploratoryTestsOfClangAST[] =
                                 // overload chosen by the target type of an address-of, not by a call
                                 "inline void useAddrOverload() { void (*p)(long) = pick; }\n"
 
-                                //// dependent call: each instantiation selects a different overload
-                                //"template<typename T> void useDepPick(T t) { pick(t); } inline void instDepPick() { useDepPick(1); useDepPick(1L); }\n"
+                                // dependent call: each instantiation selects a different overload
+                                "template<typename T> void useDepPick(T t) { pick(t); } inline void instDepPick() { useDepPick(1); useDepPick(1L); }\n"
 
-                                //// namespace alias as the qualifier
-                                //"namespace tyNa1 { struct NaT {}; } namespace nsAlias = tyNa1; inline void useNsAlias() { nsAlias::NaT t; }\n"
+                                // namespace alias as the qualifier
+                                "namespace tyNa1 { struct NaT {}; } namespace nsAlias = tyNa1; inline void useNsAlias() { nsAlias::NaT t; }\n"
 
-                                //// an enclosing namespace shadows the qualifier: tyQs::QsT is tyQo::tyQs::QsT here, ::tyQs::QsT in a TU without the inner namespace
-                                //"namespace tyQs { struct QsT {}; } namespace tyQo { namespace tyQs { struct QsT {}; } inline void useShadowedQualifier() { tyQs::QsT t; } }\n"
+                                // an enclosing namespace shadows the qualifier: tyQs::QsT is tyQo::tyQs::QsT here, ::tyQs::QsT in a TU without the inner namespace
+                                "namespace tyQs { struct QsT {}; } namespace tyQo { namespace tyQs { struct QsT {}; } inline void useShadowedQualifier() { tyQs::QsT t; } }\n"
 
-                                //// class qualifier found through a using-declaration
-                                //"namespace tyQc { struct Holder { struct Inner {}; static void sfn() {} }; } using tyQc::Holder; inline void useClassQualifier() { Holder::Inner i; Holder::sfn(); }\n"
+                                // class qualifier found through a using-declaration
+                                "namespace tyQc { struct Holder { struct Inner {}; static void sfn() {} }; } using tyQc::Holder; inline void useClassQualifier() { Holder::Inner i; Holder::sfn(); }\n"
 
-                                //// scoped-enum qualifier found through a using-declaration
-                                //"namespace tyQe { enum class Hue { Red }; } using tyQe::Hue; inline int useScopedEnumerator() { return static_cast<int>(Hue::Red); }\n"
+                                // scoped-enum qualifier found through a using-declaration
+                                "namespace tyQe { enum class Hue { Red }; } using tyQe::Hue; inline int useScopedEnumerator() { return static_cast<int>(Hue::Red); }\n"
 
-                                //// function address
-                                //"namespace tyFr { void frfn(int) {} } using tyFr::frfn; inline auto useFnAddress() { return &frfn; }\n"
+                                // function address
+                                "namespace tyFr { void frfn(int) {} } using tyFr::frfn; inline auto useFnAddress() { return &frfn; }\n"
 
-                                //// function as a non-type template argument
-                                //"namespace tyFr2 { void frfn2(int) {} } using tyFr2::frfn2; template<void (*F)(int)> struct FnArg {}; inline FnArg<frfn2> gFnArg;\n"
+                                // function as a non-type template argument
+                                "namespace tyFr2 { void frfn2(int) {} } using tyFr2::frfn2; template<void (*F)(int)> struct FnArg {}; inline FnArg<frfn2> gFnArg;\n"
 
-                                //// constant folded into an array bound, bit-field width and template argument (the entity vanishes if only the value is kept)
-                                //"namespace tyAb { constexpr int abv = 3; } using tyAb::abv; struct ArrayBound { int a[abv]; int b : abv; }; template<int N> struct IntArg {}; inline IntArg<abv> gIntArg;\n"
+                                // constant folded into an array bound, bit-field width and template argument (the entity vanishes if only the value is kept)
+                                "namespace tyAb { constexpr int abv = 3; } using tyAb::abv; struct ArrayBound { int a[abv]; int b : abv; }; template<int N> struct IntArg {}; inline IntArg<abv> gIntArg;\n"
 
-                                //// static_assert at namespace scope
-                                //"namespace tySa { struct Sa { int x; }; constexpr int sav(int) { return 1; } } using tySa::Sa; using tySa::sav; static_assert(sizeof(Sa) == sizeof(int) && sav(1) == 1);\n"
+                                // static_assert at namespace scope
+                                "namespace tySa { struct Sa { int x; }; constexpr int sav(int) { return 1; } } using tySa::Sa; using tySa::sav; static_assert(sizeof(Sa) == sizeof(int) && sav(1) == 1);\n"
+                                "namespace tySb { struct Sb { int x; }; constexpr int sbv(int) { return 1; } } using tySb::Sb; using tySb::sbv;                      struct AssertInClass         { static_assert(sizeof(Sb) == sizeof(int) && sbv( 1 ) == 1);      };                      inline void useAssertInBody    ( ) { static_assert(sizeof(Sb) == sizeof(int) && sbv( 1 ) == 1); }\n"
+                                "namespace tySc { struct Sc { int x; }; constexpr int scv(int) { return 1; } } using tySc::Sc; using tySc::scv; template<typename T> struct AssertInClassTemplate { static_assert(sizeof(Sc) == sizeof(int) && scv(T()) == 1); T t; }; template<typename T> inline void useAssertInTemplate(T) { static_assert(sizeof(Sc) == sizeof(int) && scv(T()) == 1); }\n"
 
                                 //// the alias declaration itself names the type unqualified: namespace scope, class scope, block scope
                                 //"namespace tyAl { struct Alt {}; } using tyAl::Alt; using AltAlias = Alt; struct AliasHost { using Member = Alt; Member m; }; inline void useLocalAlias() { using Local = Alt; Local l; }\n"
@@ -7112,12 +7114,12 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(90, maps.udtMap.size(),"wrong number of UDTs in map");
-            Assert::AreEqual(10, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual( 6, maps.enumMap.size(), "wrong number of enums in map");
-            Assert::AreEqual( 1, maps.guideMap.size(), "wrong number of deduction guides in map");
-            Assert::AreEqual( 4, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual(78, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual(102, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual( 12, maps.varMap.size(), "wrong number of vars in map");
+            Assert::AreEqual(  7, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(  1, maps.guideMap.size(), "wrong number of deduction guides in map");
+            Assert::AreEqual(  4, maps.conceptMap.size(),"wrong number of concepts in map");
+            Assert::AreEqual( 94, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -7125,6 +7127,29 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <(anonymous namespace)::AnonConcept /* template <typename T> concept AnonConcept = true; */ T> struct AnonConceptType {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct ArrayBound {\n"
+                                 "    int a[3];\n"
+                                 "    int b : tyAb::abv /* constexpr int abv = 3; */;\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAb::abv\n"
+                                 "   tyAb::abv\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct AssertInClass {\n"
+                                 "    static_assert(sizeof(Sb) == sizeof(int) && sbv(1) == 1);\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tySb::Sb\n"
+                                 "   constexpr int tySb::sbv(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> struct AssertInClassTemplate {\n"
+                                 "    static_assert(sizeof(Sc) == sizeof(int) && scv(T()) == 1);\n"
+                                 "    T t;\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tySc::Sc\n"
+                                 "   constexpr int tySc::scv(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T = Cc> struct CtplDefault {\n"
                                  "    T t;\n"
                                  "};\n"
@@ -7182,6 +7207,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyEC::Ec\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <void (*F)(int)> struct FnArg {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct FriendDef {\n"
                                  "    friend void fdef(Ba) {\n"
                                  "    }\n"
@@ -7207,6 +7234,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   tyX::Xn\n"
                                  "   n: tyX::Xn\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <int N> struct IntArg {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct LocalHost {\n"
                                  "    void f() {\n"
                                  "        struct Local {\n"
@@ -7425,6 +7454,27 @@ Test ExploratoryTestsOfClangAST[] =
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Qual {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct NaT {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Holder {\n"
+                                 "    struct Inner {\n"
+                                 "    };\n"
+                                 "    static void sfn() {\n"
+                                 "    }\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct QsT {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct QsT {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Sa {\n"
+                                 "    int x;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Sb {\n"
+                                 "    int x;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Sc {\n"
+                                 "    int x;\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ptr {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Keyed {\n"
@@ -7450,23 +7500,38 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("struct Zed {\n"
                                  "    void f();\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
-                Assert::AreEqual("Bd StaticDef::sb; /* Unqualified names: sb: tyBD::Bd */\n"                                     , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T = Db> inline constexpr int dbvar = 1; /* Unqualified names: tyDB::Db */\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline Ea auto eaVariable = 1; /* Unqualified names: tyEA::Ea */\n"                            , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline Ae gAe; /* Unqualified names: gAe: tyAE::Ae */\n"                                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline int gAg = agval(1); /* Unqualified names: int tyAG::agval(int) */\n"                    , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline int gAg2 = agval2(1); /* Unqualified names: int tyAG2::agval2(int) */\n"                , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline Ag2 gAg2Temp = Ag2{}; /* Unqualified names: gAg2Temp: tyAG2::Ag2 */\n"                  , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("Bd StaticDef::sb; /* Unqualified names: sb: tyBD::Bd */\n"                                          , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T = Db> inline constexpr int dbvar = 1; /* Unqualified names: tyDB::Db */\n"     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline Ea auto eaVariable = 1; /* Unqualified names: tyEA::Ea */\n"                                 , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline Ae gAe; /* Unqualified names: gAe: tyAE::Ae */\n"                                            , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int gAg = agval(1); /* Unqualified names: int tyAG::agval(int) */\n"                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int gAg2 = agval2(1); /* Unqualified names: int tyAG2::agval2(int) */\n"                     , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline Ag2 gAg2Temp = Ag2{}; /* Unqualified names: gAg2Temp: tyAG2::Ag2 */\n"                       , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int gAg3 = agA(1) + agB(2);\n"
                                  "/* Unqualified names:\n"
                                  "   int tyAG3::agA(int)\n"
                                  "   int tyAG3::agB(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                Assert::AreEqual("template <typename T> inline constexpr int asv = 1;\n"                                         , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline int atv = 1;\n"                                                                         , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline FnArg<frfn2> gFnArg; /* Unqualified names: void tyFr2::frfn2(int) */\n"                      , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline IntArg<tyAb::abv /* constexpr int abv = 3; */> gIntArg; /* Unqualified names: tyAb::abv */\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> inline constexpr int asv = 1;\n"                                              , (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int atv = 1;\n"                                                                              , (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.enumMap.begin();
@@ -7487,10 +7552,16 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    Red,\n"
                                  "    Green\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum class Hue {\n"
+                                 "    Red\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum class Mode {\n"
                                  "    On,\n"
                                  "    Off\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.guideMap.begin();
@@ -7537,6 +7608,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyBA::Ba\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void instDepPick() {\n"
+                                 "    useDepPick(1);\n"
+                                 "    useDepPick(1L);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void instantiateDependent() {\n"
                                  "    useDependent(tyAC::Ac{});\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -7581,6 +7656,10 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("constexpr int ddv(int) {\n"
                                  "    return 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void frfn2(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void frfn(int) {\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useNearer() {\n"
                                  "    Pin p;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -7604,6 +7683,18 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useNearCall() {\n"
                                  "    pstep(1);\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useShadowedQualifier() {\n"
+                                 "    tyQs::QsT t;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int sav(int) {\n"
+                                 "    return 1;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int sbv(int) {\n"
+                                 "    return 1;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int scv(int) {\n"
+                                 "    return 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void ycall(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
@@ -7638,6 +7729,20 @@ Test ExploratoryTestsOfClangAST[] =
                                  "   void anonFn(int) {\n"
                                  "   }\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useAssertInBody() {\n"
+                                 "    static_assert(sizeof(Sb) == sizeof(int) && sbv(1) == 1);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tySb::Sb\n"
+                                 "   constexpr int tySb::sbv(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> inline void useAssertInTemplate(T) {\n"
+                                 "    static_assert(sizeof(Sc) == sizeof(int) && scv(T()) == 1);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tySc::Sc\n"
+                                 "   constexpr int tySc::scv(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useBoth() {\n"
                                  "    Hub h;\n"
                                  "}\n"
@@ -7649,6 +7754,14 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   tyG::Gear\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useClassQualifier() {\n"
+                                 "    Holder::Inner i;\n"
+                                 "    Holder::sfn();\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   i: tyQc::Holder\n"
+                                 "   tyQc::Holder\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <Cx T> void useConcept(T) {\n"
                                  "}\n"
@@ -7666,6 +7779,25 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   template<> void tyAP::apdef<int>()\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void useDepPick<int>(int t) {\n"
+                                 "    pick(t);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyOv1::pick(int)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("void useDepPick<long>(long t) {\n"
+                                 "    pick(t);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyOv1::pick(long)\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("template <typename T> void useDepPick(T t) {\n"
+                                 "    pick(t);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyOv1::pick(int)\n"
+                                 "   void tyOv1::pick(long)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void useDependent<tyAC::Ac>(tyAC::Ac t) {\n"
                                  "    adl(t);\n"
@@ -7702,6 +7834,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   template<> void tyAD::adtake<tyAD::Ad>()\n"
                                  "   tyAD::Ad\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline auto useFnAddress() {\n"
+                                 "    return &frfn;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   void tyFr::frfn(int)\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useHidden() {\n"
                                  "    using tyK2::Lug;\n"
@@ -7748,6 +7886,9 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   template<> void tyAQ::aqn<3>()\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useNsAlias() {\n"
+                                 "    tyNa1::NaT t;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useOverloadInt() {\n"
                                  "    pick(1);\n"
                                  "}\n"
@@ -7782,6 +7923,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n"
                                  "/* Unqualified names:\n"
                                  "   tyC1::Bolt\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int useScopedEnumerator() {\n"
+                                 "    return static_cast<int>(Hue::Red);\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyQe::Hue\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int useSizeof() {\n"
                                  "    using namespace tyF;\n"
@@ -7846,6 +7993,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyAS::asv\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
