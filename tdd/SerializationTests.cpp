@@ -6978,11 +6978,11 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tySb { struct Sb { int x; }; constexpr int sbv(int) { return 1; } } using tySb::Sb; using tySb::sbv;                      struct AssertInClass         { static_assert(sizeof(Sb) == sizeof(int) && sbv( 1 ) == 1);      };                      inline void useAssertInBody    ( ) { static_assert(sizeof(Sb) == sizeof(int) && sbv( 1 ) == 1); }\n"
                                 "namespace tySc { struct Sc { int x; }; constexpr int scv(int) { return 1; } } using tySc::Sc; using tySc::scv; template<typename T> struct AssertInClassTemplate { static_assert(sizeof(Sc) == sizeof(int) && scv(T()) == 1); T t; }; template<typename T> inline void useAssertInTemplate(T) { static_assert(sizeof(Sc) == sizeof(int) && scv(T()) == 1); }\n"
 
-                                //// the alias declaration itself names the type unqualified: namespace scope, class scope, block scope
-                                //"namespace tyAl { struct Alt {}; } using tyAl::Alt; using AltAlias = Alt; struct AliasHost { using Member = Alt; Member m; }; inline void useLocalAlias() { using Local = Alt; Local l; }\n"
+                                // the alias declaration itself names the type unqualified: namespace scope, class scope, block scope
+                                "namespace tyAl { struct Alt {}; } using tyAl::Alt; using AltAlias = Alt; struct AliasHost { using Member = Alt; Member m; }; inline void useLocalAlias() { using Local = Alt; Local l; }\n"
 
-                                //// enumerator initializer
-                                //"namespace tyEi { constexpr int eiv(int) { return 1; } } using tyEi::eiv; enum EnumInit { EnumInitA = eiv(1) };\n"
+                                // enumerator initializer
+                                "namespace tyEi { constexpr int eiv(int) { return 1; } } using tyEi::eiv; enum EnumInit { EnumInitA = eiv(1) };\n"
 
                                 //// default arguments: evaluated at the call site, part of the function's identity
                                 //"namespace tyDf { struct Df {}; int dfv(int) { return 0; } } using tyDf::Df; using tyDf::dfv; inline void useDefaultArgs(Df d = Df{}, int n = dfv(1)) {}\n"
@@ -7114,15 +7114,22 @@ Test ExploratoryTestsOfClangAST[] =
             bool ok = clang::tooling::runToolOnCodeWithArgs(std::make_unique<OdrCop3::VisitorAction>(maps), code, { "-x", "c++", "-std=c++23" });
             Assert::IsTrue(ok);
 
-            Assert::AreEqual(102, maps.udtMap.size(),"wrong number of UDTs in map");
+            Assert::AreEqual(104, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 12, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(  7, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(  8, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(  1, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(  4, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual( 94, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual( 96, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
+                Assert::AreEqual("struct AliasHost {\n"
+                                 "    using Member = Alt;\n"
+                                 "    Member m;\n"
+                                 "};\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAl::Alt\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <AnonConcept auto V> struct AnonConceptNontype {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <(anonymous namespace)::AnonConcept /* template <typename T> concept AnonConcept = true; */ T> struct AnonConceptType {\n"
@@ -7403,6 +7410,8 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    Ay<T>(T) {\n"
                                  "    }\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("struct Alt {\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Sprocket {\n"
                                  "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("struct Ba {\n"
@@ -7506,6 +7515,12 @@ Test ExploratoryTestsOfClangAST[] =
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
             {
                 auto it = maps.varMap.begin();
@@ -7516,11 +7531,10 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("inline int gAg = agval(1); /* Unqualified names: int tyAG::agval(int) */\n"                         , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline int gAg2 = agval2(1); /* Unqualified names: int tyAG2::agval2(int) */\n"                     , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline Ag2 gAg2Temp = Ag2{}; /* Unqualified names: gAg2Temp: tyAG2::Ag2 */\n"                       , (*it++).second[0].fullyQualified);
-                Assert::AreEqual("inline int gAg3 = agA(1) + agB(2);\n"
-                                 "/* Unqualified names:\n"
-                                 "   int tyAG3::agA(int)\n"
-                                 "   int tyAG3::agB(int)\n"
-                                 "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline int gAg3 = agA(1) + agB(2); /* Unqualified names:\n"
+                                 "                                      int tyAG3::agA(int)\n"
+                                 "                                      int tyAG3::agB(int)\n"
+                                 "                                   */\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline FnArg<frfn2> gFnArg; /* Unqualified names: void tyFr2::frfn2(int) */\n"                      , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline IntArg<tyAb::abv /* constexpr int abv = 3; */> gIntArg; /* Unqualified names: tyAb::abv */\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("template <typename T> inline constexpr int asv = 1;\n"                                              , (*it++).second[0].fullyQualified);
@@ -7544,6 +7558,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("enum Backed3 : unsigned short {\n"
                                  "    Backed3A\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("enum EnumInit {\n"
+                                 "    EnumInitA = eiv(1) /* Unqualified names: constexpr int tyEi::eiv(int) */\n"
+                                 "};\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum Plain {\n"
                                  "    PlainA,\n"
                                  "    PlainB\n"
@@ -7559,7 +7576,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    On,\n"
                                  "    Off\n"
                                  "};\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -7654,6 +7670,9 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("void cacall(int) {\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constexpr int ddv(int) {\n"
+                                 "    return 1;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int eiv(int) {\n"
                                  "    return 1;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("void frfn2(int) {\n"
@@ -7873,6 +7892,13 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   g: tyA::Gadget\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("inline void useLocalAlias() {\n"
+                                 "    using Local = Alt;\n"
+                                 "    Local l;\n"
+                                 "}\n"
+                                 "/* Unqualified names:\n"
+                                 "   tyAl::Alt\n"
+                                 "*/\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("inline void useMixed() {\n"
                                  "    arpick(1, Ar{});\n"
                                  "}\n"
@@ -7993,8 +8019,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyAS::asv\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);

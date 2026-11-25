@@ -901,4 +901,15 @@ namespace OdrCop3
             return !depths.empty();
         }
     };
+
+    static inline std::string CollapseIfOneAnnotation(std::string annotation)
+    {
+        if (std::ranges::count(annotation, '\n') == 3)
+        { // can use single-line comment
+            std::ranges::replace(annotation, '\n', ' ');
+            annotation.erase(std::unique(annotation.begin(), annotation.end(), [](char a, char b) { return a == ' ' && b == ' '; }), annotation.end());
+            return TrimRightIf(annotation, " ");
+        }
+        return annotation;
+    }
 }

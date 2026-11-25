@@ -100,8 +100,14 @@ namespace OdrCop3
                             fqe += " = " + llvm::toString(value, 10); // Clang's semantic value is valid.
                         else
                             fqe += " = " + Lexer::getSourceText(CharSourceRange::getTokenRange(init->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts()).str(); // go with what the user typed
-                    } else
+                    } else {
                         fqe += " = " + IndentBlock(SerializeExpr(contextItems, init), LengthOfLastLine(fqe));
+                        if (contextItems.serializationNeeds.hasUnqualifiedNames)
+                        {
+                            fqe += " ";
+                            fqe += IndentBlock(CollapseIfOneAnnotation(UnqualifiedNameCollector::PrintUnqualifiedNames(enumDecl, enumDecl, contextItems)), LengthOfLastLine(fqe));
+                        }
+                    }
                 }
                 fqe += ",\n";
             }
