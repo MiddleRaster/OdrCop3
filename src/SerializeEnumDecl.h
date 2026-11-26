@@ -87,6 +87,10 @@ namespace OdrCop3
                 fqe += " : " + enumDecl->getIntegerType().getCanonicalType().getAsString();
             fqe += " {\n";
 
+            // find last enumerator to use to omit the last comma
+            const EnumConstantDecl* lastEnumerator = nullptr;
+            for (const EnumConstantDecl* enumeratorDecl : enumDecl->enumerators())
+                lastEnumerator = enumeratorDecl;
             for (const EnumConstantDecl* enumeratorDecl : enumDecl->enumerators())
             {
                 fqe += "    " + enumeratorDecl->getName().str();
@@ -100,18 +104,20 @@ namespace OdrCop3
                             fqe += " = " + llvm::toString(value, 10); // Clang's semantic value is valid.
                         else
                             fqe += " = " + Lexer::getSourceText(CharSourceRange::getTokenRange(init->getSourceRange()), contextItems.context.getSourceManager(), contextItems.context.getLangOpts()).str(); // go with what the user typed
+                        fqe += enumeratorDecl == lastEnumerator ? "\n" : ",\n";
                     } else {
                         fqe += " = " + IndentBlock(SerializeExpr(contextItems, init), LengthOfLastLine(fqe));
-                        if (contextItems.serializationNeeds.hasUnqualifiedNames)
-                        {
+                        if (enumeratorDecl != lastEnumerator)   fqe += ",";
+                        if (contextItems.serializationNeeds.hasUnqualifiedNames) {
                             fqe += " ";
-                            fqe += IndentBlock(CollapseIfOneAnnotation(UnqualifiedNameCollector::PrintUnqualifiedNames(enumDecl, enumDecl, contextItems)), LengthOfLastLine(fqe));
+                            fqe += IndentBlock(CollapseIfOneAnnotation(UnqualifiedNameCollector::PrintUnqualifiedNames(enumeratorDecl, enumDecl, contextItems)), LengthOfLastLine(fqe));
                         }
+                        fqe += "\n";
                     }
-                }
-                fqe += ",\n";
+                } else
+                    fqe += enumeratorDecl == lastEnumerator ? "\n" : ",\n";
             }
-            fqe = TrimRightIf(fqe, ",\n");
+            fqe = TrimRightIf(fqe, "\n");
             return fqe + "\n};\n";
         }
     };

@@ -6982,7 +6982,8 @@ Test ExploratoryTestsOfClangAST[] =
                                 "namespace tyAl { struct Alt {}; } using tyAl::Alt; using AltAlias = Alt; struct AliasHost { using Member = Alt; Member m; }; inline void useLocalAlias() { using Local = Alt; Local l; }\n"
 
                                 // enumerator initializer
-                                "namespace tyEi { constexpr int eiv(int) { return 1; } } using tyEi::eiv; enum EnumInit { EnumInitA = eiv(1) };\n"
+                                "namespace tyEi  { constexpr int eiv (int) { return 1; }                                       } using tyEi ::eiv ;                    enum EnumInit  { EnumInitA  = eiv (1)                                                       };\n"
+                                "namespace tyEi2 { constexpr int eiva(int) { return 1; } constexpr int eivb(int) { return 2; } } using tyEi2::eiva; using tyEi2::eivb; enum EnumInit2 { EnumInit2A = eiva(1), EnumInit2B = eivb(2), EnumInit2C = eiva(1) + eivb(2) };\n"
 
                                 //// default arguments: evaluated at the call site, part of the function's identity
                                 //"namespace tyDf { struct Df {}; int dfv(int) { return 0; } } using tyDf::Df; using tyDf::dfv; inline void useDefaultArgs(Df d = Df{}, int n = dfv(1)) {}\n"
@@ -7116,10 +7117,10 @@ Test ExploratoryTestsOfClangAST[] =
 
             Assert::AreEqual(104, maps.udtMap.size(),"wrong number of UDTs in map");
             Assert::AreEqual( 12, maps.varMap.size(), "wrong number of vars in map");
-            Assert::AreEqual(  8, maps.enumMap.size(), "wrong number of enums in map");
+            Assert::AreEqual(  9, maps.enumMap.size(), "wrong number of enums in map");
             Assert::AreEqual(  1, maps.guideMap.size(), "wrong number of deduction guides in map");
             Assert::AreEqual(  4, maps.conceptMap.size(),"wrong number of concepts in map");
-            Assert::AreEqual( 96, maps.functionMap.size(),"wrong number of functions in map");
+            Assert::AreEqual( 98, maps.functionMap.size(),"wrong number of functions in map");
 
             {
                 auto it = maps.udtMap.begin();
@@ -7561,6 +7562,19 @@ Test ExploratoryTestsOfClangAST[] =
                 Assert::AreEqual("enum EnumInit {\n"
                                  "    EnumInitA = eiv(1) /* Unqualified names: constexpr int tyEi::eiv(int) */\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual(
+                    
+
+"enum EnumInit2 {\n"
+"    EnumInit2A = eiva(1), /* Unqualified names: constexpr int tyEi2::eiva(int) */\n"
+"    EnumInit2B = eivb(2), /* Unqualified names: constexpr int tyEi2::eivb(int) */\n"
+"    EnumInit2C = eiva(1) + eivb(2) /* Unqualified names:\n"
+"                                      constexpr int tyEi2::eiva(int)\n"
+"                                      constexpr int tyEi2::eivb(int)\n"
+"                                   */\n"
+"};\n"
+
+                    , (*it++).second[0].fullyQualified);
                 Assert::AreEqual("enum Plain {\n"
                                  "    PlainA,\n"
                                  "    PlainB\n"
@@ -7576,6 +7590,10 @@ Test ExploratoryTestsOfClangAST[] =
                                  "    On,\n"
                                  "    Off\n"
                                  "};\n", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
+                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
             }
@@ -7671,6 +7689,12 @@ Test ExploratoryTestsOfClangAST[] =
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constexpr int ddv(int) {\n"
                                  "    return 1;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int eiva(int) {\n"
+                                 "    return 1;\n"
+                                 "}\n", (*it++).second[0].fullyQualified);
+                Assert::AreEqual("constexpr int eivb(int) {\n"
+                                 "    return 2;\n"
                                  "}\n", (*it++).second[0].fullyQualified);
                 Assert::AreEqual("constexpr int eiv(int) {\n"
                                  "    return 1;\n"
@@ -8019,8 +8043,6 @@ Test ExploratoryTestsOfClangAST[] =
                                  "/* Unqualified names:\n"
                                  "   tyAS::asv\n"
                                  "*/\n", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
-                //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
                 //Assert::AreEqual("boo", (*it++).second[0].fullyQualified);
